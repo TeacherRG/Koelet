@@ -419,6 +419,12 @@ a.btn{text-decoration:none}
 .banner .dots{background:rgba(255,255,255,.95);padding:7px 9px;border-radius:999px}
 .sheet .achs{grid-template-columns:repeat(2,minmax(0,1fr))}
 
+/* Выбор языка */
+.langpick{display:flex;flex-direction:column;gap:6px}
+.langpick.title{align-self:flex-end;width:min(260px,100%)}
+.langpick .segb{min-height:44px;font-size:14px}
+.langpick small{font-size:12px}
+
 /* Печать сертификата A4 */
 .print-area{display:none}
 @media print{

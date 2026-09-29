@@ -11,7 +11,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=s=>document.querySelector(s);
 const stage=$('#stage');
 const esc=s=>String(s).replace(/[&<>"{}]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','{':'&#123;','}':'&#125;'}[c]));
-const heroName=()=>S.hero.name.trim()||'Путник';
+const heroName=()=>S.hero.name.trim()||t('hero.default');
 /* возраст и род */
 const young=()=>S.hero.age==='y';
 const T=s=>typeof s==='string'?s.replace(/\{([^{}|]*)\|([^{}|]*)\}/g,(_,m,f)=>S.hero.g==='f'?f:m):s;
@@ -44,7 +44,7 @@ const PIECE='M12 12 H40 C38 2 62 2 60 12 H88 V40 C98 38 98 62 88 60 V88 H60 C62 
 const pieceSvg=(fill,stroke)=>`<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${PIECE}" style="fill:${fill};stroke:${stroke||'none'};stroke-width:3"/></svg>`;
 
 function speaker(who,mood){
-  if(who===M) return {name:'Хранитель',svg:mentorSvg(mood),m:1};
+  if(who===M) return {name:t('mentor.name'),svg:mentorSvg(mood),m:1};
   if(who==='hero') return {name:heroName(),svg:avatar(S.hero)};
   return {name:who.name,svg:avatar(who.av)};
 }
@@ -80,11 +80,11 @@ const lvl=()=>Math.min(LEVELS.length,Math.floor(S.sparks/130)+1);
 function addSparks(n,el){
   const before=lvl();S.sparks+=n;
   if(el){const r=el.getBoundingClientRect();const p=document.createElement('div');p.className='plus';p.textContent='+'+n;p.style.left=(r.left+r.width/2-14)+'px';p.style.top=(r.top-6)+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),1200)}
-  if(lvl()>before){toast('up','Новый уровень: '+LEVELS[lvl()-1],'Уровень '+lvl());sfx.ach()}
+  if(lvl()>before){toast('up',t('toast.level',{name:T(LEVELS[lvl()-1])}),t('toast.levelN',{n:lvl()}));sfx.ach()}
   hud();save();
 }
 function unlock(id){
-  if(S.ach[id])return;S.ach[id]=1;const a=ACHS[id];toast(a[0],'Достижение: '+T(a[1]),T(a[2]));sfx.ach();save();hud();
+  if(S.ach[id])return;S.ach[id]=1;const a=ACHS[id];toast(a[0],t('toast.ach',{name:T(a[1])}),T(a[2]));sfx.ach();save();hud();
 }
 function toast(ic,title,sub){
   const t=document.createElement('div');t.className='toast';t.innerHTML=`<span class="ic">${icon(ic)}</span><div><b>${esc(title)}</b><small>${esc(sub)}</small></div>`;
@@ -95,24 +95,26 @@ function hud(){
   const show=!['title','create','welcome'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
-  h.innerHTML=`<span class="pill" title="Искры — твой личный прогресс">${icon('sparkle')}<b>${S.sparks}</b><span class="sr-only">искр</span></span>
-  <span class="pill" title="Детали пазла">${icon('puzzle')}<b>${pieces}/7</b><span class="sr-only">деталей</span></span><span class="grow"></span>
-  <button class="iconbtn" id="menubtn" aria-haspopup="dialog">${icon('menu')}<span>Меню</span></button>`;
+  h.innerHTML=`<span class="pill" title="${t('hud.sparksTitle')}">${icon('sparkle')}<b>${S.sparks}</b><span class="sr-only">${t('hud.sparks')}</span></span>
+  <span class="pill" title="${t('hud.piecesTitle')}">${icon('puzzle')}<b>${pieces}/7</b><span class="sr-only">${t('hud.pieces')}</span></span><span class="grow"></span>
+  <button class="iconbtn" id="menubtn" aria-haspopup="dialog">${icon('menu')}<span>${t('hud.menu')}</span></button>`;
   $('#menubtn').onclick=showMenu;
 }
 function showMenu(){
   const L=lvl(),into=L>=LEVELS.length?100:(S.sparks%130)/130*100;
   const m=document.createElement('div');m.className='modal';
-  const draw=()=>{m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Меню">
-    <div class="menu-lvl"><span class="kicker">Уровень ${L}</span><b>${LEVELS[L-1]}</b><div class="bar"><i style="width:${into}%"></i></div><small>${S.sparks} искр · ${S.done.filter(Boolean).length} из 7 деталей</small></div>
+  const draw=()=>{m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${t('hud.menu')}">
+    <div class="menu-lvl"><span class="kicker">${t('menu.level',{n:L})}</span><b>${T(LEVELS[L-1])}</b><div class="bar"><i style="width:${into}%"></i></div><small>${t('menu.stats',{sparks:S.sparks,pieces:S.done.filter(Boolean).length})}</small></div>
     <div class="menu-list">
-      ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>Карта путешествия</span></button>`:''}
-      <button class="mitem" data-m="snd" aria-pressed="${S.sound}">${icon(S.sound?'sound':'mute')}<span>Звук: ${S.sound?'включён':'выключен'}</span></button>
-      <button class="mitem" data-m="home">${icon('home')}<span>На главный экран</span></button>
+      ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
+      <button class="mitem" data-m="snd" aria-pressed="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sound',{state:t(S.sound?'menu.on':'menu.off')})}</span></button>
+      <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
     </div>
-    <div><span class="kicker">Достижения · ${Object.keys(S.ach).length} из 6</span>${achGrid()}</div>
-    <p class="muted" style="font-size:14px">Здесь нет рейтинга и соревнования. Только твой собственный путь.</p>
-    <button class="btn ghost" id="closeM">Закрыть</button></div>`;
+    ${langPicker()}
+    <div><span class="kicker">${t('ach.count',{n:Object.keys(S.ach).length})}</span>${achGrid()}</div>
+    <p class="muted" style="font-size:14px">${t('ach.note')}</p>
+    <button class="btn ghost" id="closeM">${t('btn.close')}</button></div>`;
+    wireLangPicker(m,()=>{draw();hud();render()});
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();sfx.good();draw();return}
       m.remove();if(k==='map')go('map');if(k==='home')go('title')});
@@ -124,6 +126,20 @@ function showMenu(){
   m.onkeydown=e=>{if(e.key==='Escape')close()};
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
+/* ---------- выбор языка ---------- */
+function langPicker(where){
+  const codes=Object.keys(LANGS);if(codes.length<2)return '';
+  return `<div class="langpick ${where||''}" role="group" aria-label="${t('lang.label')}">${where==='title'?'':`<span class="kicker">${t('lang.label')}</span>`}<div class="seg">${codes.map(c=>`<button class="segb ${c===LANG?'on':''}" data-lang="${c}" lang="${c}" aria-pressed="${c===LANG}">${LANGS[c].name}</button>`).join('')}</div>${where==='title'||!S.started?'':`<small class="muted">${t('lang.note')}</small>`}</div>`;
+}
+function wireLangPicker(root,after){
+  root.querySelectorAll('[data-lang]').forEach(b=>b.onclick=async()=>{
+    if(b.dataset.lang===LANG)return;
+    root.querySelectorAll('[data-lang]').forEach(x=>x.disabled=true);
+    try{await setLang(b.dataset.lang);sfx.tap()}catch(e){toast('mute',LOAD_ERROR[b.dataset.lang]?.[0]||'Error','')}
+    after();
+  });
+}
+
 /* ================================================================
    SCREENS
    ================================================================ */
@@ -141,20 +157,22 @@ function renderTitle(){
   let wall='';for(let i=0;i<15;i++){wall+= i===7?`<div class="pw-hole">${pieceSvg('none')}</div>`:pieceSvg(cols[(i*3)%cols.length])}
   const started=S.screen!=='title'||S.sparks>0||S.hero.name||S.done.some(Boolean);
   stage.innerHTML=`<section class="title-screen scene">
-    <span class="kicker">Интерактивное приключение · 8–15 лет</span>
-    <h1 class="h1">Тайна<br><span>Коэлета</span></h1>
-    <p class="lead">Найди свою деталь в большом пазле.</p>
+    ${langPicker('title')}
+    <span class="kicker">${t('title.kicker')}</span>
+    <h1 class="h1">${t('title.h1a')}<br><span>${t('title.h1b')}</span></h1>
+    <p class="lead">${t('title.lead')}</p>
     <div class="puzzlewall" aria-hidden="true">${wall}</div>
     <div class="actions" id="ta">
-      ${S.sparks>0?`<button class="btn" id="cont">Продолжить приключение</button><button class="btn ghost" id="newg">Начать заново</button>`:`<button class="btn" id="start">Начать</button>`}
+      ${S.sparks>0?`<button class="btn" id="cont">${t('btn.continue')}</button><button class="btn ghost" id="newg">${t('btn.restart')}</button>`:`<button class="btn" id="start">${t('btn.start')}</button>`}
     </div>
     <div id="conf"></div>
-    <p class="foot">По мотивам урока раввина Шнеора Ашкенази «Тайна книги Коэлет». Игра ничего не отправляет в интернет: прогресс хранится только на этом устройстве. Без чата, рекламы и рейтингов.</p>
+    <p class="foot">${t('title.foot')}</p>
   </section>`;
+  wireLangPicker(stage,renderTitle);
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
   const n=$('#newg');if(n)n.onclick=()=>{
-    $('#conf').innerHTML=`<div class="confirm"><p>Начать сначала? Весь прогресс на этом устройстве будет стёрт.</p><div class="actions"><button class="btn small" id="yes">Да, начать заново</button><button class="btn ghost small" id="no">Отмена</button></div></div>`;
+    $('#conf').innerHTML=`<div class="confirm"><p>${t('confirm.reset')}</p><div class="actions"><button class="btn small" id="yes">${t('btn.yesReset')}</button><button class="btn ghost small" id="no">${t('btn.cancel')}</button></div></div>`;
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};
     $('#no').onclick=()=>{$('#conf').innerHTML=''};
   };
@@ -165,19 +183,19 @@ function renderCreate(){
   const seg=(attr,val,label)=>`<button class="segb ${h[attr]===val?'on':''}" data-${attr}="${val}" aria-pressed="${h[attr]===val}">${label}</button>`;
   const ok=!!(h.age&&h.g);
   stage.innerHTML=`<section class="scene create">
-    <span class="kicker">Перед путешествием</span>
-    <h2 class="h2">Создай своего героя</h2>
+    <span class="kicker">${t('create.kicker')}</span>
+    <h2 class="h2">${t('create.title')}</h2>
     <div class="create-top"><div class="preview" id="pv">${avatar(h)}</div>
       <div class="idcol">
-        <div class="field"><label for="hname">Имя героя (можно придумать любое или оставить пустым)</label><input id="hname" maxlength="16" autocomplete="off" placeholder="Путник" value="${esc(h.name)}"></div>
-        <div class="field"><span class="lbl" id="agel">Сколько тебе лет?</span><div class="seg" role="group" aria-labelledby="agel">${seg('age','y','8–11 лет')}${seg('age','t','12–15 лет')}</div></div>
-        <div class="field"><span class="lbl" id="gl">Как к тебе обращаться?</span><div class="seg" role="group" aria-labelledby="gl">${seg('g','m','Ты готов')}${seg('g','f','Ты готова')}</div></div>
+        <div class="field"><label for="hname">${t('create.name')}</label><input id="hname" maxlength="16" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(h.name)}"></div>
+        <div class="field"><span class="lbl" id="agel">${t('create.age')}</span><div class="seg" role="group" aria-labelledby="agel">${seg('age','y',t('create.ageY'))}${seg('age','t',t('create.ageT'))}</div></div>
+        <div class="field"><span class="lbl" id="gl">${t('create.address')}</span><div class="seg" role="group" aria-labelledby="gl">${seg('g','m',t('create.m'))}${seg('g','f',t('create.f'))}</div></div>
       </div></div>
-    ${h.age?`<p class="agenote">${h.age==='y'?'Короткие тексты и картинки. Любой экран можно послушать вслух.':'Больше историй и вопросов для размышления: о Шауле и Давиде, о зависти, которая помогает расти.'}</p>`:''}
-    <div class="group"><h3>Кто ты в этой истории</h3><div class="archs">${ARCHS.map((a,i)=>`<button class="arch ${h.arch===i?'on':''}" data-arch="${i}">${avatar({look:h.look,outfit:h.outfit,arch:i})}<span>${a.name}</span></button>`).join('')}</div></div>
-    <div class="group"><h3>Внешность</h3><div class="swatches">${LOOKS.map((l,i)=>`<button class="sw ${h.look===i?'on':''}" data-look="${i}" aria-label="Вариант внешности ${i+1}"><span style="background:linear-gradient(135deg,${l.hair} 50%,${l.skin} 50%)"></span></button>`).join('')}</div></div>
-    <div class="group"><h3>Одежда</h3><div class="swatches">${OUTFITS.map((o,i)=>`<button class="sw ${h.outfit===i?'on':''}" data-outfit="${i}" aria-label="Цвет одежды ${i+1}"><span style="background:${o}"></span></button>`).join('')}</div></div>
-    <div class="actions"><button class="btn" id="ready" ${ok?'':'disabled'}>Готово</button>${ok?'':'<span class="muted" style="font-size:14px">Выбери возраст и как к тебе обращаться</span>'}</div>
+    ${h.age?`<p class="agenote">${t(h.age==='y'?'create.noteY':'create.noteT')}</p>`:''}
+    <div class="group"><h3>${t('create.role')}</h3><div class="archs">${ARCHS.map((a,i)=>`<button class="arch ${h.arch===i?'on':''}" data-arch="${i}">${avatar({look:h.look,outfit:h.outfit,arch:i})}<span>${esc(T(a.name))}</span></button>`).join('')}</div></div>
+    <div class="group"><h3>${t('create.looks')}</h3><div class="swatches">${LOOKS.map((l,i)=>`<button class="sw ${h.look===i?'on':''}" data-look="${i}" aria-label="${t('create.lookN',{n:i+1})}"><span style="background:linear-gradient(135deg,${l.hair} 50%,${l.skin} 50%)"></span></button>`).join('')}</div></div>
+    <div class="group"><h3>${t('create.outfit')}</h3><div class="swatches">${OUTFITS.map((o,i)=>`<button class="sw ${h.outfit===i?'on':''}" data-outfit="${i}" aria-label="${t('create.outfitN',{n:i+1})}"><span style="background:${o}"></span></button>`).join('')}</div></div>
+    <div class="actions"><button class="btn" id="ready" ${ok?'':'disabled'}>${t('create.ready')}</button>${ok?'':`<span class="muted" style="font-size:14px">${t('create.need')}</span>`}</div>
   </section>`;
   const keep=()=>{const y=window.scrollY;renderCreate();window.scrollTo(0,y)};
   $('#hname').oninput=e=>{h.name=e.target.value;save()};
@@ -191,8 +209,8 @@ function renderCreate(){
 
 function renderWelcome(){
   stage.innerHTML=`<section class="scene">
-    ${sayHTML(M,`<b>${esc(heroName())}</b>, добро пожаловать в путешествие! Перед тобой большая загадка. Ты ${T('{готов|готова}')} её разгадать?`,'open')}
-    <div class="actions"><button class="btn" id="go">Начать приключение</button><button class="btn ghost" id="back">Изменить героя</button></div>
+    ${sayHTML(M,t('welcome.text',{name:esc(heroName())}),'open')}
+    <div class="actions"><button class="btn" id="go">${t('welcome.go')}</button><button class="btn ghost" id="back">${t('welcome.back')}</button></div>
   </section>`;
   $('#go').onclick=()=>{sfx.good();S.ps=0;go('prologue')};
   $('#back').onclick=()=>go('create');
@@ -208,19 +226,19 @@ function next(){
 }
 function head(){
   const st=steps(),i=idx();
-  const label=S.screen==='prologue'?'Пролог · Библиотека':`Мир ${S.w+1} · ${WORLDS[S.w].name}`;
-  const rd=young()&&canSpeak()?`<button class="iconbtn readbtn" data-read aria-label="Прочитать вслух">${icon('sound')}<span>Послушать</span></button>`:'';
-  return `<div class="scene-head banner"><div class="bn-art" aria-hidden="true">${sceneSvg(themeKey(),'xMidYMid')}</div><span class="kicker bn-k">${label}</span><div class="bn-row"><div class="dots" role="img" aria-label="Шаг ${i+1} из ${st.length}">${st.map((_,k)=>`<i class="${k<i?'done':k===i?'on':''}"></i>`).join('')}</div>${rd}</div></div>`;
+  const label=S.screen==='prologue'?t('head.prologue'):t('head.world',{n:S.w+1,name:WORLDS[S.w].name});
+  const rd=young()&&canSpeak()?`<button class="iconbtn readbtn" data-read aria-label="${t('read.label')}">${icon('sound')}<span>${t('read.listen')}</span></button>`:'';
+  return `<div class="scene-head banner"><div class="bn-art" aria-hidden="true">${sceneSvg(themeKey(),'xMidYMid')}</div><span class="kicker bn-k">${label}</span><div class="bn-row"><div class="dots" role="img" aria-label="${t('head.step',{i:i+1,n:st.length})}">${st.map((_,k)=>`<i class="${k<i?'done':k===i?'on':''}"></i>`).join('')}</div>${rd}</div></div>`;
 }
-const LETTERS='АБВГДЕЖЗИК';
-function optHTML(o,i){return `<button class="opt" data-i="${i}"><span class="ic ${o.ic?'e':''}" aria-hidden="true">${o.ic?icon(o.ic):LETTERS[i]}</span><span class="ot"><span>${esc(o.t)}</span>${o.s?`<small>${esc(o.s)}</small>`:''}</span></button>`}
-function hintBtn(h){return h?`<button class="btn ghost small" data-hint>Мне нужна подсказка</button>`:''}
+const letter=i=>(t('letters')[i]||String(i+1));
+function optHTML(o,i){return `<button class="opt" data-i="${i}"><span class="ic ${o.ic?'e':''}" aria-hidden="true">${o.ic?icon(o.ic):letter(i)}</span><span class="ot"><span>${esc(o.t)}</span>${o.s?`<small>${esc(o.s)}</small>`:''}</span></button>`}
+function hintBtn(h){return h?`<button class="btn ghost small" data-hint>${t('hint.btn')}</button>`:''}
 function wireHint(h,container){
   const b=(container||stage).querySelector('[data-hint]');if(!b)return;
   b.onclick=()=>{if(stage.querySelector('.hint'))return;const d=document.createElement('div');d.className='hint';d.innerHTML=icon('bulb')+' '+h;b.closest('.actions').before(d);sfx.soft()};
 }
 function toolbox(){if(!(S.screen==='world'&&WORLDS[S.w].tools))return '';
-  return `<div class="toolbox" aria-label="Ящик с инструментами">${Object.entries(TOOLS).map(([k,t])=>`<div class="tool ${S.tools[k]?'on':''}" title="${t[1]}" aria-label="${t[1]}">${icon(t[0])}${S.tools[k]>1?`<sup>${S.tools[k]}</sup>`:''}</div>`).join('')}</div>`}
+  return `<div class="toolbox" aria-label="${t('toolbox.label')}">${Object.entries(TOOLS).map(([k,t])=>`<div class="tool ${S.tools[k]?'on':''}" title="${t[1]}" aria-label="${t[1]}">${icon(t[0])}${S.tools[k]>1?`<sup>${S.tools[k]}</sup>`:''}</div>`).join('')}</div>`}
 
 function renderStep(){
   let st=steps()[idx()];if(typeof st==='function')st=st(S);if(st&&st.__dynamic)st=resolveDynamic(st);st=R(st);
@@ -230,22 +248,15 @@ function renderStep(){
 }
 function resolveDynamic(st){
   if(st.__dynamic==='city-year')return {type:'talk',who:M,text:CITY[S.city||'wealth'].year};
-  if(st.__dynamic==='city-evening')return {type:'choice',who:M,text:CITY[S.city||'wealth'].evening,key:'evening',neutral:true,options:[
-    {t:'Всё отлично, мне хватает',r:'Может быть. Запомни это чувство: скоро мы с тобой к нему вернёмся.'},
-    {t:'Хочется ещё больше',r:'Так бывает почти со всеми: чем больше собираешь, тем больше хочется. Странно, правда?'},
-    {t:'Скучновато. Как будто чего-то не хватает',r:'Всё есть, а чего-то не хватает. Интересно, чего именно?'},
-    {t:'Хочется, чтобы рядом кто-то был',r:'Выходит, самое нужное в сундук не положишь.'},
-    {t:'Хочу поделиться с кем-нибудь',r:'Интересно: радость как будто становится настоящей, только когда ею делишься.',help:1},
-    {t:'Пока не знаю',r:'Это честно. Иногда нужно время, чтобы понять, что чувствуешь.'}
-  ]};
-  if(st.body&&st.body.__dynamic==='strength-map')return {type:'card',kicker:'Результат лаборатории',title:'Моя карта сильных сторон',art:'map',body:strengthMap(S),btn:'Дальше'};
+  if(st.__dynamic==='city-evening')return {type:'choice',who:M,text:CITY[S.city||'wealth'].evening,key:'evening',neutral:true,options:tl('evening.options')};
+  if(st.body&&st.body.__dynamic==='strength-map')return {type:'card',kicker:t('lab.resultKicker'),title:t('lab.resultTitle'),art:'map',body:strengthMap(S),btn:t('lab.resultBtn')};
   return st;
 }
 function rTalk(st){
-  stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'point')}<div class="actions"><button class="btn" id="nx">Далее</button></div></section>`;
+  stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'point')}<div class="actions"><button class="btn" id="nx">${t('btn.next')}</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();next()};
 }
-function ownHTML(o){return `<div class="own"><label for="ownin">${esc(o.label)}</label><div class="ownrow"><input id="ownin" maxlength="60" autocomplete="off" placeholder="${esc(o.ph||'')}"><button class="btn small" id="ownok" disabled>Это моё</button></div><small>${esc(OWN_NOTE)}</small></div>`}
+function ownHTML(o){return `<div class="own"><label for="ownin">${esc(o.label)}</label><div class="ownrow"><input id="ownin" maxlength="60" autocomplete="off" placeholder="${esc(o.ph||'')}"><button class="btn small" id="ownok" disabled>${t('own.ok')}</button></div><small>${esc(OWN_NOTE)}</small></div>`}
 function rChoice(st){
   const hint=st.hint||(st.neutral?DEF_HINT:null);
   const whatif=st.whatif!==false&&new Set(st.options.map(o=>o.r)).size>1;
@@ -263,14 +274,14 @@ function rChoice(st){
     if(o.help){S.help++;if(S.help>=3)unlock('friend')}
     if(o.insight){S.insight++;if(/^mirror\d/.test(st.key||''))S.mi=(S.mi||0)+1}
     let extra='';
-    if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+1;const t=TOOLS[o.tool];extra=`<p class="lit">${icon(t[0])}<b>В ящике загорелся инструмент: ${t[1]}</b></p>`}
+    if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+1;const tool=TOOLS[o.tool];extra=`<p class="lit">${icon(tool[0])}<b>${t('choice.toolLit',{name:tool[1]})}</b></p>`}
     addSparks(10,b);sfx.good();setMood('warm'); // искры одинаковые за любой ответ
-    $('#out').innerHTML=`<div class="resp"><span class="who">Что произошло</span><p>${esc(o.r)}</p>${extra}${st.after?`<p class="muted">${esc(st.after)}</p>`:''}</div>`;
+    $('#out').innerHTML=`<div class="resp"><span class="who">${t('choice.what')}</span><p>${esc(o.r)}</p>${extra}${st.after?`<p class="muted">${esc(st.after)}</p>`:''}</div>`;
     const tb=stage.querySelector('.toolbox');if(tb)tb.outerHTML=toolbox();
     const others=st.options.filter(x=>x!==o&&x.r!==o.r);
-    $('#act').innerHTML=`${whatif&&others.length?'<button class="btn ghost small" id="wi">А что было бы, если…?</button>':''}<button class="btn" id="nx">Продолжить</button>`;
+    $('#act').innerHTML=`${whatif&&others.length?`<button class="btn ghost small" id="wi">${t('choice.whatif')}</button>`:''}<button class="btn" id="nx">${t('btn.continueShort')}</button>`;
     const wi=$('#wi');if(wi)wi.onclick=()=>{sfx.soft();wi.remove();
-      $('#wil').innerHTML=`<div class="whatif"><span class="kicker">Другие исходы · твой выбор остаётся твоим</span>${others.map(x=>`<div class="wi"><b>${x.ic?icon(x.ic)+' ':''}${esc(x.t)}</b><p>${esc(x.r)}</p></div>`).join('')}</div>`;
+      $('#wil').innerHTML=`<div class="whatif"><span class="kicker">${t('choice.others')}</span>${others.map(x=>`<div class="wi"><b>${x.ic?icon(x.ic)+' ':''}${esc(x.t)}</b><p>${esc(x.r)}</p></div>`).join('')}</div>`;
       $('#wil').scrollIntoView({behavior:'smooth',block:'nearest'})};
     $('#nx').onclick=()=>{sfx.tap();next()};
     $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -279,7 +290,7 @@ function rChoice(st){
   if(st.own){const inp=$('#ownin'),ok=$('#ownok');const prev=S.own[st.key]||'';inp.value=prev;ok.disabled=!prev.trim();
     inp.oninput=()=>{ok.disabled=!inp.value.trim()};
     inp.onkeydown=e=>{if(e.key==='Enter'&&!ok.disabled)ok.click()};
-    ok.onclick=()=>{const t=inp.value.trim().slice(0,60);if(!t)return;S.own[st.key]=t;save();pick({t,v:t,r:st.own.r||'Записано. Это твои собственные слова.',own:1},ok)}}
+    ok.onclick=()=>{const own=inp.value.trim().slice(0,60);if(!own)return;S.own[st.key]=own;save();pick({t:own,v:own,r:st.own.r||t('own.default'),own:1},ok)}}
 }
 function rMulti(st){
   let sel=(S[st.key]||[]).filter(x=>st.options.includes(x));
@@ -289,9 +300,9 @@ function rMulti(st){
   const draw=()=>{
     stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,esc(st.text),'think')}
       <div class="chips">${st.options.map((o,i)=>`<button class="chip ${sel.includes(o)?'on':''}" data-i="${i}" aria-pressed="${sel.includes(o)}">${esc(o)}</button>`).join('')}</div>
-      <p class="muted" style="font-size:14px">Выбрано ${sel.length} из ${st.max}</p>
+      <p class="muted" style="font-size:14px">${t('multi.count',{n:sel.length,max:st.max})}</p>
       ${ok?`<div class="own"><label for="ownin">${esc(st.own.label)}</label><input id="ownin" maxlength="40" autocomplete="off" placeholder="${esc(st.own.ph||'')}" value="${esc(S.own[ok]||'')}"><small>${esc(OWN_NOTE)}</small></div>`:''}
-      <div class="actions">${hintBtn(st.hint)}<button class="btn" id="nx" ${sel.length<need()?'disabled':''}>Выбрать</button></div></section>`;
+      <div class="actions">${hintBtn(st.hint)}<button class="btn" id="nx" ${sel.length<need()?'disabled':''}>${t('btn.choose')}</button></div></section>`;
     wireHint(st.hint);
     stage.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const o=st.options[+c.dataset.i];
       if(sel.includes(o))sel=sel.filter(x=>x!==o);else if(sel.length<st.max)sel.push(o);else{sel.shift();sel.push(o)}
@@ -302,38 +313,38 @@ function rMulti(st){
 }
 function rQuote(st){
   stage.innerHTML=`<section class="scene">${head()}
-    <div class="card"><span class="kicker">Цитата · ${esc(st.src)}</span><div class="quote-he" lang="he">${st.he}</div><div id="tr"></div></div>
+    <div class="card"><span class="kicker">${t('quote.kicker',{src:esc(st.src)})}</span><div class="quote-he" lang="he">${st.he}</div><div id="tr"></div></div>
     <div id="qq"></div>
-    <div class="actions" id="act"><button class="btn" id="show">Посмотреть перевод</button></div></section>`;
+    <div class="actions" id="act"><button class="btn" id="show">${t('quote.show')}</button></div></section>`;
   $('#show').onclick=()=>{sfx.tap();
-    $('#tr').innerHTML=`<p style="font-size:19px;font-weight:500">${esc(st.ru)}</p><p class="muted">${esc(st.plain)}</p>`;
+    $('#tr').innerHTML=`<p style="font-size:19px;font-weight:500">${esc(st.tr??st.ru)}</p><p class="muted">${esc(st.plain)}</p>`;
     $('#qq').innerHTML=`${sayHTML(M,esc(st.q),'think')}<div class="opts" style="margin-top:12px">${st.options.map((o,i)=>optHTML({t:o},i)).join('')}</div><div id="out" style="margin-top:12px"></div>`;
     $('#act').innerHTML=hintBtn(DEF_HINT);wireHint(DEF_HINT);
     stage.querySelectorAll('#qq .opt').forEach(b=>b.onclick=()=>{
       stage.querySelectorAll('#qq .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});
       addSparks(10,b);sfx.good();
-      $('#out').innerHTML=`<div class="resp"><span class="who">Хранитель</span><p>${esc(st.r)}</p></div>`;setMood('warm');
-      $('#act').innerHTML=`<button class="btn" id="nx">Продолжить</button>`;$('#nx').onclick=()=>{sfx.tap();next()};
+      $('#out').innerHTML=`<div class="resp"><span class="who">${t('mentor.name')}</span><p>${esc(st.r)}</p></div>`;setMood('warm');
+      $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.continueShort')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()};
     });
     $('#qq').scrollIntoView({behavior:'smooth',block:'start'});
   };
 }
 function artHTML(a){
-  if(a==='solomon')return `<div style="display:grid;gap:8px">${[['Богатство'],['Мудрость'],['Слава'],['Мир в стране'],['Язык зверей и птиц']].map((r,i)=>`<div class="stat"><span>${r[0]}</span><div class="bar"><i style="animation-delay:${i*.15}s"></i></div></div>`).join('')}</div>`;
-  if(a==='brothers')return `<div style="display:flex;gap:12px;align-items:flex-end;justify-content:center"><div style="text-align:center"><div style="width:84px;height:84px;border-radius:24px;overflow:hidden">${avatar({look:0,outfit:0})}</div><small class="muted">Менаше, старший</small></div><div style="text-align:center"><div style="width:70px;height:70px;border-radius:20px;overflow:hidden;margin:0 auto">${avatar({look:1,outfit:2})}</div><small class="muted">Эфраим, младший</small></div></div>`;
-  if(a==='map')return `<div style="display:flex;gap:14px;align-items:center"><div style="width:72px;height:72px;flex:none;border-radius:22px;overflow:hidden;border:2px solid var(--etrog)">${avatar(S.hero)}</div><div><span class="kicker">${esc(heroName())}</span><p class="muted" style="font-size:14px">Это подсказки, а не приговор. Их можно исследовать дальше.</p></div></div>`;
+  if(a==='solomon')return `<div style="display:grid;gap:8px">${tl('art.solomon').map(x=>[x]).map((r,i)=>`<div class="stat"><span>${r[0]}</span><div class="bar"><i style="animation-delay:${i*.15}s"></i></div></div>`).join('')}</div>`;
+  if(a==='brothers')return `<div style="display:flex;gap:12px;align-items:flex-end;justify-content:center"><div style="text-align:center"><div style="width:84px;height:84px;border-radius:24px;overflow:hidden">${avatar({look:0,outfit:0})}</div><small class="muted">${t('art.menashe')}</small></div><div style="text-align:center"><div style="width:70px;height:70px;border-radius:20px;overflow:hidden;margin:0 auto">${avatar({look:1,outfit:2})}</div><small class="muted">${t('art.efraim')}</small></div></div>`;
+  if(a==='map')return `<div style="display:flex;gap:14px;align-items:center"><div style="width:72px;height:72px;flex:none;border-radius:22px;overflow:hidden;border:2px solid var(--etrog)">${avatar(S.hero)}</div><div><span class="kicker">${esc(heroName())}</span><p class="muted" style="font-size:14px">${t('art.mapNote')}</p></div></div>`;
   return '';
 }
 function rCard(st){
   stage.innerHTML=`<section class="scene">${head()}<article class="card">
     <span class="kicker">${esc(st.kicker)}</span><h2 class="h2">${esc(st.title)}</h2>
     ${st.heb?`<div class="bigheb" lang="he">${st.heb}</div>`:''}${picHTML(st.pic)}${artHTML(st.art)}${st.body}</article>
-    <div class="actions"><button class="btn" id="nx">${esc(st.btn||'Далее')}</button></div></section>`;
+    <div class="actions"><button class="btn" id="nx">${esc(st.btn||t('btn.next'))}</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();addSparks(5);next()};
 }
 function rReveal(st){
-  stage.innerHTML=`<section class="scene">${head()}${toolbox()}<div class="card reveal"><div class="reveal-m">${mentorSvg('joy')}</div><span class="kicker">Открытие</span><p class="h1">${esc(st.text)}</p><span class="line"></span><p class="muted">${esc(st.sub)}</p></div>
-    <div class="actions"><button class="btn" id="nx">Продолжить приключение</button></div></section>`;
+  stage.innerHTML=`<section class="scene">${head()}${toolbox()}<div class="card reveal"><div class="reveal-m">${mentorSvg('joy')}</div><span class="kicker">${t('reveal.kicker')}</span><p class="h1">${esc(st.text)}</p><span class="line"></span><p class="muted">${esc(st.sub)}</p></div>
+    <div class="actions"><button class="btn" id="nx">${t('reveal.btn')}</button></div></section>`;
   sfx.good();$('#nx').onclick=()=>{sfx.tap();next()};
 }
 
@@ -345,17 +356,17 @@ function gBook(){
   let shelves='';for(let s=0;s<3;s++){let sp='';for(let i=0;i<40;i++){sp+=`<span class="spine" style="width:${8+((i*7+s*3)%9)}px;height:${60+((i*13+s*11)%38)}%;background:${cols[(i+s*2)%cols.length]}"></span>`}shelves+=`<div class="shelf">${sp}</div>`}
   stage.innerHTML=`<section class="scene">${head()}
     <div class="library"><div class="shelves" aria-hidden="true">${shelves}</div><div class="lamp"></div>
-      <button class="bookwrap" id="book" aria-label="Открыть книгу"><div class="book-pages"><span class="glow heb">חֵלֶק ?</span></div><div class="book-cover"><span class="heb">קֹהֶלֶת</span><span class="lat">КОЭЛЕТ</span></div><div class="letters" id="letters"></div></button>
+      <button class="bookwrap" id="book" aria-label="${t('book.label')}"><div class="book-pages"><span class="glow heb">חֵלֶק ?</span></div><div class="book-cover"><span class="heb">קֹהֶלֶת</span><span class="lat">${t('book.cover')}</span></div><div class="letters" id="letters"></div></button>
     </div>
-    <p class="lead" id="bt">В самом сердце старой библиотеки лежит книга, которую никто не мог открыть. На обложке одно слово.</p>
-    <div class="actions" id="act"><button class="btn" id="tap">Коснуться книги</button></div></section>`;
+    <p class="lead" id="bt">${t('book.lead')}</p>
+    <div class="actions" id="act"><button class="btn" id="tap">${t('book.tap')}</button></div></section>`;
   const open=()=>{
     const b=$('#book');if(b.classList.contains('open'))return;b.classList.add('open');sfx.ach();
     const L='אבגדהוזחטיכלמנסעפצקרשת';let h='';for(let i=0;i<16;i++){const dx=(Math.random()*260-130)|0,dy=-(60+Math.random()*140)|0;h+=`<span style="left:${40+Math.random()*40}%;top:45%;--dx:${dx}px;--dy:${dy}px;animation-delay:${.5+i*.08}s">${L[i%L.length]}</span>`}
     $('#letters').innerHTML=h;
-    $('#bt').textContent='Страницы светятся. Из книги вылетают буквы, а на первой странице проступает вопрос…';
+    $('#bt').textContent=t('book.after');
     addSparks(10,b);
-    $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()};
+    $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()};
   };
   $('#book').onclick=open;$('#tap').onclick=open;
 }
@@ -363,14 +374,14 @@ function gBook(){
 function gTreasure(){
   const c=CITY[S.city||'wealth'];let got=0,inner=20;const N=10;
   stage.innerHTML=`<section class="scene">${head()}
-    ${sayHTML(M,`Собирай! Нажимай на ${c.what} как можно быстрее. И следи за обеими шкалами.`,'joy')}
-    <div class="meters"><div class="meter"><span>Собрано ${c.what}</span><b id="m1">0</b><div class="bar"><i id="b1" style="width:0%"></i></div></div>
-    <div class="meter in"><span>Чувство, что всего хватает</span><b id="m2">20%</b><div class="bar"><i id="b2" style="width:20%"></i></div></div></div>
-    <div class="arena" id="ar"></div><div id="out"></div><div class="actions" id="act">${hintBtn('Просто собирай и посмотри, как ведёт себя вторая шкала.')}</div></section>`;
-  wireHint('Просто собирай и посмотри, как ведёт себя вторая шкала.');
+    ${sayHTML(M,t('treasure.say',{what:c.what}),'joy')}
+    <div class="meters"><div class="meter"><span>${t('treasure.got',{what:c.what})}</span><b id="m1">0</b><div class="bar"><i id="b1" style="width:0%"></i></div></div>
+    <div class="meter in"><span>${t('treasure.enough')}</span><b id="m2">20%</b><div class="bar"><i id="b2" style="width:20%"></i></div></div></div>
+    <div class="arena" id="ar"></div><div id="out"></div><div class="actions" id="act">${hintBtn(t('treasure.hint'))}</div></section>`;
+  wireHint(t('treasure.hint'));
   const ar=$('#ar');
   const spawn=()=>{
-    const b=document.createElement('button');b.className='item';b.innerHTML=icon(c.item);b.setAttribute('aria-label','Собрать');
+    const b=document.createElement('button');b.className='item';b.innerHTML=icon(c.item);b.setAttribute('aria-label',t('treasure.collect'));
     const w=ar.clientWidth-62,h=ar.clientHeight-62;b.style.left=(Math.random()*w)+'px';b.style.top=(Math.random()*h)+'px';
     b.onclick=()=>{if(b.classList.contains('got')||got>=N)return;b.classList.add('got');got++;tone(500+got*40,.1);
       $('#m1').textContent=got*(S.city==='fame'?100000:1000);$('#b1').style.width=(got/N*100)+'%';
@@ -381,43 +392,43 @@ function gTreasure(){
     };ar.appendChild(b);
   };
   const done=()=>{if(!document.body.contains(ar))return;addSparks(25,ar);
-    $('#out').innerHTML=`${sayHTML(M,T('Шкала «Собрано» полная. А что ты {заметил|заметила}?'),'think')}<div class="opts" style="margin-top:12px">${['Вторая шкала почти не растёт','Надо собрать ещё больше','Кажется, игра сломалась'].map((t,i)=>optHTML({t},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
-    const RR=['Ты это {заметил сам|заметила сама}. Собранного становится больше, а чувство «хватает» возвращается на место.','Давай проверим: вот ещё сто. Вторая шкала всё равно стоит на месте. Интересно, правда?','Игра работает. Это не ошибка: так устроена вторая шкала. Любопытно, почему.'];
+    $('#out').innerHTML=`${sayHTML(M,t('treasure.full'),'think')}<div class="opts" style="margin-top:12px">${tl('treasure.opts').map((x,i)=>optHTML({t:x},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
+    const RR=tl('treasure.resp');
     stage.querySelectorAll('#out .opt').forEach(b=>b.onclick=()=>{stage.querySelectorAll('#out .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});addSparks(10,b);sfx.good();
-      $('#o2').innerHTML=`<div class="resp"><span class="who">Что произошло</span><p>${esc(T(RR[+b.dataset.i]))}</p></div>`;
-      $('#act').innerHTML=`<button class="btn" id="nx">Продолжить</button>`;$('#nx').onclick=()=>{sfx.tap();next()}});
+      $('#o2').innerHTML=`<div class="resp"><span class="who">${t('choice.what')}</span><p>${esc(RR[+b.dataset.i])}</p></div>`;
+      $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.continueShort')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}});
     $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
   };
   spawn();
 }
 
 function gFind(){
-  const T='חֵלֶק',D=['הֶבֶל','שֶׁמֶשׁ','רוּחַ','עָמָל','לֵב','דּוֹר','זְמַן','חָכְמָה'];
-  const tiles=[];for(let i=0;i<8;i++)tiles.push(T);for(let i=0;i<12;i++)tiles.push(D[i%D.length]);
+  const W='חֵלֶק',D=['הֶבֶל','שֶׁמֶשׁ','רוּחַ','עָמָל','לֵב','דּוֹר','זְמַן','חָכְמָה'];
+  const tiles=[];for(let i=0;i<8;i++)tiles.push(W);for(let i=0;i<12;i++)tiles.push(D[i%D.length]);
   for(let i=tiles.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[tiles[i],tiles[j]]=[tiles[j],tiles[i]]}
   let found=0;
-  const hint='Смотри на последнюю букву: у слова «хелек» она похожа на крючок, уходящий вниз — ק. И первая буква — ח, как ворота.';
+  const hint=t('find.hint');
   stage.innerHTML=`<section class="scene">${head()}
-    <div class="target card"><span class="heb" lang="he">${T}</span><div><span class="kicker">Ищем слово</span><p>Найди все 8 таких слов. Осторожно: «суета» — הֶבֶל — прячется рядом.</p></div></div>
-    <div class="findgrid">${tiles.map((t,i)=>`<button class="tile" data-t="${t===T?1:0}" lang="he">${t}</button>`).join('')}</div>
-    <p class="muted" id="cnt">Найдено: 0 из 8</p><div class="actions" id="act">${hintBtn(hint)}</div></section>`;
+    <div class="target card"><span class="heb" lang="he">${W}</span><div><span class="kicker">${t('find.kicker')}</span><p>${t('find.task')}</p></div></div>
+    <div class="findgrid">${tiles.map((x,i)=>`<button class="tile" data-t="${x===W?1:0}" lang="he">${x}</button>`).join('')}</div>
+    <p class="muted" id="cnt">${t('find.count',{n:0})}</p><div class="actions" id="act">${hintBtn(hint)}</div></section>`;
   wireHint(hint);
   stage.querySelectorAll('.tile').forEach(b=>b.onclick=()=>{
     if(b.classList.contains('hit'))return;
-    if(b.dataset.t==='1'){b.classList.add('hit');found++;tone(600+found*50,.12);$('#cnt').textContent=`Найдено: ${found} из 8`;
-      if(found===8){addSparks(25,b);sfx.ach();$('#cnt').innerHTML='<b style="color:var(--etrog)">Все восемь найдены! Слово «доля» спрятано в книге столько же раз.</b>';$('#act').innerHTML=`<button class="btn" id="nx">Что значит это слово?</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}}
+    if(b.dataset.t==='1'){b.classList.add('hit');found++;tone(600+found*50,.12);$('#cnt').textContent=t('find.count',{n:found});
+      if(found===8){addSparks(25,b);sfx.ach();$('#cnt').innerHTML=`<b style="color:var(--etrog)">${t('find.done')}</b>`;$('#act').innerHTML=`<button class="btn" id="nx">${t('find.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}}
     else{b.classList.remove('no');void b.offsetWidth;b.classList.add('no');sfx.soft()}
   });
 }
 
 function gPuzzle(){
-  const P=[['star','Талант','То, что получается у тебя легче, чем у других.'],['diamond','Характер','Какой ты: смелый, спокойный, упорный, добрый.'],['circle','Интерес','То, о чём ты можешь думать часами.'],['triangle','Опыт','Всё, что ты уже прожил и чему научился. Даже трудное.'],['heart','Возможность помочь','Место, где рядом с тобой кто-то нуждается в помощи.'],['square','Ответственность','То, что поручено именно тебе.']];
+  const P=tl('puzzle.pieces');
   const layout=[0,'d',1,2,'h',3,4,'d',5];
   const placed={};let sel=null;
-  const hint='Посмотри на знак на детали и найди такой же знак в картине. Сначала нажми на деталь, потом на место.';
+  const hint=t('puzzle.hint');
   const draw=()=>{
-    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,'Собери картину. Нажми на деталь, а потом на место с таким же знаком.','point')}
-      <div class="board">${layout.map((c,i)=>c==='d'?`<div class="slot deco">чужая деталь</div>`:c==='h'?`<div class="slot hole">?</div>`:placed[c]?`<div class="slot filled"><span><em>${icon(P[c][0])}</em>${P[c][1]}</span></div>`:`<button class="slot" data-slot="${c}" aria-label="Место для детали «${P[c][1]}»" data-sym="${P[c][0]}">${icon(P[c][0])}</button>`).join('')}</div>
+    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('puzzle.say'),'point')}
+      <div class="board">${layout.map((c,i)=>c==='d'?`<div class="slot deco">${t('puzzle.deco')}</div>`:c==='h'?`<div class="slot hole">?</div>`:placed[c]?`<div class="slot filled"><span><em>${icon(P[c][0])}</em>${P[c][1]}</span></div>`:`<button class="slot" data-slot="${c}" aria-label="${t('puzzle.slot',{name:P[c][1]})}" data-sym="${P[c][0]}">${icon(P[c][0])}</button>`).join('')}</div>
       <div class="tray">${P.map((p,i)=>placed[i]?'':`<button class="piece ${sel===i?'sel':''}" data-p="${i}" data-sym="${p[0]}"><em>${icon(p[0])}</em>${p[1]}</button>`).join('')}</div>
       <div id="out"></div><div class="actions" id="act">${hintBtn(hint)}</div></section>`;
     wireHint(hint);
@@ -426,7 +437,7 @@ function gPuzzle(){
       if(sel===null){b.classList.remove('no');void b.offsetWidth;b.classList.add('no');return}
       if(+b.dataset.slot===sel){placed[sel]=1;const p=P[sel];sel=null;sfx.good();draw();
         $('#out').innerHTML=`<div class="resp"><span class="who">${p[1]}</span><p>${p[2]}</p></div>`;
-        if(Object.keys(placed).length===6){addSparks(25);$('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}
+        if(Object.keys(placed).length===6){addSparks(25);$('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}
       }else{b.classList.remove('no');void b.offsetWidth;b.classList.add('no');sfx.soft()}
     });
   };draw();
@@ -434,9 +445,9 @@ function gPuzzle(){
 
 function gSpecies(){
   const got=[];
-  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,T(young()?'В Суккот берут вместе четыре растения. Нажми на каждое и собери букет.':'Вот почему Коэлет читают именно в Суккот. В этот праздник связывают вместе четыре вида растений. Мидраш видит в них четыре типа людей. Нажми на каждое растение и собери букет.'),'point')}
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,tl('species.say'),'point')}
     <div class="species">${SPECIES.map((p,i)=>`<button class="sp" data-i="${i}"><span class="spic" aria-hidden="true">${icon(p.ic)}</span><b>${p.name}</b><span class="heb" lang="he">${p.he}</span></button>`).join('')}</div>
-    <div class="bundle" id="bun" aria-live="polite"><span class="muted">Букет пока пустой</span></div>
+    <div class="bundle" id="bun" aria-live="polite"><span class="muted">${t('species.empty')}</span></div>
     <div id="out"></div><div class="actions" id="act"></div></section>`;
   stage.querySelectorAll('.sp').forEach(b=>b.onclick=()=>{
     const i=+b.dataset.i,p=SPECIES[i];
@@ -444,50 +455,50 @@ function gSpecies(){
     $('#bun').innerHTML=got.map(k=>`<span>${icon(SPECIES[k].ic)}</span>`).join('');
     $('#out').innerHTML=`<div class="resp"><span class="who">${p.name}</span><p>${esc(young()?p.y:p.t)}</p></div>`;
     if(got.length===SPECIES.length&&!$('#nx')){addSparks(25,$('#bun'));sfx.ach();$('#bun').classList.add('full');
-      $('#out').insertAdjacentHTML('beforeend',`<div class="resp"><span class="who">Ваикра Раба 30:12</span><p>${esc(young()?'Мидраш говорит: пусть все будут связаны вместе. Заповедь исполняется, только когда все четыре вместе. Если нет хоть одного, ничего не выйдет.':'Мидраш говорит: «Пусть все будут связаны в одну связку, и одни искупят других». Заповедь исполняется, только когда все четыре вместе. Не хватает одного, даже аравы без вкуса и запаха, — и весь букет непригоден.')}</p></div>`);
-      $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}
+      $('#out').insertAdjacentHTML('beforeend',`<div class="resp"><span class="who">${t('species.src')}</span><p>${esc(tl('species.end'))}</p></div>`);
+      $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}
   });
 }
 
 function gSky(){
   let stars='';for(let i=0;i<24;i++)stars+=`<span class="star" style="left:${(i*37)%100}%;top:${(i*23)%60}%"></span>`;
-  stage.innerHTML=`<section class="scene">${head()}<article class="card"><span class="kicker">Солнце и луна</span><h2 class="h2">Моше и Йеошуа</h2>
-    <p>Моше был великим учителем. Его ученик Йеошуа стал вести народ после него. ${young()?'В Талмуде сказано: «Лицо Моше — как солнце, лицо Йеошуа — как луна». Мудрецы говорили это с грустью: люди стали слабее.':'В Талмуде (Бава Батра 75а) старейшины сказали: «Лицо Моше — как солнце, лицо Йеошуа — как луна». Сказали с горечью: поколение ослабло.'}</p>
+  stage.innerHTML=`<section class="scene">${head()}<article class="card"><span class="kicker">${t('sky.kicker')}</span><h2 class="h2">${t('sky.title')}</h2>
+    <p>${esc(tl('sky.text'))}</p>
     <div class="sky" id="sky">${stars}<div class="sun"></div><div class="moon"></div><div class="ground"></div></div>
-    <p id="skyt" class="muted">Луна светит слабее солнца. Значит, она хуже?</p></article>
-    <div class="actions" id="act"><button class="btn" id="night">Наступает ночь</button></div></section>`;
+    <p id="skyt" class="muted">${t('sky.q')}</p></article>
+    <div class="actions" id="act"><button class="btn" id="night">${t('sky.btn')}</button></div></section>`;
   $('#night').onclick=()=>{$('#sky').classList.add('night');sfx.good();addSparks(10,$('#sky'));
-    setTimeout(()=>{if(!$('#skyt'))return;$('#skyt').innerHTML='<b style="color:var(--ink)">Рав Ашкенази объясняет: ночью солнца не видно. И миру нужен именно свет луны.</b> Луне не нужно становиться солнцем. У неё своё время и своя работа.'},1200);
-    $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
+    setTimeout(()=>{if(!$('#skyt'))return;$('#skyt').innerHTML=t('sky.after')},1200);
+    $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
 }
 
 function gHands(){
-  stage.innerHTML=`<section class="scene">${head()}<article class="card"><span class="kicker">Берешит 48:14</span><h2 class="h2">Благословение Яакова</h2>
+  stage.innerHTML=`<section class="scene">${head()}<article class="card"><span class="kicker">${t('hands.kicker')}</span><h2 class="h2">${t('hands.title')}</h2>
     <svg class="blessing" id="bl" viewBox="0 0 360 250" aria-hidden="true">
       <g transform="translate(130,6) scale(1)"><svg width="100" height="100" x="0" y="0" viewBox="0 0 120 150">${mentorSvg('warm').replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg></g>
       <path class="arm straight" d="M160 100 Q120 140 85 175"/><path class="arm straight" d="M200 100 Q240 140 275 175"/>
       <path class="arm crossed" d="M160 100 Q210 130 275 175"/><path class="arm crossed" d="M200 100 Q150 130 85 175"/>
       <svg x="40" y="160" width="90" height="90">${avatar({look:1,outfit:2})}</svg><svg x="230" y="160" width="90" height="90">${avatar({look:0,outfit:0})}</svg>
-      <text x="85" y="248" text-anchor="middle" fill="#566d67" font-size="12" font-family="Onest,sans-serif">Эфраим</text><text x="275" y="248" text-anchor="middle" fill="#566d67" font-size="12" font-family="Onest,sans-serif">Менаше</text>
+      <text x="85" y="248" text-anchor="middle" fill="#566d67" font-size="12" font-family="Onest,sans-serif">${esc(t('hands.efraim'))}</text><text x="275" y="248" text-anchor="middle" fill="#566d67" font-size="12" font-family="Onest,sans-serif">${esc(t('hands.menashe'))}</text>
     </svg>
-    <p id="ht" class="muted">Менаше, старший, стоит под правой рукой дедушки. Что сделает Яаков?</p></article>
-    <div class="actions" id="act"><button class="btn" id="see">Посмотреть</button></div></section>`;
+    <p id="ht" class="muted">${t('hands.q')}</p></article>
+    <div class="actions" id="act"><button class="btn" id="see">${t('hands.btn')}</button></div></section>`;
   $('#see').onclick=()=>{$('#bl').classList.add('x');sfx.good();addSparks(10);
-    $('#ht').innerHTML='<b style="color:var(--ink)">Яаков скрестил руки.</b> Правую руку он положил на голову младшего, Эфраима. Йосеф возразил: «Не так, отец мой!» Но Яаков ответил: «Я знаю, сын мой, я знаю». И благословил младшего первым.';
-    $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
+    $('#ht').innerHTML=t('hands.after');
+    $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
 }
 
 const labOpts=k=>young()?LAB[k].opts.slice(0,LAB_Y[k]):LAB[k].opts;
 function gCircles(){
   let act=null;
   const keys=Object.keys(LAB);
-  const hint='Выбирай быстро, не думай слишком долго. Первое, что пришло в голову, часто самое точное.';
+  const hint=t('circles.hint');
   const draw=()=>{
     const all=keys.every(k=>S.lab[k].length>0);
-    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,'Четыре круга. Нажми на каждый и выбери до трёх ответов. Где круги пересекаются, там может прятаться твоя доля.','point')}
-      <div class="circles">${keys.map(k=>`<button class="circ ${act===k?'act':''} ${S.lab[k].length?'has':''}" data-k="${k}">${LAB[k].title}<small>${S.lab[k].length?'выбрано: '+S.lab[k].length:'нажми'}</small></button>`).join('')}</div>
+    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('circles.say'),'point')}
+      <div class="circles">${keys.map(k=>`<button class="circ ${act===k?'act':''} ${S.lab[k].length?'has':''}" data-k="${k}">${LAB[k].title}<small>${S.lab[k].length?t('circles.chosen',{n:S.lab[k].length}):t('circles.tap')}</small></button>`).join('')}</div>
       ${act?`<div class="card"><span class="kicker">${LAB[act].title}</span><div class="chips">${labOpts(act).map((o,i)=>`<button class="chip ${S.lab[act].includes(o)?'on':''}" data-o="${i}">${esc(o)}</button>`).join('')}</div></div>`:''}
-      <div class="actions">${hintBtn(hint)}<button class="btn" id="nx" ${all?'':'disabled'}>${all?'Собрать карту':'Заполни все четыре круга'}</button></div></section>`;
+      <div class="actions">${hintBtn(hint)}<button class="btn" id="nx" ${all?'':'disabled'}>${all?t('circles.build'):t('circles.fill')}</button></div></section>`;
     wireHint(hint);
     stage.querySelectorAll('.circ').forEach(b=>b.onclick=()=>{act=b.dataset.k;sfx.tap();draw()});
     stage.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const o=labOpts(act)[+b.dataset.o];const a=S.lab[act];
@@ -499,27 +510,29 @@ function gCircles(){
 
 function strengthMap(s){
   const L=s.lab,q=myQualities();const list=a=>a.map(esc).join(', ');
-  const combos=[[/идеи|рисовать|писать/,'создавать что-то новое и полезное для других'],[/объяснять/,'помогать другим понять сложное'],[/слушать/,'быть рядом, когда кому-то трудно'],[/организовывать/,'собирать людей вместе и доводить дело до конца'],[/задачи|мастерить|детали/,'находить решения, которые другие не замечают'],[/спорт/,'заряжать других энергией и командным духом']];
-  const joined=(L.can||[]).join(' ');const c=combos.find(x=>x[0].test(joined));
+  /* какие умения из круга «Что у меня получается?» ведут к какой формулировке (по номеру варианта) */
+  const COMBO_IDX=[[0,2,8],[1],[5],[4],[3,7,9],[6]],texts=tl('sm.combos')||[];
+  const picked=(L.can||[]).map(x=>LAB.can.opts.indexOf(x)).filter(i=>i>=0);
+  const ci=COMBO_IDX.findIndex(ix=>ix.some(i=>picked.includes(i)));const c=ci>=0&&texts[ci]?[null,texts[ci]]:null;
   const parts=[];
-  if(q.length)parts.push(`<p>Ты ${T('{отметил|отметила}')} в себе: ${list(q)}.</p>`);
-  if(L.can.length)parts.push(`<p>У тебя хорошо получается: ${list(L.can)}.</p>`);
-  if(L.like.length)parts.push(`<p>Тебе нравится: ${list(L.like)}.</p>`);
-  if(L.need.length)parts.push(`<p>Ты замечаешь, что людям рядом нужно: ${list(L.need)}${L.help.length?'. И ты можешь помочь: '+list(L.help):''}.</p>`);
-  parts.push(`<p style="font-size:19px;font-weight:600;color:var(--etrog)">Возможно, часть твоей доли — ${c?c[1]:'делать мир вокруг чуть лучше своим способом'}.</p>`);
-  parts.push(`<p>Это не просто таланты. Это дары: их дал тебе Всевышний, и у каждого из них есть своё «для чего».</p>`);
-  if(s.ans.flow)parts.push(`<p class="muted">Попробуй обратить внимание, когда время летит незаметно. Ты ${T('{сказал|сказала}')}: «${esc(s.ans.flow)}». Это стоит исследовать.</p>`);
-  parts.push(`<p class="muted" style="font-size:14px">Раввин Шнеор Ашкенази рассказывал: однажды он почти перестал преподавать, ведь его уроки смотрели всего сто-двести человек. И тут он прочитал: «Никогда не прекращай делать то, в чём ты хорош». Он не бросил.</p>`);
+  if(q.length)parts.push(`<p>${t('sm.marked',{list:list(q)})}</p>`);
+  if(L.can.length)parts.push(`<p>${t('sm.can',{list:list(L.can)})}</p>`);
+  if(L.like.length)parts.push(`<p>${t('sm.like',{list:list(L.like)})}</p>`);
+  if(L.need.length)parts.push(`<p>${t('sm.need',{list:list(L.need)})}${L.help.length?t('sm.help',{list:list(L.help)}):''}.</p>`);
+  parts.push(`<p style="font-size:19px;font-weight:600;color:var(--etrog)">${t('sm.share',{what:c?c[1]:t('sm.default')})}</p>`);
+  parts.push(`<p>${t('sm.gift')}</p>`);
+  if(s.ans.flow)parts.push(`<p class="muted">${t('sm.flow',{flow:esc(s.ans.flow)})}</p>`);
+  parts.push(`<p class="muted" style="font-size:14px">${t('sm.rabbi')}</p>`);
   return parts.join('');
 }
 
 function gFinal(){
-  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,T('Вот он, большой пазл. Здесь все, кого ты {встретил|встретила} в пути. Каждый на своём месте. Одного места не хватает.'),'warm')}
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('final.say'),'warm')}
     <div class="bigboard" id="bb">${BOARD.map((b,i)=>b[1]?`<div class="bp" style="background:${b[1]};animation-delay:${i*.06}s">${b[0]}</div>`:`<div class="bp me" id="me">${esc(heroName())}?</div>`).join('')}</div>
-    <div class="actions" id="act"><button class="btn" id="put">Вставить свою деталь</button></div></section>`;
+    <div class="actions" id="act"><button class="btn" id="put">${t('final.put')}</button></div></section>`;
   $('#put').onclick=()=>{const me=$('#me');me.classList.add('in');me.innerHTML=avatar(S.hero);sfx.ach();
     setTimeout(()=>{const bb=$('#bb');if(bb)bb.classList.add('glow')},700);addSparks(30,me);
-    $('#act').innerHTML=`<button class="btn" id="nx">Посмотреть, что получилось</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
+    $('#act').innerHTML=`<button class="btn" id="nx">${t('final.see')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
 }
 
 /* ---------- world flow ---------- */
@@ -534,10 +547,10 @@ function completeWorld(){
 }
 function renderDone(){
   const n=S.done.filter(Boolean).length;
-  stage.innerHTML=`<section class="scene"><div class="card reveal"><span class="kicker">Мир ${S.w+1} пройден</span>
+  stage.innerHTML=`<section class="scene"><div class="card reveal"><span class="kicker">${t('done.kicker',{n:S.w+1})}</span>
     <div class="reveal-m">${mentorSvg('joy')}</div><div style="width:90px;animation:pop .6s ease both">${pieceSvg('var(--gold)')}</div>
-    <p class="h2">Деталь «${esc(WORLDS[S.w].name)}» у тебя</p><p class="muted">Собрано деталей: ${n} из 7 · +30 искр</p></div>
-    <div class="actions"><button class="btn" id="nx">Продолжить приключение</button></div></section>`;
+    <p class="h2">${t('done.title',{name:esc(WORLDS[S.w].name)})}</p><p class="muted">${t('done.sub',{n})}</p></div>
+    <div class="actions"><button class="btn" id="nx">${t('reveal.btn')}</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();go('map')};
 }
 function renderMap(){
@@ -545,15 +558,15 @@ function renderMap(){
   const firstOpen=S.done.findIndex(d=>!d);
   const prologueDone=S.ps>=PRO().length;
   /* узлы: пролог + 7 миров; тропа петляет слева направо */
-  const nodes=[{k:'pro',name:'Пролог: Библиотека',desc:'Книга, которую никто не мог открыть',ic:'book',theme:'library',state:prologueDone?'done':'open'},
+  const nodes=[{k:'pro',name:t('map.proName'),desc:t('map.proDesc'),ic:'book',theme:'library',state:prologueDone?'done':'open'},
     ...WORLDS.map((w,i)=>({k:i,name:w.name,desc:w.desc,ic:WORLD_ICON[i],theme:WORLD_THEME[i],state:S.done[i]?'done':prologueDone&&i===firstOpen?'open':'lock'}))];
   const STEP=124,TOP=70,Hh=TOP*2+STEP*(nodes.length-1);
   const X=k=>k%2?70:30,Y=k=>TOP+k*STEP;
   let road='';for(let k=1;k<nodes.length;k++){const x0=X(k-1),y0=Y(k-1),x1=X(k),y1=Y(k);
     road+=`<path class="road ${nodes[k].state!=='lock'?'lit':''}" d="M${x0} ${y0} C${x0} ${y0+STEP*.6} ${x1} ${y1-STEP*.6} ${x1} ${y1}"/>`}
-  const status={done:'Пройден · можно снова',open:'Открыт',lock:'Закрыт'};
+  const status={done:t('map.done'),open:t('map.open'),lock:t('map.lock')};
   stage.innerHTML=`<section class="scene">
-    <span class="kicker">Карта путешествия</span><h2 class="h2">Семь миров книги Коэлет</h2>
+    <span class="kicker">${t('map.kicker')}</span><h2 class="h2">${t('map.title')}</h2>
     <div class="progress-wrap"><div class="pieces">${S.done.map(d=>pieceSvg(d?'var(--gold)':'none',d?'':'#9fb5aa')).join('')}</div>
     <div class="bar" style="height:10px"><i style="width:${S.done.filter(Boolean).length/7*100}%"></i></div></div>
     <div class="tmap" style="height:${Hh}px">
@@ -561,30 +574,30 @@ function renderMap(){
       ${nodes.map((n,k)=>`<button class="mnode ${n.state} ${k%2?'r':'l'}" style="left:${X(k)}%;top:${Y(k)}px;--c:${THEMES[n.theme].accent}" ${n.k==='pro'?'id="pro"':`data-w="${n.k}"`} ${n.state==='lock'?'disabled':''} aria-label="${esc(n.name)}. ${status[n.state]}">
         <span class="isle" aria-hidden="true"></span>
         <span class="disc" aria-hidden="true">${icon(n.state==='lock'?'lock':n.ic)}${n.state==='done'?`<span class="badge">${icon('check')}</span>`:''}</span>
-        <span class="mlabel"><span class="st">${n.k==='pro'?(n.state==='done'?'Пройден':'Начало'):status[n.state]}</span><span class="nm">${esc(n.name)}</span><span class="ds">${esc(n.desc)}</span></span>
+        <span class="mlabel"><span class="st">${n.k==='pro'?(n.state==='done'?t('map.proDone'):t('map.proStart')):status[n.state]}</span><span class="nm">${esc(n.name)}</span><span class="ds">${esc(n.desc)}</span></span>
       </button>`).join('')}
     </div>
-    ${S.done.every(Boolean)?`<div class="actions"><button class="btn" id="fin">Мой Хелек</button></div>`:''}
+    ${S.done.every(Boolean)?`<div class="actions"><button class="btn" id="fin">${t('map.final')}</button></div>`:''}
   </section>`;
   const pro=$('#pro');if(pro)pro.onclick=()=>{S.ps=prologueDone?0:Math.min(S.ps,PRO().length-1);go('prologue')};
   stage.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{S.w=+b.dataset.w;S.s=0;sfx.good();go('world')});
   const f=$('#fin');if(f)f.onclick=()=>go('final');
 }
-const CITY_LABEL={wealth:'богатство',fame:'популярность',mind:'ум',power:'власть',beauty:'красивую жизнь',adventure:'приключения'};
-function fmtDate(iso){try{return new Date(iso||Date.now()).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}catch(e){return ''}}
+function fmtDate(iso){try{return new Date(iso||Date.now()).toLocaleDateString(langLocale(),{day:'numeric',month:'long',year:'numeric'})}catch(e){return ''}}
 function strengthsList(){const q=myQualities();const stem=x=>x.slice(0,6);
   const extra=(S.lab.can||[]).filter(x=>!q.some(y=>stem(y)===stem(x)||y.includes(x.split(' ').pop()))).slice(0,2);return [...q,...extra].slice(0,5)}
 function worldReport(){
   const lit=Object.keys(S.tools).map(k=>TOOLS[k][1].toLowerCase());
-  return R([
-    ['Город успеха',S.city?`Ты {выбрал|выбрала} ${CITY_LABEL[S.city]}. Вечером {ответил|ответила}: «${S.ans.evening||'—'}».`:'—','Можно получить всё и всё равно чувствовать, что чего-то не хватает.'],
-    ['Пазл',`{Нашёл|Нашла} все 8 слов חֵלֶק. Твои качества: ${myQualities().join(', ')||'—'}.`,'Каждый получает от Всевышнего свою деталь, и никто — весь пазл.'],
-    ['Зеркало',`Ты {помог|помогла} героям зеркал разобраться, что с ними происходит, и {увидел|увидела}, к чему ведёт каждый выбор.`,'Чужая сильная сторона не делает твою слабее.'],
-    ['Эфраим и Менаше',`Когда друг получил награду, ты {решил|решила}: «${S.ans.awardAct||'—'}».`,'Если у другого есть свой дар, твой от этого не исчезает.'],
-    ['Мастерская',lit.length?`Загорелись инструменты: ${lit.join(', ')}.`:'Инструменты ещё ждут тебя.','У каждого свои инструменты. Важно понять, для чего они тебе.'],
-    ['Лаборатория Хелека',`Время летит незаметно, когда: ${(S.ans.flow||'—').toLowerCase()}. Получается: ${(S.lab.can||[]).join(', ')||'—'}.`,'Где встречаются «умею», «люблю» и «нужно другим», там может быть твоя доля.'],
-    ['Одна деталь',`Твой шаг на неделю: ${(S.ans.weekly||'—').toLowerCase()}.`,'Тебе не нужно собрать весь мир. Нужно найти свою деталь.']
-  ]);
+  const lc=x=>(x||'—').toLowerCase(),W=k=>WORLDS[k].name;
+  return [
+    [W(0),S.city?t('rep.city',{choice:(tl('city.label')||{})[S.city]||S.city,evening:S.ans.evening||'—'}):'—',t('rep.cityD')],
+    [W(1),t('rep.puzzle',{list:myQualities().join(', ')||'—'}),t('rep.puzzleD')],
+    [W(2),t('rep.mirror'),t('rep.mirrorD')],
+    [W(3),t('rep.brothers',{act:S.ans.awardAct||'—'}),t('rep.brothersD')],
+    [W(4),lit.length?t('rep.tools',{list:lit.join(', ')}):t('rep.toolsNone'),t('rep.toolsD')],
+    [W(5),t('rep.lab',{flow:lc(S.ans.flow),list:(S.lab.can||[]).join(', ')||'—'}),t('rep.labD')],
+    [W(6),t('rep.final',{step:lc(S.ans.weekly)}),t('rep.finalD')]
+  ];
 }
 function wrapLines(ctx,text,maxW){const words=text.split(' ');const lines=[];let cur='';
   for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t}if(cur)lines.push(cur);return lines}
@@ -597,59 +610,59 @@ async function drawCertificate(sc){
   const piece=(px,py,sz,col,rot)=>{x.save();x.translate(px,py);x.rotate(rot);x.scale(sz/100,sz/100);x.translate(-50,-50);x.fillStyle=col;x.fill(new Path2D(PIECE));x.restore()};
   [[90,90,'#9fd0ae',0],[190,70,'#f2be3d',.3],[70,190,'#f2b8c2',-.2],[W-90,H-90,'#bcd6ea',0],[W-190,H-70,'#9fd0ae',.4],[W-70,H-190,'#f2be3d',-.3]].forEach(p=>piece(p[0],p[1],110,p[2],p[3]));
   x.strokeStyle='#c9951f';x.lineWidth=6;x.strokeRect(40,40,W-80,H-80);x.lineWidth=2;x.strokeRect(58,58,W-116,H-116);
-  x.textAlign='center';x.fillStyle='#8a5d00';x.font=`500 26px ${B}`;x.fillText('П Р И К Л Ю Ч Е Н И Е   « Т А Й Н А   К О Э Л Е Т А »',W/2,170);
-  x.fillStyle='#17282e';x.font=`800 92px ${D}`;x.fillText('СЕРТИФИКАТ',W/2,280);
-  x.fillStyle='#566d67';x.font=`400 32px ${B}`;x.fillText('вручается',W/2,350);
+  x.textAlign='center';x.fillStyle='#8a5d00';x.font=`500 26px ${B}`;x.fillText(t('cert.top').toUpperCase().split('').join(' '),W/2,170);
+  x.fillStyle='#17282e';x.font=`800 92px ${D}`;x.fillText(t('cert.title'),W/2,280);
+  x.fillStyle='#566d67';x.font=`400 32px ${B}`;x.fillText(t('cert.given'),W/2,350);
   x.fillStyle='#2f7d4a';let fs=86;x.font=`700 ${fs}px ${D}`;const nm=heroName();while(x.measureText(nm).width>1100&&fs>40){fs-=4;x.font=`700 ${fs}px ${D}`}x.fillText(nm,W/2,450);
   x.fillStyle='#17282e';x.font=`400 34px ${B}`;
-  wrapLines(x,'за прохождение всех семи миров книги Коэлет и поиск своей детали большого пазла',1150).forEach((l,i)=>x.fillText(l,W/2,530+i*46));
+  wrapLines(x,t('cert.for'),1150).forEach((l,i)=>x.fillText(l,W/2,530+i*46));
   const st=strengthsList();
-  if(st.length){x.fillStyle='#566d67';x.font=`500 28px ${B}`;x.fillText('ДАРЫ',W/2,660);
+  if(st.length){x.fillStyle='#566d67';x.font=`500 28px ${B}`;x.fillText(t('cert.gifts'),W/2,660);
     x.fillStyle='#17282e';x.font=`500 32px ${B}`;wrapLines(x,st.join(' · '),1200).slice(0,2).forEach((l,i)=>x.fillText(l,W/2,706+i*44))}
-  x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(`Уровень ${lvl()} · ${LEVELS[lvl()-1]}  ·  ${S.sparks} искр  ·  7 из 7 деталей  ·  ${Object.keys(S.ach).length} из 6 достижений`,W/2,820);
+  x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(t('cert.stats',{lvl:lvl(),lname:T(LEVELS[lvl()-1]),sparks:S.sparks,ach:Object.keys(S.ach).length}),W/2,820);
   // seal
   x.save();x.translate(W/2,950);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=i%2?74:84,a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
   x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,62,0,Math.PI*2);x.fill();x.fillStyle='#c8445b';x.font=`700 50px ${HB}`;x.fillText('חֵלֶק',0,16);x.restore();
   x.textAlign='left';x.fillStyle='#17282e';x.font=`500 28px ${B}`;x.fillText(fmtDate(S.finished),190,960);
   x.strokeStyle='#b3c7bd';x.lineWidth=2;x.beginPath();x.moveTo(190,975);x.lineTo(560,975);x.stroke();
-  x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText('дата',190,1005);
-  x.textAlign='right';x.fillStyle='#17282e';x.font=`italic 500 32px ${B}`;x.fillText('Хранитель библиотеки',W-190,960);
+  x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText(t('cert.date'),190,1005);
+  x.textAlign='right';x.fillStyle='#17282e';x.font=`italic 500 32px ${B}`;x.fillText(t('cert.keeper'),W-190,960);
   x.beginPath();x.moveTo(W-560,975);x.lineTo(W-190,975);x.stroke();
-  x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText('подпись',W-190,1005);
-  x.textAlign='center';x.font=`400 20px ${B}`;x.fillText('По мотивам урока раввина Шнеора Ашкенази «Тайна книги Коэлет»',W/2,1062);
+  x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText(t('cert.sign'),W-190,1005);
+  x.textAlign='center';x.font=`400 20px ${B}`;x.fillText(t('cert.foot'),W/2,1062);
   return c.toDataURL('image/png');
 }
 function renderFinal(){
   S._last='final';
   if(S.phrase===null){S.phrase=S.insight>=3?0:S.help>=3?2:1;save()}
   const tab=S._tab||'cert';
-  const tabs=[['cert','Сертификат','scroll'],['path','Мой путь','map'],['ach','Достижения','medal']];
+  const tabs=[['cert',t('final.tabCert'),'scroll'],['path',t('final.tabPath'),'map'],['ach',t('final.tabAch'),'medal']];
   stage.innerHTML=`<section class="scene final-grid">
-    <div class="final-hero"><div class="final-m">${mentorSvg('joy')}</div><div><span class="kicker">Финал · ${esc(heroName())}</span><h1 class="h1">Твой <span style="color:var(--pome)">Хелек</span></h1>
-    <p class="lead">Ты ${T('{обнаружил|обнаружила}')} подсказки о своей доле — о детали, которую Всевышний дал именно тебе.</p></div></div>
-    <div class="tabs" role="tablist" aria-label="Итоги">${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" role="tab" id="tab-${t[0]}" aria-selected="${tab===t[0]}" aria-controls="tabp" data-tab="${t[0]}">${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</div>
+    <div class="final-hero"><div class="final-m">${mentorSvg('joy')}</div><div><span class="kicker">${t('final.kicker',{name:esc(heroName())})}</span><h1 class="h1">${t('final.h1a')} <span style="color:var(--pome)">${t('final.h1b')}</span></h1>
+    <p class="lead">${t('final.lead')}</p></div></div>
+    <div class="tabs" role="tablist" aria-label="${t('final.tabs')}">${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" role="tab" id="tab-${t[0]}" aria-selected="${tab===t[0]}" aria-controls="tabp" data-tab="${t[0]}">${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</div>
     <div id="tabp" role="tabpanel" aria-labelledby="tab-${tab}" class="final-grid">${({cert:finalCert,path:finalPath,ach:finalAch})[tab]()}</div>
-    <div class="actions"><button class="btn" id="map">Вернуться на карту</button><button class="btn ghost" id="again">Пройти заново</button></div>
+    <div class="actions"><button class="btn" id="map">${t('final.backMap')}</button><button class="btn ghost" id="again">${t('final.again')}</button></div>
     <div id="conf"></div>
-    <p class="foot">Для взрослых: игра основана на уроке раввина Шнеора Ашкенази «Тайна книги Коэлет». Источники: Коэлет 1:2, 3:22, 5:17–18, 9:9, 12:13; Пиркей Авот 2:16, 4:1; Берешит 30:1, 48:14–20; Шмуэль I 18:7–9; Эстер 4:14; Ваикра Раба 30:12; Бава Батра 21а, 75а; Санедрин 90а; Рамбам, Законы Свитка Торы 10:1. Слова книги Коэлет принадлежат царю Шломо, а записали её, по Талмуду (Бава Батра 15а), царь Хизкияу и его люди. Сравнение Моше и Йеошуа с солнцем и луной в Талмуде звучит с горечью; позитивное прочтение, как и мысль о том, что Менаше «не стал бороться», — толкования рава Ашкенази, они подписаны в тексте. Два режима текстов: 8–11 и 12–15 лет. Ответы ребёнка хранятся только в этом браузере.</p>
+    <p class="foot">${t('final.foot')}</p>
   </section>`;
   stage.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S._tab=b.dataset.tab;save();sfx.tap();renderFinal();const t=$('#tab-'+S._tab);if(t)t.focus()});
   stage.querySelector('.tabs').onkeydown=e=>{const i=tabs.findIndex(t=>t[0]===tab);const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;S._tab=tabs[(i+d+tabs.length)%tabs.length][0];renderFinal();$('#tab-'+S._tab).focus()};
   ({cert:wireCert,path:wirePath,ach:()=>{}})[tab]();
   $('#map').onclick=()=>go('map');
-  $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>Начать всё сначала? Прогресс будет стёрт.</p><div class="actions"><button class="btn small" id="yes">Да</button><button class="btn ghost small" id="no">Отмена</button></div></div>`;
+  $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>${t('final.confirm')}</p><div class="actions"><button class="btn small" id="yes">${t('btn.yes')}</button><button class="btn ghost small" id="no">${t('btn.cancel')}</button></div></div>`;
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
 }
 function finalCert(){
-  return `<article class="card cert-card"><div class="cert-head"><span class="kicker">Сертификат</span><span class="muted" style="font-size:14px">${fmtDate(S.finished)}</span></div>
-      <div class="field"><label for="certname">Имя на сертификате</label><input id="certname" maxlength="24" autocomplete="off" placeholder="Путник" value="${esc(S.hero.name)}"></div>
-      <div class="cert-frame" id="cert"><p class="muted">Готовим сертификат…</p></div>
-      <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>Распечатать A4</span></button><a class="btn ghost" id="dl" download="sertifikat-koelet.png" href="#">Скачать картинку</a></div>
-      <p class="muted" style="font-size:14px" id="printnote">Печать откроет лист A4 (альбомный). Если печать недоступна, скачай картинку или нажми на неё и удерживай, чтобы сохранить.</p></article>`;
+  return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted" style="font-size:14px">${fmtDate(S.finished)}</span></div>
+      <div class="field"><label for="certname">${t('cert.nameLabel')}</label><input id="certname" maxlength="24" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(S.hero.name)}"></div>
+      <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
+      <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a></div>
+      <p class="muted" style="font-size:14px" id="printnote">${t('cert.note')}</p></article>`;
 }
 function wireCert(){
   let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;
-    $('#cert').innerHTML=`<img src="${url}" alt="Сертификат о прохождении приключения «Тайна Коэлета» для ${esc(heroName())}">`;$('#dl').href=url};
+    $('#cert').innerHTML=`<img src="${url}" alt="${t('cert.alt',{name:esc(heroName())})}">`;$('#dl').href=url};
   paint();
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
   $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};
@@ -657,60 +670,60 @@ function wireCert(){
     try{const url=await drawCertificate(2);const pr=$('#print-area');pr.innerHTML=`<img src="${url}" alt="">`;
       await new Promise(r=>{const im=pr.querySelector('img');if(im.complete)r();else{im.onload=r;im.onerror=r}});
       window.print();
-    }catch(e){$('#printnote').textContent='Печать здесь недоступна. Скачай картинку и распечатай её на листе A4 (альбомная ориентация).'}
+    }catch(e){$('#printnote').textContent=t('cert.noPrint')}
     b.disabled=false};
 }
 function finalPath(){
   const strengths=strengthsList(),rep=worldReport();
   return `<div class="duo">
-      <div class="card"><span class="kicker">Твои дары</span><div class="strengths">${strengths.map(x=>`<span>${esc(x)}</span>`).join('')||'<span>ещё впереди</span>'}</div></div>
-      <div class="card"><span class="kicker">Твой следующий шаг</span><p class="h2" style="font-size:20px">${esc(S.ans.weekly||'Выбрать свой шаг')}</p><p class="muted">На этой неделе. Маленький, но настоящий.</p></div>
+      <div class="card"><span class="kicker">${t('path.gifts')}</span><div class="strengths">${strengths.map(x=>`<span>${esc(x)}</span>`).join('')||`<span>${t('path.none')}</span>`}</div></div>
+      <div class="card"><span class="kicker">${t('path.step')}</span><p class="h2" style="font-size:20px">${esc(S.ans.weekly||t('path.stepDefault'))}</p><p class="muted">${t('path.stepNote')}</p></div>
     </div>
-    <div class="card"><span class="kicker">Твоя фраза</span><p class="phrase" id="ph">${esc(T(PHRASES[S.phrase]))}</p><div class="actions"><button class="btn ghost small" id="nph">Другая фраза</button><button class="btn ghost small" id="cp">Скопировать</button></div></div>
-    <section class="report"><div><span class="kicker">Отчёт о прохождении</span><h2 class="h2">Путь по семи мирам</h2>
-      <p class="muted" style="font-size:15px">Начало: ${fmtDate(S.started)} · Финиш: ${fmtDate(S.finished)}</p></div>
-      <div class="rgrid">${rep.map((r,i)=>`<article class="rcard"><div class="rtop"><span class="rnum">${i+1}</span><b>${esc(r[0])}</b></div><p>${esc(r[1])}</p><p class="disc"><span>Открытие</span>${esc(r[2])}</p></article>`).join('')}</div>
+    <div class="card"><span class="kicker">${t('path.phrase')}</span><p class="phrase" id="ph">${esc(T(PHRASES[S.phrase]))}</p><div class="actions"><button class="btn ghost small" id="nph">${t('path.otherPhrase')}</button><button class="btn ghost small" id="cp">${t('path.copy')}</button></div></div>
+    <section class="report"><div><span class="kicker">${t('path.report')}</span><h2 class="h2">${t('path.reportTitle')}</h2>
+      <p class="muted" style="font-size:15px">${t('path.dates',{a:fmtDate(S.started),b:fmtDate(S.finished)})}</p></div>
+      <div class="rgrid">${rep.map((r,i)=>`<article class="rcard"><div class="rtop"><span class="rnum">${i+1}</span><b>${esc(r[0])}</b></div><p>${esc(r[1])}</p><p class="disc"><span>${t('path.discovery')}</span>${esc(r[2])}</p></article>`).join('')}</div>
     </section>
-    <div class="card"><span class="kicker">Разгадка тайны Коэлета</span><p>Царь Шломо проверил богатство, мудрость и славу и назвал всё это паром. Но в его книге 8 раз звучит слово <b class="heb" lang="he">חֵלֶק</b>, «доля». Детали раздаёт Всевышний: Он задумал всю картину. А последние слова книги (Коэлет 12:13) говорят, что основа у всех одна — «бойся Всевышнего и соблюдай Его заповеди». Счастье не в том, чтобы собрать весь пазл. Оно в том, чтобы найти свою деталь и радоваться ей.</p></div>
-    <div class="card talk-card"><span class="kicker">Для разговора дома или в классе</span>
-      <ol><li>Что у тебя получается так, что время летит незаметно?</li><li>Когда ты последний раз ${T('{радовался|радовалась}')} чужому успеху? Что при этом ${T('{чувствовал|чувствовала}')}?</li><li>Кому рядом с тобой сейчас нужно то, что умеешь ты?</li><li>Какую «деталь» в нашей семье или классе можешь добавить только ты?</li><li>Как ты думаешь, для чего Всевышний дал тебе именно твою деталь?</li></ol></div>`;
+    <div class="card"><span class="kicker">${t('path.solve')}</span><p>${t('path.solveText')}</p></div>
+    <div class="card talk-card"><span class="kicker">${t('path.talk')}</span>
+      <ol>${(tl('path.questions')||[]).map(q=>`<li>${q}</li>`).join('')}</ol></div>`;
 }
 function wirePath(){
   $('#nph').onclick=()=>{S.phrase=(S.phrase+1)%PHRASES.length;save();$('#ph').textContent=T(PHRASES[S.phrase]);sfx.tap()};
-  $('#cp').onclick=()=>{const t=T(PHRASES[S.phrase]);const ok=()=>{$('#cp').textContent='Скопировано'};
-    try{navigator.clipboard.writeText(t).then(ok,()=>{selectText($('#ph'))})}catch(e){selectText($('#ph'))}};
+  $('#cp').onclick=()=>{const phrase=T(PHRASES[S.phrase]);const ok=()=>{$('#cp').textContent=t('path.copied')};
+    try{navigator.clipboard.writeText(phrase).then(ok,()=>{selectText($('#ph'))})}catch(e){selectText($('#ph'))}};
 }
 function finalAch(){
   return `<div class="stats">
-      <div class="statcard"><span class="k">Искры</span><b>${S.sparks}</b></div>
-      <div class="statcard"><span class="k">Уровень</span><b>${lvl()}</b><small>${LEVELS[lvl()-1]}</small></div>
-      <div class="statcard"><span class="k">Детали пазла</span><b>${S.done.filter(Boolean).length}/7</b></div>
-      <div class="statcard"><span class="k">Достижения</span><b>${Object.keys(S.ach).length}/6</b></div>
+      <div class="statcard"><span class="k">${t('stat.sparks')}</span><b>${S.sparks}</b></div>
+      <div class="statcard"><span class="k">${t('stat.level')}</span><b>${lvl()}</b><small>${T(LEVELS[lvl()-1])}</small></div>
+      <div class="statcard"><span class="k">${t('stat.pieces')}</span><b>${S.done.filter(Boolean).length}/7</b></div>
+      <div class="statcard"><span class="k">${t('stat.ach')}</span><b>${Object.keys(S.ach).length}/6</b></div>
     </div>
-    <div class="card"><span class="kicker">Коллекция</span>${achGrid()}<p class="muted" style="font-size:14px">Здесь нет рейтинга и соревнования. Только твой собственный путь.</p></div>`;
+    <div class="card"><span class="kicker">${t('ach.collection')}</span>${achGrid()}<p class="muted" style="font-size:14px">${t('ach.note')}</p></div>`;
 }
 function selectText(el){try{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(e){}}
 
 /* ---------- озвучка (для младших) ---------- */
 function canSpeak(){try{return 'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!=='undefined'}catch(e){return false}}
-function stopReading(){try{if(canSpeak())speechSynthesis.cancel()}catch(e){}const b=stage.querySelector('[data-read]');if(b)b.innerHTML=icon('sound')+'<span>Послушать</span>'}
+function stopReading(){try{if(canSpeak())speechSynthesis.cancel()}catch(e){}const b=stage.querySelector('[data-read]');if(b)b.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`}
 function readAloud(btn){
   if(!canSpeak())return;
   if(speechSynthesis.speaking){stopReading();return}
   const sel='.bubble .txt, .card .h2, .card p, .reveal .h1, .resp p, .wi b, .wi p, .lead, p.h2, .opt:not(.dim) .ot > span';
   const txt=[...stage.querySelectorAll(sel)].filter(el=>!el.closest('[lang="he"]')).map(el=>el.textContent.trim()).filter(Boolean).join('. ');
   if(!txt)return;
-  const u=new SpeechSynthesisUtterance(txt.replace(/[«»]/g,''));u.lang='ru-RU';u.rate=.95;
-  const v=speechSynthesis.getVoices().find(x=>/^ru/i.test(x.lang));if(v)u.voice=v;
-  u.onend=()=>{if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+'<span>Послушать</span>'};
+  const u=new SpeechSynthesisUtterance(txt.replace(/[«»„“]/g,''));u.lang=langLocale();u.rate=.95;
+  const v=speechSynthesis.getVoices().find(x=>x.lang&&x.lang.toLowerCase().startsWith(LANG));if(v)u.voice=v;
+  u.onend=()=>{if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`};
   u.onerror=e=>{
-    if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+'<span>Послушать</span>';
-    if(e.error==='not-allowed')toast('mute','Браузер заблокировал звук','Разреши звук для этого сайта в меню у адреса или в настройках сайта, затем нажми «Послушать» ещё раз.');
+    if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`;
+    if(e.error==='not-allowed')toast('mute',t('toast.soundBlocked'),t('toast.soundBlockedSub'));
   };
-  btn.innerHTML=icon('stop')+'<span>Стоп</span>';
+  btn.innerHTML=icon('stop')+`<span>${t('read.stop')}</span>`;
   try{speechSynthesis.speak(u)}catch(e){
-    btn.innerHTML=icon('sound')+'<span>Послушать</span>';
-    toast('mute','Не удалось включить звук','Проверь разрешение на звук для этого сайта в меню у адреса или в настройках сайта.');
+    btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`;
+    toast('mute',t('toast.soundFail'),t('toast.soundFailSub'));
   }
 }
 stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)readAloud(b)});
@@ -726,5 +739,5 @@ window.claude?.hot?.snapshot?.(()=>({state:S}));
 window.GAME_DATA_READY.then(()=>{
   window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 }).catch(()=>{
-  stage.innerHTML='<section class="scene"><h1 class="h2">Не удалось загрузить тексты игры</h1><p>Проверь подключение и обнови страницу.</p></section>';
+  const [h,p]=LOAD_ERROR[LANG]||LOAD_ERROR[DEFAULT_LANG];stage.innerHTML=`<section class="scene"><h1 class="h2">${h}</h1><p>${p}</p></section>`;
 });
