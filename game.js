@@ -223,10 +223,23 @@ function toolbox(){if(!(S.screen==='world'&&WORLDS[S.w].tools))return '';
   return `<div class="toolbox" aria-label="Ящик с инструментами">${Object.entries(TOOLS).map(([k,t])=>`<div class="tool ${S.tools[k]?'on':''}" title="${t[1]}" aria-label="${t[1]}">${icon(t[0])}${S.tools[k]>1?`<sup>${S.tools[k]}</sup>`:''}</div>`).join('')}</div>`}
 
 function renderStep(){
-  let st=steps()[idx()];if(typeof st==='function')st=st(S);st=R(st);
+  let st=steps()[idx()];if(typeof st==='function')st=st(S);if(st&&st.__dynamic)st=resolveDynamic(st);st=R(st);
   S._last=S.screen;
   const fn={talk:rTalk,choice:rChoice,multi:rMulti,quote:rQuote,card:rCard,reveal:rReveal,mini:rMini}[st.type];
   fn(st);
+}
+function resolveDynamic(st){
+  if(st.__dynamic==='city-year')return {type:'talk',who:M,text:CITY[S.city||'wealth'].year};
+  if(st.__dynamic==='city-evening')return {type:'choice',who:M,text:CITY[S.city||'wealth'].evening,key:'evening',neutral:true,options:[
+    {t:'Всё отлично, мне хватает',r:'Может быть. Запомни это чувство: скоро мы с тобой к нему вернёмся.'},
+    {t:'Хочется ещё больше',r:'Так бывает почти со всеми: чем больше собираешь, тем больше хочется. Странно, правда?'},
+    {t:'Скучновато. Как будто чего-то не хватает',r:'Всё есть, а чего-то не хватает. Интересно, чего именно?'},
+    {t:'Хочется, чтобы рядом кто-то был',r:'Выходит, самое нужное в сундук не положишь.'},
+    {t:'Хочу поделиться с кем-нибудь',r:'Интересно: радость как будто становится настоящей, только когда ею делишься.',help:1},
+    {t:'Пока не знаю',r:'Это честно. Иногда нужно время, чтобы понять, что чувствуешь.'}
+  ]};
+  if(st.body&&st.body.__dynamic==='strength-map')return {type:'card',kicker:'Результат лаборатории',title:'Моя карта сильных сторон',art:'map',body:strengthMap(S),btn:'Дальше'};
+  return st;
 }
 function rTalk(st){
   stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'point')}<div class="actions"><button class="btn" id="nx">Далее</button></div></section>`;
@@ -689,8 +702,16 @@ function readAloud(btn){
   if(!txt)return;
   const u=new SpeechSynthesisUtterance(txt.replace(/[«»]/g,''));u.lang='ru-RU';u.rate=.95;
   const v=speechSynthesis.getVoices().find(x=>/^ru/i.test(x.lang));if(v)u.voice=v;
-  u.onend=u.onerror=()=>{if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+'<span>Послушать</span>'};
-  btn.innerHTML=icon('stop')+'<span>Стоп</span>';speechSynthesis.speak(u);
+  u.onend=()=>{if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+'<span>Послушать</span>'};
+  u.onerror=e=>{
+    if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+'<span>Послушать</span>';
+    if(e.error==='not-allowed')toast('mute','Браузер заблокировал звук','Разреши звук для этого сайта в меню у адреса или в настройках сайта, затем нажми «Послушать» ещё раз.');
+  };
+  btn.innerHTML=icon('stop')+'<span>Стоп</span>';
+  try{speechSynthesis.speak(u)}catch(e){
+    btn.innerHTML=icon('sound')+'<span>Послушать</span>';
+    toast('mute','Не удалось включить звук','Проверь разрешение на звук для этого сайта в меню у адреса или в настройках сайта.');
+  }
 }
 stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)readAloud(b)});
 
@@ -702,4 +723,8 @@ function start(data){
   render();
 }
 window.claude?.hot?.snapshot?.(()=>({state:S}));
-window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+window.GAME_DATA_READY.then(()=>{
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+}).catch(()=>{
+  stage.innerHTML='<section class="scene"><h1 class="h2">Не удалось загрузить тексты игры</h1><p>Проверь подключение и обнови страницу.</p></section>';
+});
