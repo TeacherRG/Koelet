@@ -40,20 +40,34 @@ function avatar(p){
   if(a===5) acc=`<path d="M30 44 Q29 17 50 17 Q71 17 70 44" stroke="#2b2b2b" stroke-width="4" fill="none"/><rect x="26" y="37" width="8" height="14" rx="3" fill="#3d7fb0"/><rect x="66" y="37" width="8" height="14" rx="3" fill="#3d7fb0"/>`;
   return `<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#dcebe2"/>${back}<path d="M16 100 Q18 69 50 67 Q82 69 84 100Z" fill="${out}"/><rect x="45" y="56" width="10" height="12" fill="${L.skin}"/><circle cx="50" cy="42" r="18" fill="${L.skin}"/>${hair}<circle cx="43" cy="44" r="2.2" fill="#1b1b1b"/><circle cx="57" cy="44" r="2.2" fill="#1b1b1b"/><path d="M44 51 Q50 56 56 51" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>${acc}</svg>`;
 }
-function mentorSvg(){
-  return `<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#dcebe2"/><circle cx="80" cy="22" r="16" fill="rgba(236,200,101,.25)"/><path d="M14 100 Q16 68 50 66 Q84 68 86 100Z" fill="#5a4a78"/><path d="M40 70 L50 100 L60 70Z" fill="#ecc865" opacity=".8"/><circle cx="50" cy="42" r="18" fill="#e7b894"/><path d="M33 44 Q33 74 50 78 Q67 74 67 44 Q60 55 50 55 Q40 55 33 44Z" fill="#ece6dc"/><path d="M36 27 Q50 15 64 27 Q50 23 36 27Z" fill="#1d2b44"/><path d="M32 36 Q33 26 38 25 L37 38Z M68 36 Q67 26 62 25 L63 38Z" fill="#ece6dc"/><circle cx="43" cy="42" r="5" fill="none" stroke="#2a2a2a" stroke-width="1.5"/><circle cx="57" cy="42" r="5" fill="none" stroke="#2a2a2a" stroke-width="1.5"/><path d="M48 42 H52" stroke="#2a2a2a" stroke-width="1.5"/><circle cx="43" cy="42" r="1.6" fill="#1b1b1b"/><circle cx="57" cy="42" r="1.6" fill="#1b1b1b"/></svg>`;
-}
 const PIECE='M12 12 H40 C38 2 62 2 60 12 H88 V40 C98 38 98 62 88 60 V88 H60 C62 78 38 78 40 88 H12 V60 C22 62 22 38 12 40 Z';
 const pieceSvg=(fill,stroke)=>`<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${PIECE}" style="fill:${fill};stroke:${stroke||'none'};stroke-width:3"/></svg>`;
 
-function speaker(who){
-  if(who===M) return {name:'Хранитель',svg:mentorSvg()};
+function speaker(who,mood){
+  if(who===M) return {name:'Хранитель',svg:mentorSvg(mood),m:1};
   if(who==='hero') return {name:heroName(),svg:avatar(S.hero)};
   return {name:who.name,svg:avatar(who.av)};
 }
-function sayHTML(who,text){
-  const sp=speaker(who);
-  return `<div class="say"><div class="av">${sp.svg}</div><div class="bubble"><span class="who">${esc(sp.name)}</span><div class="txt">${text}</div></div></div>`;
+function sayHTML(who,text,mood){
+  const sp=speaker(who,mood);
+  return `<div class="say ${sp.m?'m':''}"><div class="av">${sp.svg}</div><div class="bubble"><span class="who">${esc(sp.name)}</span><div class="txt">${text}</div></div></div>`;
+}
+
+function setMood(mood){const a=stage.querySelector('.say.m .av');if(a)a.innerHTML=mentorSvg(mood)}
+
+/* ---------- тема мира: фон и акцентный цвет ---------- */
+function themeKey(){
+  const s=S.screen;
+  if(s==='prologue')return 'library';
+  if(s==='world'||s==='done')return WORLD_THEME[S.w]||'base';
+  if(s==='map')return 'map';
+  if(s==='final')return 'sukkah';
+  return 'base';
+}
+function applyTheme(){
+  const k=themeKey(),b=document.body;if(b.dataset.theme===k)return;
+  const t=THEMES[k]||THEMES.base;b.dataset.theme=k;b.style.setProperty('--accent',t.accent);b.style.setProperty('--bg',t.bg);
+  const sc=$('#scenery');if(sc)sc.innerHTML=sceneSvg(k);
 }
 
 /* ---------- sound (off by default) ---------- */
@@ -66,39 +80,50 @@ const lvl=()=>Math.min(LEVELS.length,Math.floor(S.sparks/130)+1);
 function addSparks(n,el){
   const before=lvl();S.sparks+=n;
   if(el){const r=el.getBoundingClientRect();const p=document.createElement('div');p.className='plus';p.textContent='+'+n;p.style.left=(r.left+r.width/2-14)+'px';p.style.top=(r.top-6)+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),1200)}
-  if(lvl()>before){toast('⬆️','Новый уровень: '+LEVELS[lvl()-1],'Уровень '+lvl());sfx.ach()}
+  if(lvl()>before){toast('up','Новый уровень: '+LEVELS[lvl()-1],'Уровень '+lvl());sfx.ach()}
   hud();save();
 }
 function unlock(id){
   if(S.ach[id])return;S.ach[id]=1;const a=ACHS[id];toast(a[0],'Достижение: '+T(a[1]),T(a[2]));sfx.ach();save();hud();
 }
 function toast(ic,title,sub){
-  const t=document.createElement('div');t.className='toast';t.innerHTML=`<span class="ic">${ic}</span><div><b>${esc(title)}</b><small>${esc(sub)}</small></div>`;
+  const t=document.createElement('div');t.className='toast';t.innerHTML=`<span class="ic">${icon(ic)}</span><div><b>${esc(title)}</b><small>${esc(sub)}</small></div>`;
   $('#toasts').appendChild(t);setTimeout(()=>t.remove(),4100);
 }
 function hud(){
   const h=$('#hud');
   const show=!['title','create','welcome'].includes(S.screen);
   h.hidden=!show;if(!show)return;
-  const L=lvl(),into=(S.sparks%130)/130*100;
   const pieces=S.done.filter(Boolean).length;
-  h.innerHTML=`<span class="pill" title="Искры — твой личный прогресс"><span class="spark"></span><b>${S.sparks}</b></span>
-  <div class="lvl"><small>Ур. ${L} · ${LEVELS[L-1]}</small><div class="bar"><i style="width:${L>=LEVELS.length?100:into}%"></i></div></div>
-  <span class="pill">🧩 <b>${pieces}/7</b></span><span class="grow"></span>
-  <button class="iconbtn" id="snd" aria-pressed="${S.sound}">${S.sound?'🔊 Звук: вкл':'🔈 Звук: выкл'}</button>
-  <button class="iconbtn" id="achbtn" aria-label="Достижения">🏅 ${Object.keys(S.ach).length}/6</button>
-  ${S.screen==='world'||S.screen==='prologue'?'<button class="iconbtn" id="mapbtn">Карта</button>':''}`;
-  $('#snd').onclick=()=>{S.sound=!S.sound;save();hud();sfx.good()};
-  $('#achbtn').onclick=showAchs;
-  const mb=$('#mapbtn');if(mb)mb.onclick=()=>go('map');
+  h.innerHTML=`<span class="pill" title="Искры — твой личный прогресс">${icon('sparkle')}<b>${S.sparks}</b><span class="sr-only">искр</span></span>
+  <span class="pill" title="Детали пазла">${icon('puzzle')}<b>${pieces}/7</b><span class="sr-only">деталей</span></span><span class="grow"></span>
+  <button class="iconbtn" id="menubtn" aria-haspopup="dialog">${icon('menu')}<span>Меню</span></button>`;
+  $('#menubtn').onclick=showMenu;
 }
-function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${a[0]}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
-function showAchs(){
+function showMenu(){
+  const L=lvl(),into=L>=LEVELS.length?100:(S.sparks%130)/130*100;
   const m=document.createElement('div');m.className='modal';
-  m.innerHTML=`<div class="sheet" role="dialog" aria-label="Достижения"><span class="kicker">Коллекция</span><h2 class="h2">Достижения</h2>${achGrid()}<p class="muted" style="font-size:14px">Здесь нет рейтинга и соревнования. Только твой собственный путь.</p><button class="btn ghost" id="closeM">Закрыть</button></div>`;
-  document.body.appendChild(m);m.onclick=e=>{if(e.target===m||e.target.id==='closeM')m.remove()};
+  const draw=()=>{m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="Меню">
+    <div class="menu-lvl"><span class="kicker">Уровень ${L}</span><b>${LEVELS[L-1]}</b><div class="bar"><i style="width:${into}%"></i></div><small>${S.sparks} искр · ${S.done.filter(Boolean).length} из 7 деталей</small></div>
+    <div class="menu-list">
+      ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>Карта путешествия</span></button>`:''}
+      <button class="mitem" data-m="snd" aria-pressed="${S.sound}">${icon(S.sound?'sound':'mute')}<span>Звук: ${S.sound?'включён':'выключен'}</span></button>
+      <button class="mitem" data-m="home">${icon('home')}<span>На главный экран</span></button>
+    </div>
+    <div><span class="kicker">Достижения · ${Object.keys(S.ach).length} из 6</span>${achGrid()}</div>
+    <p class="muted" style="font-size:14px">Здесь нет рейтинга и соревнования. Только твой собственный путь.</p>
+    <button class="btn ghost" id="closeM">Закрыть</button></div>`;
+    m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
+      if(k==='snd'){S.sound=!S.sound;save();sfx.good();draw();return}
+      m.remove();if(k==='map')go('map');if(k==='home')go('title')});
+    const c=m.querySelector('#closeM');c.onclick=()=>{m.remove();const mb=$('#menubtn');if(mb)mb.focus()};(m.querySelector('.mitem')||c).focus();
+  };
+  const back=document.activeElement;const close=()=>{m.remove();if(back&&back.isConnected)back.focus()};
+  document.body.appendChild(m);draw();
+  m.onclick=e=>{if(e.target===m)close()};
+  m.onkeydown=e=>{if(e.key==='Escape')close()};
 }
-
+function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
 /* ================================================================
    SCREENS
    ================================================================ */
@@ -107,7 +132,7 @@ function go(screen,skipPrologue){
   S.screen=screen;save();render();window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
-  stopReading();hud();
+  stopReading();applyTheme();hud();
   ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal}[S.screen]||renderTitle)();
 }
 
@@ -166,7 +191,7 @@ function renderCreate(){
 
 function renderWelcome(){
   stage.innerHTML=`<section class="scene">
-    ${sayHTML('hero',`<b>${esc(heroName())}</b>, добро пожаловать в путешествие. Перед тобой большая загадка. Ты ${T('{готов|готова}')} её разгадать?`)}
+    ${sayHTML(M,`<b>${esc(heroName())}</b>, добро пожаловать в путешествие! Перед тобой большая загадка. Ты ${T('{готов|готова}')} её разгадать?`,'open')}
     <div class="actions"><button class="btn" id="go">Начать приключение</button><button class="btn ghost" id="back">Изменить героя</button></div>
   </section>`;
   $('#go').onclick=()=>{sfx.good();S.ps=0;go('prologue')};
@@ -184,18 +209,18 @@ function next(){
 function head(){
   const st=steps(),i=idx();
   const label=S.screen==='prologue'?'Пролог · Библиотека':`Мир ${S.w+1} · ${WORLDS[S.w].name}`;
-  const rd=young()&&canSpeak()?`<button class="iconbtn readbtn" data-read aria-label="Прочитать вслух">🔈 Послушать</button>`:'';
-  return `<div class="scene-head"><span class="kicker">${label}</span>${rd}<div class="dots" aria-label="Шаг ${i+1} из ${st.length}">${st.map((_,k)=>`<i class="${k<i?'done':k===i?'on':''}"></i>`).join('')}</div></div>`;
+  const rd=young()&&canSpeak()?`<button class="iconbtn readbtn" data-read aria-label="Прочитать вслух">${icon('sound')}<span>Послушать</span></button>`:'';
+  return `<div class="scene-head banner"><div class="bn-art" aria-hidden="true">${sceneSvg(themeKey(),'xMidYMid')}</div><span class="kicker bn-k">${label}</span><div class="bn-row"><div class="dots" role="img" aria-label="Шаг ${i+1} из ${st.length}">${st.map((_,k)=>`<i class="${k<i?'done':k===i?'on':''}"></i>`).join('')}</div>${rd}</div></div>`;
 }
 const LETTERS='АБВГДЕЖЗИК';
-function optHTML(o,i){return `<button class="opt" data-i="${i}"><span class="ic ${o.ic?'e':''}" aria-hidden="true">${o.ic||LETTERS[i]}</span><span class="ot"><span>${esc(o.t)}</span>${o.s?`<small>${esc(o.s)}</small>`:''}</span></button>`}
+function optHTML(o,i){return `<button class="opt" data-i="${i}"><span class="ic ${o.ic?'e':''}" aria-hidden="true">${o.ic?icon(o.ic):LETTERS[i]}</span><span class="ot"><span>${esc(o.t)}</span>${o.s?`<small>${esc(o.s)}</small>`:''}</span></button>`}
 function hintBtn(h){return h?`<button class="btn ghost small" data-hint>Мне нужна подсказка</button>`:''}
 function wireHint(h,container){
   const b=(container||stage).querySelector('[data-hint]');if(!b)return;
-  b.onclick=()=>{if(stage.querySelector('.hint'))return;const d=document.createElement('div');d.className='hint';d.innerHTML='💡 '+h;b.closest('.actions').before(d);sfx.soft()};
+  b.onclick=()=>{if(stage.querySelector('.hint'))return;const d=document.createElement('div');d.className='hint';d.innerHTML=icon('bulb')+' '+h;b.closest('.actions').before(d);sfx.soft()};
 }
 function toolbox(){if(!(S.screen==='world'&&WORLDS[S.w].tools))return '';
-  return `<div class="toolbox" aria-label="Ящик с инструментами">${Object.entries(TOOLS).map(([k,t])=>`<div class="tool ${S.tools[k]?'on':''}" title="${t[1]}">${t[0]}${S.tools[k]>1?`<sup>${S.tools[k]}</sup>`:''}</div>`).join('')}</div>`}
+  return `<div class="toolbox" aria-label="Ящик с инструментами">${Object.entries(TOOLS).map(([k,t])=>`<div class="tool ${S.tools[k]?'on':''}" title="${t[1]}" aria-label="${t[1]}">${icon(t[0])}${S.tools[k]>1?`<sup>${S.tools[k]}</sup>`:''}</div>`).join('')}</div>`}
 
 function renderStep(){
   let st=steps()[idx()];if(typeof st==='function')st=st(S);st=R(st);
@@ -204,14 +229,14 @@ function renderStep(){
   fn(st);
 }
 function rTalk(st){
-  stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text))}<div class="actions"><button class="btn" id="nx">Далее</button></div></section>`;
+  stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'point')}<div class="actions"><button class="btn" id="nx">Далее</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();next()};
 }
 function ownHTML(o){return `<div class="own"><label for="ownin">${esc(o.label)}</label><div class="ownrow"><input id="ownin" maxlength="60" autocomplete="off" placeholder="${esc(o.ph||'')}"><button class="btn small" id="ownok" disabled>Это моё</button></div><small>${esc(OWN_NOTE)}</small></div>`}
 function rChoice(st){
   const hint=st.hint||(st.neutral?DEF_HINT:null);
   const whatif=st.whatif!==false&&new Set(st.options.map(o=>o.r)).size>1;
-  stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text))}
+  stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'think')}
     ${st.q?`<p class="h2" style="font-size:18px">${esc(st.q)}</p>`:''}
     <div class="opts ${st.compact?'compact':''}" role="group">${st.options.map((o,i)=>optHTML(o,i)).join('')}</div>
     ${st.own?ownHTML(st.own):''}
@@ -225,14 +250,14 @@ function rChoice(st){
     if(o.help){S.help++;if(S.help>=3)unlock('friend')}
     if(o.insight){S.insight++;if(/^mirror\d/.test(st.key||''))S.mi=(S.mi||0)+1}
     let extra='';
-    if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+1;const t=TOOLS[o.tool];extra=`<p><b>${t[0]} В ящике загорелся инструмент: ${t[1]}</b></p>`}
-    addSparks(10,b);sfx.good(); // искры одинаковые за любой ответ
+    if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+1;const t=TOOLS[o.tool];extra=`<p class="lit">${icon(t[0])}<b>В ящике загорелся инструмент: ${t[1]}</b></p>`}
+    addSparks(10,b);sfx.good();setMood('warm'); // искры одинаковые за любой ответ
     $('#out').innerHTML=`<div class="resp"><span class="who">Что произошло</span><p>${esc(o.r)}</p>${extra}${st.after?`<p class="muted">${esc(st.after)}</p>`:''}</div>`;
     const tb=stage.querySelector('.toolbox');if(tb)tb.outerHTML=toolbox();
     const others=st.options.filter(x=>x!==o&&x.r!==o.r);
     $('#act').innerHTML=`${whatif&&others.length?'<button class="btn ghost small" id="wi">А что было бы, если…?</button>':''}<button class="btn" id="nx">Продолжить</button>`;
     const wi=$('#wi');if(wi)wi.onclick=()=>{sfx.soft();wi.remove();
-      $('#wil').innerHTML=`<div class="whatif"><span class="kicker">Другие исходы · твой выбор остаётся твоим</span>${others.map(x=>`<div class="wi"><b>${x.ic?x.ic+' ':''}${esc(x.t)}</b><p>${esc(x.r)}</p></div>`).join('')}</div>`;
+      $('#wil').innerHTML=`<div class="whatif"><span class="kicker">Другие исходы · твой выбор остаётся твоим</span>${others.map(x=>`<div class="wi"><b>${x.ic?icon(x.ic)+' ':''}${esc(x.t)}</b><p>${esc(x.r)}</p></div>`).join('')}</div>`;
       $('#wil').scrollIntoView({behavior:'smooth',block:'nearest'})};
     $('#nx').onclick=()=>{sfx.tap();next()};
     $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -249,7 +274,7 @@ function rMulti(st){
   const ownVal=()=>ok?(S.own[ok]||'').trim():'';
   const need=()=>Math.max(1,st.min-(ownVal()?1:0));
   const draw=()=>{
-    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,esc(st.text))}
+    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,esc(st.text),'think')}
       <div class="chips">${st.options.map((o,i)=>`<button class="chip ${sel.includes(o)?'on':''}" data-i="${i}" aria-pressed="${sel.includes(o)}">${esc(o)}</button>`).join('')}</div>
       <p class="muted" style="font-size:14px">Выбрано ${sel.length} из ${st.max}</p>
       ${ok?`<div class="own"><label for="ownin">${esc(st.own.label)}</label><input id="ownin" maxlength="40" autocomplete="off" placeholder="${esc(st.own.ph||'')}" value="${esc(S.own[ok]||'')}"><small>${esc(OWN_NOTE)}</small></div>`:''}
@@ -269,12 +294,12 @@ function rQuote(st){
     <div class="actions" id="act"><button class="btn" id="show">Посмотреть перевод</button></div></section>`;
   $('#show').onclick=()=>{sfx.tap();
     $('#tr').innerHTML=`<p style="font-size:19px;font-weight:500">${esc(st.ru)}</p><p class="muted">${esc(st.plain)}</p>`;
-    $('#qq').innerHTML=`${sayHTML(M,esc(st.q))}<div class="opts" style="margin-top:12px">${st.options.map((o,i)=>optHTML({t:o},i)).join('')}</div><div id="out" style="margin-top:12px"></div>`;
+    $('#qq').innerHTML=`${sayHTML(M,esc(st.q),'think')}<div class="opts" style="margin-top:12px">${st.options.map((o,i)=>optHTML({t:o},i)).join('')}</div><div id="out" style="margin-top:12px"></div>`;
     $('#act').innerHTML=hintBtn(DEF_HINT);wireHint(DEF_HINT);
     stage.querySelectorAll('#qq .opt').forEach(b=>b.onclick=()=>{
       stage.querySelectorAll('#qq .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});
       addSparks(10,b);sfx.good();
-      $('#out').innerHTML=`<div class="resp"><span class="who">Хранитель</span><p>${esc(st.r)}</p></div>`;
+      $('#out').innerHTML=`<div class="resp"><span class="who">Хранитель</span><p>${esc(st.r)}</p></div>`;setMood('warm');
       $('#act').innerHTML=`<button class="btn" id="nx">Продолжить</button>`;$('#nx').onclick=()=>{sfx.tap();next()};
     });
     $('#qq').scrollIntoView({behavior:'smooth',block:'start'});
@@ -289,12 +314,12 @@ function artHTML(a){
 function rCard(st){
   stage.innerHTML=`<section class="scene">${head()}<article class="card">
     <span class="kicker">${esc(st.kicker)}</span><h2 class="h2">${esc(st.title)}</h2>
-    ${st.heb?`<div class="bigheb" lang="he">${st.heb}</div>`:''}${st.pic?`<div class="pic" aria-hidden="true">${st.pic}</div>`:''}${artHTML(st.art)}${st.body}</article>
+    ${st.heb?`<div class="bigheb" lang="he">${st.heb}</div>`:''}${picHTML(st.pic)}${artHTML(st.art)}${st.body}</article>
     <div class="actions"><button class="btn" id="nx">${esc(st.btn||'Далее')}</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();addSparks(5);next()};
 }
 function rReveal(st){
-  stage.innerHTML=`<section class="scene">${head()}${toolbox()}<div class="card reveal"><span class="kicker">Открытие</span><p class="h1">${esc(st.text)}</p><span class="line"></span><p class="muted">${esc(st.sub)}</p></div>
+  stage.innerHTML=`<section class="scene">${head()}${toolbox()}<div class="card reveal"><div class="reveal-m">${mentorSvg('joy')}</div><span class="kicker">Открытие</span><p class="h1">${esc(st.text)}</p><span class="line"></span><p class="muted">${esc(st.sub)}</p></div>
     <div class="actions"><button class="btn" id="nx">Продолжить приключение</button></div></section>`;
   sfx.good();$('#nx').onclick=()=>{sfx.tap();next()};
 }
@@ -325,14 +350,14 @@ function gBook(){
 function gTreasure(){
   const c=CITY[S.city||'wealth'];let got=0,inner=20;const N=10;
   stage.innerHTML=`<section class="scene">${head()}
-    ${sayHTML(M,`Собирай! Нажимай на ${c.item} как можно быстрее. И следи за обеими шкалами.`)}
+    ${sayHTML(M,`Собирай! Нажимай на ${c.what} как можно быстрее. И следи за обеими шкалами.`,'joy')}
     <div class="meters"><div class="meter"><span>Собрано ${c.what}</span><b id="m1">0</b><div class="bar"><i id="b1" style="width:0%"></i></div></div>
     <div class="meter in"><span>Чувство, что всего хватает</span><b id="m2">20%</b><div class="bar"><i id="b2" style="width:20%"></i></div></div></div>
     <div class="arena" id="ar"></div><div id="out"></div><div class="actions" id="act">${hintBtn('Просто собирай и посмотри, как ведёт себя вторая шкала.')}</div></section>`;
   wireHint('Просто собирай и посмотри, как ведёт себя вторая шкала.');
   const ar=$('#ar');
   const spawn=()=>{
-    const b=document.createElement('button');b.className='item';b.textContent=c.item;b.setAttribute('aria-label','Собрать');
+    const b=document.createElement('button');b.className='item';b.innerHTML=icon(c.item);b.setAttribute('aria-label','Собрать');
     const w=ar.clientWidth-62,h=ar.clientHeight-62;b.style.left=(Math.random()*w)+'px';b.style.top=(Math.random()*h)+'px';
     b.onclick=()=>{if(b.classList.contains('got')||got>=N)return;b.classList.add('got');got++;tone(500+got*40,.1);
       $('#m1').textContent=got*(S.city==='fame'?100000:1000);$('#b1').style.width=(got/N*100)+'%';
@@ -343,7 +368,7 @@ function gTreasure(){
     };ar.appendChild(b);
   };
   const done=()=>{if(!document.body.contains(ar))return;addSparks(25,ar);
-    $('#out').innerHTML=`${sayHTML(M,T('Шкала «Собрано» полная. А что ты {заметил|заметила}?'))}<div class="opts" style="margin-top:12px">${['Вторая шкала почти не растёт','Надо собрать ещё больше','Кажется, игра сломалась'].map((t,i)=>optHTML({t},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
+    $('#out').innerHTML=`${sayHTML(M,T('Шкала «Собрано» полная. А что ты {заметил|заметила}?'),'think')}<div class="opts" style="margin-top:12px">${['Вторая шкала почти не растёт','Надо собрать ещё больше','Кажется, игра сломалась'].map((t,i)=>optHTML({t},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
     const RR=['Ты это {заметил сам|заметила сама}. Собранного становится больше, а чувство «хватает» возвращается на место.','Давай проверим: вот ещё сто. Вторая шкала всё равно стоит на месте. Интересно, правда?','Игра работает. Это не ошибка: так устроена вторая шкала. Любопытно, почему.'];
     stage.querySelectorAll('#out .opt').forEach(b=>b.onclick=()=>{stage.querySelectorAll('#out .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});addSparks(10,b);sfx.good();
       $('#o2').innerHTML=`<div class="resp"><span class="who">Что произошло</span><p>${esc(T(RR[+b.dataset.i]))}</p></div>`;
@@ -373,21 +398,21 @@ function gFind(){
 }
 
 function gPuzzle(){
-  const P=[['★','Талант','То, что получается у тебя легче, чем у других.'],['◆','Характер','Какой ты: смелый, спокойный, упорный, добрый.'],['●','Интерес','То, о чём ты можешь думать часами.'],['▲','Опыт','Всё, что ты уже прожил и чему научился. Даже трудное.'],['♥','Возможность помочь','Место, где рядом с тобой кто-то нуждается в помощи.'],['■','Ответственность','То, что поручено именно тебе.']];
+  const P=[['star','Талант','То, что получается у тебя легче, чем у других.'],['diamond','Характер','Какой ты: смелый, спокойный, упорный, добрый.'],['circle','Интерес','То, о чём ты можешь думать часами.'],['triangle','Опыт','Всё, что ты уже прожил и чему научился. Даже трудное.'],['heart','Возможность помочь','Место, где рядом с тобой кто-то нуждается в помощи.'],['square','Ответственность','То, что поручено именно тебе.']];
   const layout=[0,'d',1,2,'h',3,4,'d',5];
   const placed={};let sel=null;
   const hint='Посмотри на знак на детали и найди такой же знак в картине. Сначала нажми на деталь, потом на место.';
   const draw=()=>{
-    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,'Собери картину. Нажми на деталь, а потом на место с таким же знаком.')}
-      <div class="board">${layout.map((c,i)=>c==='d'?`<div class="slot deco">чужая деталь</div>`:c==='h'?`<div class="slot hole">?</div>`:placed[c]?`<div class="slot filled"><span><em>${P[c][0]}</em>${P[c][1]}</span></div>`:`<button class="slot" data-slot="${c}" aria-label="Место со знаком ${P[c][0]}">${P[c][0]}</button>`).join('')}</div>
-      <div class="tray">${P.map((p,i)=>placed[i]?'':`<button class="piece ${sel===i?'sel':''}" data-p="${i}"><em>${p[0]}</em>${p[1]}</button>`).join('')}</div>
+    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,'Собери картину. Нажми на деталь, а потом на место с таким же знаком.','point')}
+      <div class="board">${layout.map((c,i)=>c==='d'?`<div class="slot deco">чужая деталь</div>`:c==='h'?`<div class="slot hole">?</div>`:placed[c]?`<div class="slot filled"><span><em>${icon(P[c][0])}</em>${P[c][1]}</span></div>`:`<button class="slot" data-slot="${c}" aria-label="Место для детали «${P[c][1]}»" data-sym="${P[c][0]}">${icon(P[c][0])}</button>`).join('')}</div>
+      <div class="tray">${P.map((p,i)=>placed[i]?'':`<button class="piece ${sel===i?'sel':''}" data-p="${i}" data-sym="${p[0]}"><em>${icon(p[0])}</em>${p[1]}</button>`).join('')}</div>
       <div id="out"></div><div class="actions" id="act">${hintBtn(hint)}</div></section>`;
     wireHint(hint);
     stage.querySelectorAll('.piece').forEach(b=>b.onclick=()=>{sel=+b.dataset.p;sfx.tap();draw()});
     stage.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{
       if(sel===null){b.classList.remove('no');void b.offsetWidth;b.classList.add('no');return}
       if(+b.dataset.slot===sel){placed[sel]=1;const p=P[sel];sel=null;sfx.good();draw();
-        $('#out').innerHTML=`<div class="resp"><span class="who">${p[0]} ${p[1]}</span><p>${p[2]}</p></div>`;
+        $('#out').innerHTML=`<div class="resp"><span class="who">${p[1]}</span><p>${p[2]}</p></div>`;
         if(Object.keys(placed).length===6){addSparks(25);$('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}
       }else{b.classList.remove('no');void b.offsetWidth;b.classList.add('no');sfx.soft()}
     });
@@ -396,15 +421,15 @@ function gPuzzle(){
 
 function gSpecies(){
   const got=[];
-  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,T(young()?'В Суккот берут вместе четыре растения. Нажми на каждое и собери букет.':'Вот почему Коэлет читают именно в Суккот. В этот праздник связывают вместе четыре вида растений. Мидраш видит в них четыре типа людей. Нажми на каждое растение и собери букет.'))}
-    <div class="species">${SPECIES.map((p,i)=>`<button class="sp" data-i="${i}"><span class="spic" aria-hidden="true">${p.ic}</span><b>${p.name}</b><span class="heb" lang="he">${p.he}</span></button>`).join('')}</div>
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,T(young()?'В Суккот берут вместе четыре растения. Нажми на каждое и собери букет.':'Вот почему Коэлет читают именно в Суккот. В этот праздник связывают вместе четыре вида растений. Мидраш видит в них четыре типа людей. Нажми на каждое растение и собери букет.'),'point')}
+    <div class="species">${SPECIES.map((p,i)=>`<button class="sp" data-i="${i}"><span class="spic" aria-hidden="true">${icon(p.ic)}</span><b>${p.name}</b><span class="heb" lang="he">${p.he}</span></button>`).join('')}</div>
     <div class="bundle" id="bun" aria-live="polite"><span class="muted">Букет пока пустой</span></div>
     <div id="out"></div><div class="actions" id="act"></div></section>`;
   stage.querySelectorAll('.sp').forEach(b=>b.onclick=()=>{
     const i=+b.dataset.i,p=SPECIES[i];
     if(!got.includes(i)){got.push(i);b.classList.add('on');tone(520+got.length*60,.14)}else sfx.tap();
-    $('#bun').innerHTML=got.map(k=>`<span>${SPECIES[k].ic}</span>`).join('');
-    $('#out').innerHTML=`<div class="resp"><span class="who">${p.ic} ${p.name}</span><p>${esc(young()?p.y:p.t)}</p></div>`;
+    $('#bun').innerHTML=got.map(k=>`<span>${icon(SPECIES[k].ic)}</span>`).join('');
+    $('#out').innerHTML=`<div class="resp"><span class="who">${p.name}</span><p>${esc(young()?p.y:p.t)}</p></div>`;
     if(got.length===SPECIES.length&&!$('#nx')){addSparks(25,$('#bun'));sfx.ach();$('#bun').classList.add('full');
       $('#out').insertAdjacentHTML('beforeend',`<div class="resp"><span class="who">Ваикра Раба 30:12</span><p>${esc(young()?'Мидраш говорит: пусть все будут связаны вместе. Заповедь исполняется, только когда все четыре вместе. Если нет хоть одного, ничего не выйдет.':'Мидраш говорит: «Пусть все будут связаны в одну связку, и одни искупят других». Заповедь исполняется, только когда все четыре вместе. Не хватает одного, даже аравы без вкуса и запаха, — и весь букет непригоден.')}</p></div>`);
       $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}
@@ -426,7 +451,7 @@ function gSky(){
 function gHands(){
   stage.innerHTML=`<section class="scene">${head()}<article class="card"><span class="kicker">Берешит 48:14</span><h2 class="h2">Благословение Яакова</h2>
     <svg class="blessing" id="bl" viewBox="0 0 360 250" aria-hidden="true">
-      <g transform="translate(130,6) scale(1)"><svg width="100" height="100" x="0" y="0">${mentorSvg()}</svg></g>
+      <g transform="translate(130,6) scale(1)"><svg width="100" height="100" x="0" y="0" viewBox="0 0 120 150">${mentorSvg('warm').replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg></g>
       <path class="arm straight" d="M160 100 Q120 140 85 175"/><path class="arm straight" d="M200 100 Q240 140 275 175"/>
       <path class="arm crossed" d="M160 100 Q210 130 275 175"/><path class="arm crossed" d="M200 100 Q150 130 85 175"/>
       <svg x="40" y="160" width="90" height="90">${avatar({look:1,outfit:2})}</svg><svg x="230" y="160" width="90" height="90">${avatar({look:0,outfit:0})}</svg>
@@ -439,19 +464,20 @@ function gHands(){
     $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
 }
 
+const labOpts=k=>young()?LAB[k].opts.slice(0,LAB_Y[k]):LAB[k].opts;
 function gCircles(){
   let act=null;
   const keys=Object.keys(LAB);
   const hint='Выбирай быстро, не думай слишком долго. Первое, что пришло в голову, часто самое точное.';
   const draw=()=>{
     const all=keys.every(k=>S.lab[k].length>0);
-    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,'Четыре круга. Нажми на каждый и выбери до трёх ответов. Где круги пересекаются, там может прятаться твоя доля.')}
+    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,'Четыре круга. Нажми на каждый и выбери до трёх ответов. Где круги пересекаются, там может прятаться твоя доля.','point')}
       <div class="circles">${keys.map(k=>`<button class="circ ${act===k?'act':''} ${S.lab[k].length?'has':''}" data-k="${k}">${LAB[k].title}<small>${S.lab[k].length?'выбрано: '+S.lab[k].length:'нажми'}</small></button>`).join('')}</div>
-      ${act?`<div class="card"><span class="kicker">${LAB[act].title}</span><div class="chips">${LAB[act].opts.map((o,i)=>`<button class="chip ${S.lab[act].includes(o)?'on':''}" data-o="${i}">${esc(o)}</button>`).join('')}</div></div>`:''}
+      ${act?`<div class="card"><span class="kicker">${LAB[act].title}</span><div class="chips">${labOpts(act).map((o,i)=>`<button class="chip ${S.lab[act].includes(o)?'on':''}" data-o="${i}">${esc(o)}</button>`).join('')}</div></div>`:''}
       <div class="actions">${hintBtn(hint)}<button class="btn" id="nx" ${all?'':'disabled'}>${all?'Собрать карту':'Заполни все четыре круга'}</button></div></section>`;
     wireHint(hint);
     stage.querySelectorAll('.circ').forEach(b=>b.onclick=()=>{act=b.dataset.k;sfx.tap();draw()});
-    stage.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const o=LAB[act].opts[+b.dataset.o];const a=S.lab[act];
+    stage.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const o=labOpts(act)[+b.dataset.o];const a=S.lab[act];
       if(a.includes(o))S.lab[act]=a.filter(x=>x!==o);else{if(a.length>=3)a.shift();a.push(o)}sfx.tap();save();
       const cur=act;if(S.lab[cur].length===3){const nk=keys.find(k=>!S.lab[k].length);if(nk)act=nk}draw()});
     $('#nx').onclick=()=>{addSparks(25,$('#nx'));sfx.good();next()};
@@ -475,7 +501,7 @@ function strengthMap(s){
 }
 
 function gFinal(){
-  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,T('Вот он, большой пазл. Здесь все, кого ты {встретил|встретила} в пути. Каждый на своём месте. Одного места не хватает.'))}
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,T('Вот он, большой пазл. Здесь все, кого ты {встретил|встретила} в пути. Каждый на своём месте. Одного места не хватает.'),'warm')}
     <div class="bigboard" id="bb">${BOARD.map((b,i)=>b[1]?`<div class="bp" style="background:${b[1]};animation-delay:${i*.06}s">${b[0]}</div>`:`<div class="bp me" id="me">${esc(heroName())}?</div>`).join('')}</div>
     <div class="actions" id="act"><button class="btn" id="put">Вставить свою деталь</button></div></section>`;
   $('#put').onclick=()=>{const me=$('#me');me.classList.add('in');me.innerHTML=avatar(S.hero);sfx.ach();
@@ -496,7 +522,7 @@ function completeWorld(){
 function renderDone(){
   const n=S.done.filter(Boolean).length;
   stage.innerHTML=`<section class="scene"><div class="card reveal"><span class="kicker">Мир ${S.w+1} пройден</span>
-    <div style="width:110px;animation:pop .6s ease both">${pieceSvg('var(--gold)')}</div>
+    <div class="reveal-m">${mentorSvg('joy')}</div><div style="width:90px;animation:pop .6s ease both">${pieceSvg('var(--gold)')}</div>
     <p class="h2">Деталь «${esc(WORLDS[S.w].name)}» у тебя</p><p class="muted">Собрано деталей: ${n} из 7 · +30 искр</p></div>
     <div class="actions"><button class="btn" id="nx">Продолжить приключение</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();go('map')};
@@ -505,16 +531,29 @@ function renderMap(){
   S._last='map';
   const firstOpen=S.done.findIndex(d=>!d);
   const prologueDone=S.ps>=PRO().length;
+  /* узлы: пролог + 7 миров; тропа петляет слева направо */
+  const nodes=[{k:'pro',name:'Пролог: Библиотека',desc:'Книга, которую никто не мог открыть',ic:'book',theme:'library',state:prologueDone?'done':'open'},
+    ...WORLDS.map((w,i)=>({k:i,name:w.name,desc:w.desc,ic:WORLD_ICON[i],theme:WORLD_THEME[i],state:S.done[i]?'done':prologueDone&&i===firstOpen?'open':'lock'}))];
+  const STEP=124,TOP=70,Hh=TOP*2+STEP*(nodes.length-1);
+  const X=k=>k%2?70:30,Y=k=>TOP+k*STEP;
+  let road='';for(let k=1;k<nodes.length;k++){const x0=X(k-1),y0=Y(k-1),x1=X(k),y1=Y(k);
+    road+=`<path class="road ${nodes[k].state!=='lock'?'lit':''}" d="M${x0} ${y0} C${x0} ${y0+STEP*.6} ${x1} ${y1-STEP*.6} ${x1} ${y1}"/>`}
+  const status={done:'Пройден · можно снова',open:'Открыт',lock:'Закрыт'};
   stage.innerHTML=`<section class="scene">
     <span class="kicker">Карта путешествия</span><h2 class="h2">Семь миров книги Коэлет</h2>
-    <div class="progress-wrap"><div class="pieces">${S.done.map(d=>pieceSvg(d?'var(--gold)':'none',d?'':'#b3c7bd')).join('')}</div>
+    <div class="progress-wrap"><div class="pieces">${S.done.map(d=>pieceSvg(d?'var(--gold)':'none',d?'':'#9fb5aa')).join('')}</div>
     <div class="bar" style="height:10px"><i style="width:${S.done.filter(Boolean).length/7*100}%"></i></div></div>
-    ${!prologueDone?`<button class="node open" id="pro"><span class="disc">📖</span><span><span class="st">Сначала</span><br><span class="nm">Пролог: Библиотека</span></span></button>`:''}
-    <div class="map"><span class="rail"></span>${WORLDS.map((w,i)=>{const d=S.done[i],o=prologueDone&&(i===firstOpen),lock=!d&&!o;
-      return `<button class="node ${d?'done':''} ${o?'open':''}" data-w="${i}" ${lock?'disabled':''}><span class="disc">${d?pieceSvg('var(--gold)'):lock?'🔒':i+1}</span><span style="min-width:0"><span class="st">${d?'Пройден · можно снова':o?'Открыт':'Закрыт'}</span><br><span class="nm">${esc(w.name)}</span><br><span class="ds">${esc(w.desc)}</span></span></button>`}).join('')}</div>
+    <div class="tmap" style="height:${Hh}px">
+      <svg class="tmap-road" viewBox="0 0 100 ${Hh}" preserveAspectRatio="none" aria-hidden="true">${road.replace(/class="road[^"]*"/g,'class="road-bed"')}${road}</svg>
+      ${nodes.map((n,k)=>`<button class="mnode ${n.state} ${k%2?'r':'l'}" style="left:${X(k)}%;top:${Y(k)}px;--c:${THEMES[n.theme].accent}" ${n.k==='pro'?'id="pro"':`data-w="${n.k}"`} ${n.state==='lock'?'disabled':''} aria-label="${esc(n.name)}. ${status[n.state]}">
+        <span class="isle" aria-hidden="true"></span>
+        <span class="disc" aria-hidden="true">${icon(n.state==='lock'?'lock':n.ic)}${n.state==='done'?`<span class="badge">${icon('check')}</span>`:''}</span>
+        <span class="mlabel"><span class="st">${n.k==='pro'?(n.state==='done'?'Пройден':'Начало'):status[n.state]}</span><span class="nm">${esc(n.name)}</span><span class="ds">${esc(n.desc)}</span></span>
+      </button>`).join('')}
+    </div>
     ${S.done.every(Boolean)?`<div class="actions"><button class="btn" id="fin">Мой Хелек</button></div>`:''}
   </section>`;
-  const pro=$('#pro');if(pro)pro.onclick=()=>{S.ps=Math.min(S.ps,PRO().length-1);go('prologue')};
+  const pro=$('#pro');if(pro)pro.onclick=()=>{S.ps=prologueDone?0:Math.min(S.ps,PRO().length-1);go('prologue')};
   stage.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{S.w=+b.dataset.w;S.s=0;sfx.good();go('world')});
   const f=$('#fin');if(f)f.onclick=()=>go('final');
 }
@@ -523,7 +562,7 @@ function fmtDate(iso){try{return new Date(iso||Date.now()).toLocaleDateString('r
 function strengthsList(){const q=myQualities();const stem=x=>x.slice(0,6);
   const extra=(S.lab.can||[]).filter(x=>!q.some(y=>stem(y)===stem(x)||y.includes(x.split(' ').pop()))).slice(0,2);return [...q,...extra].slice(0,5)}
 function worldReport(){
-  const lit=Object.keys(S.tools).map(k=>TOOLS[k][0]+' '+TOOLS[k][1].toLowerCase());
+  const lit=Object.keys(S.tools).map(k=>TOOLS[k][1].toLowerCase());
   return R([
     ['Город успеха',S.city?`Ты {выбрал|выбрала} ${CITY_LABEL[S.city]}. Вечером {ответил|ответила}: «${S.ans.evening||'—'}».`:'—','Можно получить всё и всё равно чувствовать, что чего-то не хватает.'],
     ['Пазл',`{Нашёл|Нашла} все 8 слов חֵלֶק. Твои качества: ${myQualities().join(', ')||'—'}.`,'Каждый получает от Всевышнего свою деталь, и никто — весь пазл.'],
@@ -536,8 +575,8 @@ function worldReport(){
 }
 function wrapLines(ctx,text,maxW){const words=text.split(' ');const lines=[];let cur='';
   for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t}if(cur)lines.push(cur);return lines}
-async function drawCertificate(){
-  const W=1600,H=1130,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+async function drawCertificate(sc){
+  sc=sc||1;const W=1600,H=1130,c=document.createElement('canvas');c.width=W*sc;c.height=H*sc;const x=c.getContext('2d');x.scale(sc,sc);
   try{await Promise.all(['800 60px Unbounded','700 40px Unbounded','400 30px Onest','500 30px Onest','700 60px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
   const D='Unbounded, "Trebuchet MS", sans-serif',B='Onest, "Segoe UI", sans-serif',HB='"Frank Ruhl Libre", serif';
   x.fillStyle='#fbfdfb';x.fillRect(0,0,W,H);
@@ -545,14 +584,14 @@ async function drawCertificate(){
   const piece=(px,py,sz,col,rot)=>{x.save();x.translate(px,py);x.rotate(rot);x.scale(sz/100,sz/100);x.translate(-50,-50);x.fillStyle=col;x.fill(new Path2D(PIECE));x.restore()};
   [[90,90,'#9fd0ae',0],[190,70,'#f2be3d',.3],[70,190,'#f2b8c2',-.2],[W-90,H-90,'#bcd6ea',0],[W-190,H-70,'#9fd0ae',.4],[W-70,H-190,'#f2be3d',-.3]].forEach(p=>piece(p[0],p[1],110,p[2],p[3]));
   x.strokeStyle='#c9951f';x.lineWidth=6;x.strokeRect(40,40,W-80,H-80);x.lineWidth=2;x.strokeRect(58,58,W-116,H-116);
-  x.textAlign='center';x.fillStyle='#a2700a';x.font=`500 26px ${B}`;x.fillText('П Р И К Л Ю Ч Е Н И Е   « Т А Й Н А   К О Э Л Е Т А »',W/2,170);
+  x.textAlign='center';x.fillStyle='#8a5d00';x.font=`500 26px ${B}`;x.fillText('П Р И К Л Ю Ч Е Н И Е   « Т А Й Н А   К О Э Л Е Т А »',W/2,170);
   x.fillStyle='#17282e';x.font=`800 92px ${D}`;x.fillText('СЕРТИФИКАТ',W/2,280);
   x.fillStyle='#566d67';x.font=`400 32px ${B}`;x.fillText('вручается',W/2,350);
   x.fillStyle='#2f7d4a';let fs=86;x.font=`700 ${fs}px ${D}`;const nm=heroName();while(x.measureText(nm).width>1100&&fs>40){fs-=4;x.font=`700 ${fs}px ${D}`}x.fillText(nm,W/2,450);
   x.fillStyle='#17282e';x.font=`400 34px ${B}`;
   wrapLines(x,'за прохождение всех семи миров книги Коэлет и поиск своей детали большого пазла',1150).forEach((l,i)=>x.fillText(l,W/2,530+i*46));
   const st=strengthsList();
-  if(st.length){x.fillStyle='#566d67';x.font=`500 28px ${B}`;x.fillText('СИЛЬНЫЕ СТОРОНЫ',W/2,660);
+  if(st.length){x.fillStyle='#566d67';x.font=`500 28px ${B}`;x.fillText('ДАРЫ',W/2,660);
     x.fillStyle='#17282e';x.font=`500 32px ${B}`;wrapLines(x,st.join(' · '),1200).slice(0,2).forEach((l,i)=>x.fillText(l,W/2,706+i*44))}
   x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(`Уровень ${lvl()} · ${LEVELS[lvl()-1]}  ·  ${S.sparks} искр  ·  7 из 7 деталей  ·  ${Object.keys(S.ach).length} из 6 достижений`,W/2,820);
   // seal
@@ -569,63 +608,79 @@ async function drawCertificate(){
 }
 function renderFinal(){
   S._last='final';
-  const strengths=strengthsList();
   if(S.phrase===null){S.phrase=S.insight>=3?0:S.help>=3?2:1;save()}
-  const rep=worldReport();
+  const tab=S._tab||'cert';
+  const tabs=[['cert','Сертификат','scroll'],['path','Мой путь','map'],['ach','Достижения','medal']];
   stage.innerHTML=`<section class="scene final-grid">
-    <div class="final-hero"><span class="kicker">Финал · ${esc(heroName())}</span><h1 class="h1">Твой <span style="color:var(--pome)">Хелек</span></h1>
-    <p class="lead">Ты ${T('{обнаружил|обнаружила}')} подсказки о своей доле — о детали, которую Всевышний дал именно тебе. Это не готовый ответ на всю жизнь. Это подсказки, которые можно исследовать дальше.</p></div>
-
-    <article class="card cert-card"><div class="cert-head"><span class="kicker">Сертификат</span><span class="muted" style="font-size:14px">${fmtDate(S.finished)}</span></div>
+    <div class="final-hero"><div class="final-m">${mentorSvg('joy')}</div><div><span class="kicker">Финал · ${esc(heroName())}</span><h1 class="h1">Твой <span style="color:var(--pome)">Хелек</span></h1>
+    <p class="lead">Ты ${T('{обнаружил|обнаружила}')} подсказки о своей доле — о детали, которую Всевышний дал именно тебе.</p></div></div>
+    <div class="tabs" role="tablist" aria-label="Итоги">${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" role="tab" id="tab-${t[0]}" aria-selected="${tab===t[0]}" aria-controls="tabp" data-tab="${t[0]}">${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</div>
+    <div id="tabp" role="tabpanel" aria-labelledby="tab-${tab}" class="final-grid">${({cert:finalCert,path:finalPath,ach:finalAch})[tab]()}</div>
+    <div class="actions"><button class="btn" id="map">Вернуться на карту</button><button class="btn ghost" id="again">Пройти заново</button></div>
+    <div id="conf"></div>
+    <p class="foot">Для взрослых: игра основана на уроке раввина Шнеора Ашкенази «Тайна книги Коэлет». Источники: Коэлет 1:2, 3:22, 5:17–18, 9:9, 12:13; Пиркей Авот 2:16, 4:1; Берешит 30:1, 48:14–20; Шмуэль I 18:7–9; Эстер 4:14; Ваикра Раба 30:12; Бава Батра 21а, 75а; Санедрин 90а; Рамбам, Законы Свитка Торы 10:1. Слова книги Коэлет принадлежат царю Шломо, а записали её, по Талмуду (Бава Батра 15а), царь Хизкияу и его люди. Сравнение Моше и Йеошуа с солнцем и луной в Талмуде звучит с горечью; позитивное прочтение, как и мысль о том, что Менаше «не стал бороться», — толкования рава Ашкенази, они подписаны в тексте. Два режима текстов: 8–11 и 12–15 лет. Ответы ребёнка хранятся только в этом браузере.</p>
+  </section>`;
+  stage.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S._tab=b.dataset.tab;save();sfx.tap();renderFinal();const t=$('#tab-'+S._tab);if(t)t.focus()});
+  stage.querySelector('.tabs').onkeydown=e=>{const i=tabs.findIndex(t=>t[0]===tab);const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;S._tab=tabs[(i+d+tabs.length)%tabs.length][0];renderFinal();$('#tab-'+S._tab).focus()};
+  ({cert:wireCert,path:wirePath,ach:()=>{}})[tab]();
+  $('#map').onclick=()=>go('map');
+  $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>Начать всё сначала? Прогресс будет стёрт.</p><div class="actions"><button class="btn small" id="yes">Да</button><button class="btn ghost small" id="no">Отмена</button></div></div>`;
+    $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
+}
+function finalCert(){
+  return `<article class="card cert-card"><div class="cert-head"><span class="kicker">Сертификат</span><span class="muted" style="font-size:14px">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">Имя на сертификате</label><input id="certname" maxlength="24" autocomplete="off" placeholder="Путник" value="${esc(S.hero.name)}"></div>
       <div class="cert-frame" id="cert"><p class="muted">Готовим сертификат…</p></div>
-      <p class="muted" style="font-size:14px">Чтобы сохранить сертификат, нажми на картинку и удерживай её. На компьютере нажми на неё правой кнопкой и выбери «Сохранить изображение».</p></article>
-
-    <div class="stats">
+      <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>Распечатать A4</span></button><a class="btn ghost" id="dl" download="sertifikat-koelet.png" href="#">Скачать картинку</a></div>
+      <p class="muted" style="font-size:14px" id="printnote">Печать откроет лист A4 (альбомный). Если печать недоступна, скачай картинку или нажми на неё и удерживай, чтобы сохранить.</p></article>`;
+}
+function wireCert(){
+  let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;
+    $('#cert').innerHTML=`<img src="${url}" alt="Сертификат о прохождении приключения «Тайна Коэлета» для ${esc(heroName())}">`;$('#dl').href=url};
+  paint();
+  let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
+  $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};
+  $('#print').onclick=async()=>{const b=$('#print');b.disabled=true;
+    try{const url=await drawCertificate(2);const pr=$('#print-area');pr.innerHTML=`<img src="${url}" alt="">`;
+      await new Promise(r=>{const im=pr.querySelector('img');if(im.complete)r();else{im.onload=r;im.onerror=r}});
+      window.print();
+    }catch(e){$('#printnote').textContent='Печать здесь недоступна. Скачай картинку и распечатай её на листе A4 (альбомная ориентация).'}
+    b.disabled=false};
+}
+function finalPath(){
+  const strengths=strengthsList(),rep=worldReport();
+  return `<div class="duo">
+      <div class="card"><span class="kicker">Твои дары</span><div class="strengths">${strengths.map(x=>`<span>${esc(x)}</span>`).join('')||'<span>ещё впереди</span>'}</div></div>
+      <div class="card"><span class="kicker">Твой следующий шаг</span><p class="h2" style="font-size:20px">${esc(S.ans.weekly||'Выбрать свой шаг')}</p><p class="muted">На этой неделе. Маленький, но настоящий.</p></div>
+    </div>
+    <div class="card"><span class="kicker">Твоя фраза</span><p class="phrase" id="ph">${esc(T(PHRASES[S.phrase]))}</p><div class="actions"><button class="btn ghost small" id="nph">Другая фраза</button><button class="btn ghost small" id="cp">Скопировать</button></div></div>
+    <section class="report"><div><span class="kicker">Отчёт о прохождении</span><h2 class="h2">Путь по семи мирам</h2>
+      <p class="muted" style="font-size:15px">Начало: ${fmtDate(S.started)} · Финиш: ${fmtDate(S.finished)}</p></div>
+      <div class="rgrid">${rep.map((r,i)=>`<article class="rcard"><div class="rtop"><span class="rnum">${i+1}</span><b>${esc(r[0])}</b></div><p>${esc(r[1])}</p><p class="disc"><span>Открытие</span>${esc(r[2])}</p></article>`).join('')}</div>
+    </section>
+    <div class="card"><span class="kicker">Разгадка тайны Коэлета</span><p>Царь Шломо проверил богатство, мудрость и славу и назвал всё это паром. Но в его книге 8 раз звучит слово <b class="heb" lang="he">חֵלֶק</b>, «доля». Детали раздаёт Всевышний: Он задумал всю картину. А последние слова книги (Коэлет 12:13) говорят, что основа у всех одна — «бойся Всевышнего и соблюдай Его заповеди». Счастье не в том, чтобы собрать весь пазл. Оно в том, чтобы найти свою деталь и радоваться ей.</p></div>
+    <div class="card talk-card"><span class="kicker">Для разговора дома или в классе</span>
+      <ol><li>Что у тебя получается так, что время летит незаметно?</li><li>Когда ты последний раз ${T('{радовался|радовалась}')} чужому успеху? Что при этом ${T('{чувствовал|чувствовала}')}?</li><li>Кому рядом с тобой сейчас нужно то, что умеешь ты?</li><li>Какую «деталь» в нашей семье или классе можешь добавить только ты?</li><li>Как ты думаешь, для чего Всевышний дал тебе именно твою деталь?</li></ol></div>`;
+}
+function wirePath(){
+  $('#nph').onclick=()=>{S.phrase=(S.phrase+1)%PHRASES.length;save();$('#ph').textContent=T(PHRASES[S.phrase]);sfx.tap()};
+  $('#cp').onclick=()=>{const t=T(PHRASES[S.phrase]);const ok=()=>{$('#cp').textContent='Скопировано'};
+    try{navigator.clipboard.writeText(t).then(ok,()=>{selectText($('#ph'))})}catch(e){selectText($('#ph'))}};
+}
+function finalAch(){
+  return `<div class="stats">
       <div class="statcard"><span class="k">Искры</span><b>${S.sparks}</b></div>
       <div class="statcard"><span class="k">Уровень</span><b>${lvl()}</b><small>${LEVELS[lvl()-1]}</small></div>
       <div class="statcard"><span class="k">Детали пазла</span><b>${S.done.filter(Boolean).length}/7</b></div>
       <div class="statcard"><span class="k">Достижения</span><b>${Object.keys(S.ach).length}/6</b></div>
     </div>
-
-    <div class="duo">
-      <div class="card"><span class="kicker">Твои дары</span><div class="strengths">${strengths.map(x=>`<span>${esc(x)}</span>`).join('')||'<span>ещё впереди</span>'}</div></div>
-      <div class="card"><span class="kicker">Твой следующий шаг</span><p class="h2" style="font-size:20px">${esc(S.ans.weekly||'Выбрать свой шаг')}</p><p class="muted">На этой неделе. Маленький, но настоящий.</p></div>
-    </div>
-
-    <div class="card"><span class="kicker">Твоя фраза</span><p class="phrase" id="ph">${esc(T(PHRASES[S.phrase]))}</p><div class="actions"><button class="btn ghost small" id="nph">Другая фраза</button><button class="btn ghost small" id="cp">Скопировать</button></div></div>
-
-    <section class="report"><div><span class="kicker">Отчёт о прохождении</span><h2 class="h2">Путь по семи мирам</h2>
-      <p class="muted" style="font-size:15px">Начало: ${fmtDate(S.started)} · Финиш: ${fmtDate(S.finished)}</p></div>
-      <div class="rgrid">${rep.map((r,i)=>`<article class="rcard"><div class="rtop"><span class="rnum">${i+1}</span><b>${esc(r[0])}</b></div><p>${esc(r[1])}</p><p class="disc"><span>Открытие</span>${esc(r[2])}</p></article>`).join('')}</div>
-    </section>
-
-    <div class="card"><span class="kicker">Разгадка тайны Коэлета</span><p>Царь Шломо проверил богатство, мудрость и славу и назвал всё это паром. Но в его книге 8 раз звучит слово <b class="heb" lang="he">חֵלֶק</b>, «доля». Детали раздаёт Всевышний: Он задумал всю картину. А последние слова книги (Коэлет 12:13) говорят, что основа у всех одна — «бойся Всевышнего и соблюдай Его заповеди». Счастье не в том, чтобы собрать весь пазл. Оно в том, чтобы найти свою деталь и радоваться ей.</p></div>
-
-    <div class="card"><span class="kicker">Достижения</span>${achGrid()}</div>
-
-    <div class="card talk-card"><span class="kicker">Для разговора дома или в классе</span>
-      <ol><li>Что у тебя получается так, что время летит незаметно?</li><li>Когда ты последний раз ${T('{радовался|радовалась}')} чужому успеху? Что при этом ${T('{чувствовал|чувствовала}')}?</li><li>Кому рядом с тобой сейчас нужно то, что умеешь ты?</li><li>Какую «деталь» в нашей семье или классе можешь добавить только ты?</li><li>Как ты думаешь, для чего Всевышний дал тебе именно твою деталь?</li></ol></div>
-
-    <div class="actions"><button class="btn" id="map">Вернуться на карту</button><button class="btn ghost" id="again">Пройти заново</button></div>
-    <div id="conf"></div>
-    <p class="foot">Для взрослых: игра основана на уроке раввина Шнеора Ашкенази «Тайна книги Коэлет». Источники: Коэлет 1:2, 3:22, 5:17–18, 9:9, 12:13; Пиркей Авот 2:16, 4:1; Берешит 30:1, 48:14–20; Шмуэль I 18:7–9; Эстер 4:14; Ваикра Раба 30:12; Бава Батра 21а, 75а; Санедрин 90а; Рамбам, Законы Свитка Торы 10:1. Слова книги Коэлет принадлежат царю Шломо, а записали её, по Талмуду (Бава Батра 15а), царь Хизкияу и его люди. Сравнение Моше и Йеошуа с солнцем и луной в Талмуде звучит с горечью; позитивное прочтение, как и мысль о том, что Менаше «не стал бороться», — толкования рава Ашкенази, они подписаны в тексте. Два режима текстов: 8–11 и 12–15 лет. Ответы ребёнка хранятся только в этом браузере.</p>
-  </section>`;
-  let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;$('#cert').innerHTML=`<img src="${url}" alt="Сертификат о прохождении приключения «Тайна Коэлета» для ${esc(heroName())}">`};
-  paint();
-  let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
-  $('#nph').onclick=()=>{S.phrase=(S.phrase+1)%PHRASES.length;save();$('#ph').textContent=T(PHRASES[S.phrase]);sfx.tap()};
-  $('#cp').onclick=()=>{const t=T(PHRASES[S.phrase]);const ok=()=>{$('#cp').textContent='Скопировано'};
-    try{navigator.clipboard.writeText(t).then(ok,()=>{selectText($('#ph'))})}catch(e){selectText($('#ph'))}};
-  $('#map').onclick=()=>go('map');
-  $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>Начать всё сначала? Прогресс будет стёрт.</p><div class="actions"><button class="btn small" id="yes">Да</button><button class="btn ghost small" id="no">Отмена</button></div></div>`;
-    $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
+    <div class="card"><span class="kicker">Коллекция</span>${achGrid()}<p class="muted" style="font-size:14px">Здесь нет рейтинга и соревнования. Только твой собственный путь.</p></div>`;
 }
 function selectText(el){try{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(e){}}
 
 /* ---------- озвучка (для младших) ---------- */
 function canSpeak(){try{return 'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!=='undefined'}catch(e){return false}}
-function stopReading(){try{if(canSpeak())speechSynthesis.cancel()}catch(e){}const b=stage.querySelector('[data-read]');if(b)b.textContent='🔈 Послушать'}
+function stopReading(){try{if(canSpeak())speechSynthesis.cancel()}catch(e){}const b=stage.querySelector('[data-read]');if(b)b.innerHTML=icon('sound')+'<span>Послушать</span>'}
 function readAloud(btn){
   if(!canSpeak())return;
   if(speechSynthesis.speaking){stopReading();return}
@@ -634,8 +689,8 @@ function readAloud(btn){
   if(!txt)return;
   const u=new SpeechSynthesisUtterance(txt.replace(/[«»]/g,''));u.lang='ru-RU';u.rate=.95;
   const v=speechSynthesis.getVoices().find(x=>/^ru/i.test(x.lang));if(v)u.voice=v;
-  u.onend=u.onerror=()=>{if(btn&&btn.isConnected)btn.textContent='🔈 Послушать'};
-  btn.textContent='⏹ Стоп';speechSynthesis.speak(u);
+  u.onend=u.onerror=()=>{if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+'<span>Послушать</span>'};
+  btn.innerHTML=icon('stop')+'<span>Стоп</span>';speechSynthesis.speak(u);
 }
 stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)readAloud(b)});
 

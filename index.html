@@ -4,12 +4,15 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Onest:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap">
   <link rel="stylesheet" href="styles.css">
 
+<div class="scenery" id="scenery" aria-hidden="true"></div>
 <div class="app" id="app">
   <div class="hud" id="hud" hidden></div>
   <main id="stage"></main>
 </div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="print-area" id="print-area" aria-hidden="true"></div>
 
 <!-- Narrative content is kept separate from the runtime so both can evolve independently. -->
 <script src="game-data.js"></script>
+<script src="art.js"></script>
 <script src="game.js"></script>
