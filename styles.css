@@ -2,7 +2,7 @@
    World: a daylight sukkah — sage-mint ground, white cards, sechach green, etrog gold, pomegranate. Deliberately single light theme; the library and the sky stay as painted scenes. */
 :root{
   --bg:#edf3ef; --sunk:#e1ebe5; --panel:#ffffff; --panel-2:#f5faf7; --line:#cfddd5;
-  --ink:#17282e; --muted:#566d67; --leaf:#2f7d4a; --etrog:#a2700a; --gold:#f2be3d; --gold-edge:#c9951f; --pome:#c8445b; --sky:#3d7fb0;
+  --ink:#17282e; --muted:#4a5d58; --leaf:#2a7043; --etrog:#8a5d00; --accent:#8a5d00; --gold:#f2be3d; --gold-edge:#c9951f; --pome:#c8445b; --sky:#3d7fb0;
   --etrog-ink:#2a2004; --leaf-soft:rgba(47,125,74,.10); --etrog-soft:rgba(242,190,61,.20); --pome-soft:rgba(200,68,91,.09);
   --shadow:0 14px 30px -20px rgba(23,40,46,.45);
   --display:"Unbounded","Trebuchet MS",system-ui,sans-serif;
@@ -32,7 +32,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--etrog);outline-
 .bar i{display:block;height:100%;background:var(--leaf);border-radius:9px;transition:width .6s ease}
 
 /* Type */
-.kicker{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--etrog)}
+.kicker{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 .h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8vw,54px);line-height:1.02;letter-spacing:-.01em;margin:0;text-wrap:balance}
 .h2{font-family:var(--display);font-weight:700;font-size:clamp(21px,5vw,28px);line-height:1.15;margin:0;text-wrap:balance}
 .lead{font-size:18px;color:var(--muted);margin:0;max-width:34em}
@@ -59,7 +59,7 @@ p{margin:0}
 .say{display:grid;grid-template-columns:68px minmax(0,1fr);gap:12px;align-items:start}
 .say .av{width:68px;height:68px;border-radius:22px;overflow:hidden;background:var(--panel-2);animation:pop .4s ease both}
 .bubble{background:var(--panel);border:1px solid var(--line);border-radius:6px 20px 20px 20px;padding:14px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);animation:rise .4s .1s ease both}
-.who{font-family:var(--display);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--etrog)}
+.who{font-family:var(--display);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .bubble .txt{font-size:18px}
 .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:10px}
 .opts.compact{grid-template-columns:repeat(auto-fill,minmax(min(46%,160px),1fr))}
@@ -73,7 +73,8 @@ p{margin:0}
 .opts.compact .opt{flex-direction:column;align-items:flex-start;gap:8px;min-height:104px}
 .opt.picked .ic{background:var(--gold);color:var(--etrog-ink)}
 .opt.picked{border-color:var(--etrog);background:var(--panel-2)}
-.opt.dim{opacity:.38}
+.opt.dim{opacity:1;background:var(--panel-2);box-shadow:none;color:var(--muted)}
+.opt.dim .ic{background:var(--sunk);color:var(--muted)}
 .opt[disabled]{cursor:default}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{min-height:48px;padding:10px 16px;border-radius:999px;background:var(--panel);border:1.5px solid var(--line);font-size:16px;transition:all .2s}
@@ -136,7 +137,8 @@ p{margin:0}
 .wi+.wi{border-top:1px solid var(--line);padding-top:10px}
 .wi b{font-size:15px}
 .wi p{font-size:15px;color:var(--muted)}
-.pic{font-size:44px;line-height:1.2;text-align:center;letter-spacing:.12em}
+.pic{display:flex;justify-content:center;gap:14px;color:var(--accent)}
+.pic .ico{width:52px;height:52px}
 .readbtn{margin-left:auto}
 .species{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .sp{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border-radius:18px;background:var(--panel);border:1.5px solid var(--line);box-shadow:var(--shadow);font-size:13px;min-width:0;transition:all .25s}
@@ -252,8 +254,9 @@ p{margin:0}
 .ach .ic{font-size:26px}
 .ach b{font-size:14px}
 .ach small{font-size:12px;color:var(--muted)}
-.ach.lock{opacity:.4}
-.ach.lock .ic{filter:grayscale(1)}
+.ach.lock{color:var(--muted)}
+.ach.lock b{color:var(--muted)}
+.ach.lock .ic{color:#7d8f8a}
 
 /* Toasts & modal */
 .toasts{position:fixed;left:0;right:0;bottom:0;padding:0 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:20;pointer-events:none}
@@ -309,4 +312,133 @@ p{margin:0}
   .bubble .txt{font-size:17px}
   .findgrid{grid-template-columns:repeat(4,minmax(0,1fr))}
   .lvl{min-width:80px}
+}
+
+/* ================================================================
+   Дизайн v2: миры, иконки, Хранитель, карта, вкладки, печать
+   ================================================================ */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body{transition:background-color .6s ease}
+.scenery{position:fixed;inset:0;z-index:0;pointer-events:none}
+.scenery svg{display:block;width:100%;height:100%}
+/* «вуаль» под сценой: иллюстрация видна по краям, текст остаётся читаемым */
+.scene{background:var(--bg);background:color-mix(in srgb,var(--bg) 90%,transparent);border-radius:26px;padding:16px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.final-grid .final-grid,#tabp{background:none;padding:0;backdrop-filter:none}
+
+/* icons */
+.ico{width:1.3em;height:1.3em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.25em}
+.ico .f{fill:currentColor;fill-opacity:.18}
+.opt .ic .ico{width:24px;height:24px}
+.opt .ic.e{color:var(--accent)}
+.opt.picked .ic.e{color:var(--etrog-ink)}
+.hint .ico{width:20px;height:20px;color:var(--etrog)}
+.item{color:var(--etrog)}
+.item .ico{width:40px;height:40px}
+.tool{color:var(--ink)}
+.tool .ico{width:62%;height:62%}
+.tool.on{color:var(--etrog)}
+.lit{display:flex;align-items:center;gap:8px;color:var(--leaf)}
+.lit .ico{width:26px;height:26px}
+.slot .ico{width:32px;height:32px}
+.slot.filled em .ico,.piece em .ico{width:22px;height:22px}
+.slot.filled em{display:flex;justify-content:center}
+.sp .spic .ico{width:40px;height:40px;color:var(--leaf)}
+.bundle{color:var(--leaf)}
+.bundle .ico{width:38px;height:38px}
+.ach .ic{color:var(--accent);line-height:1}
+.ach .ic .ico{width:28px;height:28px}
+.toast .ic{color:var(--etrog);line-height:1}
+.toast .ic .ico{width:30px;height:30px}
+.whatif .wi b .ico{width:18px;height:18px;color:var(--accent)}
+
+/* Хранитель — крупный персонаж с настроением */
+.say.m{grid-template-columns:112px minmax(0,1fr);align-items:end}
+.say.m .av{width:112px;height:auto;border-radius:0;background:none;overflow:visible}
+.say.m .av .mentor{width:100%;height:auto;display:block}
+.say.m .bubble{border-radius:20px 20px 20px 6px;align-self:center}
+.reveal-m{width:92px;margin:-6px auto 0}
+.reveal-m .mentor,.final-m .mentor{width:100%;height:auto;display:block}
+.final-hero{display:grid;grid-template-columns:110px minmax(0,1fr);gap:14px;align-items:center}
+.final-hero > div:last-child{display:flex;flex-direction:column;gap:10px}
+
+/* HUD в одну строку */
+.hud{flex-wrap:nowrap}
+.hud .pill{padding:6px 11px}
+.hud .pill .ico{width:18px;height:18px;color:var(--etrog)}
+.iconbtn{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.iconbtn .ico{width:20px;height:20px}
+.readbtn .ico{color:var(--accent)}
+.menu-lvl{display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px}
+.menu-lvl b{font-family:var(--display);font-size:18px}
+.menu-lvl .bar{height:10px}
+.menu-lvl small{color:var(--muted)}
+.menu-list{display:flex;flex-direction:column;gap:8px}
+.mitem{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 14px;border-radius:16px;background:var(--panel);border:1.5px solid var(--line);font-weight:600;text-align:left}
+.mitem .ico{width:24px;height:24px;color:var(--accent)}
+
+/* Карта: тропа с островами */
+.tmap{position:relative;margin:4px 0 8px}
+.tmap-road{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.road-bed{fill:none;stroke:#e8dcc0;stroke-width:24;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.road{fill:none;stroke:#bfae88;stroke-width:3.5;stroke-dasharray:1 11;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.road.lit{stroke:var(--etrog)}
+.mnode{position:absolute;transform:translate(-50%,-50%);width:84px;height:84px;padding:0;border:0;background:none;display:block}
+.mnode .isle{position:absolute;left:50%;top:58%;width:136px;height:58px;transform:translateX(-50%);border-radius:50%;background:color-mix(in srgb,var(--c) 18%,#fff);z-index:0}
+.mnode .disc{position:relative;z-index:1;width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:#fff;border:3px solid var(--c);color:var(--c);box-shadow:var(--shadow);transition:transform .2s}
+.mnode .disc .ico{width:38px;height:38px}
+.mnode:not([disabled]):hover .disc{transform:scale(1.05)}
+.mnode.open .disc{animation:pulse 2.4s ease-in-out infinite}
+.mnode.lock{cursor:not-allowed}
+.mnode.lock .disc{border-color:#b6c4be;color:#6e817c;background:#f3f6f4}
+.mnode.lock .isle{background:#e3e9e6}
+.mnode .badge{position:absolute;right:-4px;top:-4px;width:30px;height:30px;border-radius:50%;background:var(--gold);color:var(--etrog-ink);display:grid;place-items:center;border:2px solid #fff}
+.mnode .badge .ico{width:18px;height:18px;stroke-width:3}
+.mlabel{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:clamp(150px,42vw,240px);display:flex;flex-direction:column;gap:2px;text-align:left;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:14px;padding:8px 11px;box-shadow:var(--shadow)}
+.mnode.l .mlabel{left:calc(100% + 12px)}
+.mnode.r .mlabel{right:calc(100% + 12px)}
+.mlabel .st{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--c)}
+.mnode.lock .mlabel .st{color:var(--muted)}
+.mlabel .nm{font-family:var(--display);font-weight:700;font-size:14px;line-height:1.2}
+.mlabel .ds{font-size:13px;color:var(--muted);line-height:1.3}
+
+/* Финал: вкладки */
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:5px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 62px);z-index:4;box-shadow:var(--shadow)}
+.tab{min-height:46px;border:0;border-radius:14px;background:transparent;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:14px;color:var(--muted);padding:6px}
+.tab .ico{width:20px;height:20px}
+.tab.on{background:var(--gold);color:var(--etrog-ink)}
+.cert-card .btn .ico{width:22px;height:22px}
+a.btn{text-decoration:none}
+
+/* Шапка мира: иллюстрация среды на каждом шаге */
+.scene-head.banner{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:10px;min-height:104px;padding:12px 14px;border-radius:18px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+.bn-art{position:absolute;inset:0;z-index:0}
+.bn-art svg{display:block;width:100%;height:100%}
+.banner>*:not(.bn-art){position:relative;z-index:1}
+.bn-k{align-self:flex-start;background:rgba(255,255,255,.95);padding:6px 11px;border-radius:999px}
+.bn-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.banner .dots{background:rgba(255,255,255,.95);padding:7px 9px;border-radius:999px}
+.sheet .achs{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* Печать сертификата A4 */
+.print-area{display:none}
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  html,body{background:#fff!important;height:auto}
+  body::before{display:none}
+  body>*:not(.print-area){display:none!important}
+  .print-area{display:block!important}
+  .print-area img{display:block;width:auto;height:auto;max-width:100%;max-height:190mm;margin:0 auto;page-break-inside:avoid}
+  .print-area{page-break-after:avoid}
+  html,body{min-height:0!important;overflow:visible}
+}
+
+@media (max-width:480px){
+  .app{padding-inline:10px}
+  .scene{padding:12px;border-radius:22px}
+  .say.m{grid-template-columns:104px minmax(0,1fr);gap:8px}
+  .say.m .av{width:104px;height:auto;border-radius:0}
+  .say.m .bubble{padding:12px 14px}
+  .final-hero{grid-template-columns:84px minmax(0,1fr)}
+  .tab span{font-size:13px}
+  .tab{flex-direction:column;gap:2px;min-height:52px}
 }
