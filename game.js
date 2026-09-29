@@ -300,7 +300,7 @@ function rReveal(st){
 }
 
 /* ---------- mini-games ---------- */
-function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
+function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
 
 function gBook(){
   const cols=['#6e2433','#2c5564','#5a4a78','#3f6b4a','#8a6a3f','#1d2b44','#7a5a2a'];
@@ -394,15 +394,32 @@ function gPuzzle(){
   };draw();
 }
 
+function gSpecies(){
+  const got=[];
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,T(young()?'В Суккот берут вместе четыре растения. Нажми на каждое и собери букет.':'Вот почему Коэлет читают именно в Суккот. В этот праздник связывают вместе четыре вида растений. Мидраш видит в них четыре типа людей. Нажми на каждое растение и собери букет.'))}
+    <div class="species">${SPECIES.map((p,i)=>`<button class="sp" data-i="${i}"><span class="spic" aria-hidden="true">${p.ic}</span><b>${p.name}</b><span class="heb" lang="he">${p.he}</span></button>`).join('')}</div>
+    <div class="bundle" id="bun" aria-live="polite"><span class="muted">Букет пока пустой</span></div>
+    <div id="out"></div><div class="actions" id="act"></div></section>`;
+  stage.querySelectorAll('.sp').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i,p=SPECIES[i];
+    if(!got.includes(i)){got.push(i);b.classList.add('on');tone(520+got.length*60,.14)}else sfx.tap();
+    $('#bun').innerHTML=got.map(k=>`<span>${SPECIES[k].ic}</span>`).join('');
+    $('#out').innerHTML=`<div class="resp"><span class="who">${p.ic} ${p.name}</span><p>${esc(young()?p.y:p.t)}</p></div>`;
+    if(got.length===SPECIES.length&&!$('#nx')){addSparks(25,$('#bun'));sfx.ach();$('#bun').classList.add('full');
+      $('#out').insertAdjacentHTML('beforeend',`<div class="resp"><span class="who">Ваикра Раба 30:12</span><p>${esc(young()?'Мидраш говорит: пусть все будут связаны вместе. Заповедь исполняется, только когда все четыре вместе. Если нет хоть одного, ничего не выйдет.':'Мидраш говорит: «Пусть все будут связаны в одну связку, и одни искупят других». Заповедь исполняется, только когда все четыре вместе. Не хватает одного, даже аравы без вкуса и запаха, — и весь букет непригоден.')}</p></div>`);
+      $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}
+  });
+}
+
 function gSky(){
   let stars='';for(let i=0;i<24;i++)stars+=`<span class="star" style="left:${(i*37)%100}%;top:${(i*23)%60}%"></span>`;
   stage.innerHTML=`<section class="scene">${head()}<article class="card"><span class="kicker">Солнце и луна</span><h2 class="h2">Моше и Йеошуа</h2>
-    <p>Моше был великим учителем. Его ученик Йеошуа стал вести народ после него. Мудрецы сравнивали Моше с солнцем, а Йеошуа — с луной.</p>
+    <p>Моше был великим учителем. Его ученик Йеошуа стал вести народ после него. ${young()?'В Талмуде сказано: «Лицо Моше — как солнце, лицо Йеошуа — как луна». Мудрецы говорили это с грустью: люди стали слабее.':'В Талмуде (Бава Батра 75а) старейшины сказали: «Лицо Моше — как солнце, лицо Йеошуа — как луна». Сказали с горечью: поколение ослабло.'}</p>
     <div class="sky" id="sky">${stars}<div class="sun"></div><div class="moon"></div><div class="ground"></div></div>
     <p id="skyt" class="muted">Луна светит слабее солнца. Значит, она хуже?</p></article>
     <div class="actions" id="act"><button class="btn" id="night">Наступает ночь</button></div></section>`;
   $('#night').onclick=()=>{$('#sky').classList.add('night');sfx.good();addSparks(10,$('#sky'));
-    setTimeout(()=>{if(!$('#skyt'))return;$('#skyt').innerHTML='<b style="color:var(--ink)">Ночью солнца не видно. И миру нужен именно свет луны.</b> Луне не нужно становиться солнцем. У неё своё время и своя работа.'},1200);
+    setTimeout(()=>{if(!$('#skyt'))return;$('#skyt').innerHTML='<b style="color:var(--ink)">Рав Ашкенази объясняет: ночью солнца не видно. И миру нужен именно свет луны.</b> Луне не нужно становиться солнцем. У неё своё время и своя работа.'},1200);
     $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
 }
 
@@ -418,7 +435,7 @@ function gHands(){
     <p id="ht" class="muted">Менаше, старший, стоит под правой рукой дедушки. Что сделает Яаков?</p></article>
     <div class="actions" id="act"><button class="btn" id="see">Посмотреть</button></div></section>`;
   $('#see').onclick=()=>{$('#bl').classList.add('x');sfx.good();addSparks(10);
-    $('#ht').innerHTML='<b style="color:var(--ink)">Яаков скрестил руки.</b> Правую руку он положил на голову младшего, Эфраима. Йосеф удивился, но Яаков сказал: «Я знаю, сын мой, я знаю». И благословил младшего первым.';
+    $('#ht').innerHTML='<b style="color:var(--ink)">Яаков скрестил руки.</b> Правую руку он положил на голову младшего, Эфраима. Йосеф возразил: «Не так, отец мой!» Но Яаков ответил: «Я знаю, сын мой, я знаю». И благословил младшего первым.';
     $('#act').innerHTML=`<button class="btn" id="nx">Далее</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
 }
 
@@ -450,7 +467,8 @@ function strengthMap(s){
   if(L.can.length)parts.push(`<p>У тебя хорошо получается: ${list(L.can)}.</p>`);
   if(L.like.length)parts.push(`<p>Тебе нравится: ${list(L.like)}.</p>`);
   if(L.need.length)parts.push(`<p>Ты замечаешь, что людям рядом нужно: ${list(L.need)}${L.help.length?'. И ты можешь помочь: '+list(L.help):''}.</p>`);
-  parts.push(`<p style="font-size:19px;font-weight:600;color:var(--etrog)">Возможно, одна из твоих сильных сторон — ${c?c[1]:'делать мир вокруг чуть лучше своим способом'}.</p>`);
+  parts.push(`<p style="font-size:19px;font-weight:600;color:var(--etrog)">Возможно, часть твоей доли — ${c?c[1]:'делать мир вокруг чуть лучше своим способом'}.</p>`);
+  parts.push(`<p>Это не просто таланты. Это дары: их дал тебе Всевышний, и у каждого из них есть своё «для чего».</p>`);
   if(s.ans.flow)parts.push(`<p class="muted">Попробуй обратить внимание, когда время летит незаметно. Ты ${T('{сказал|сказала}')}: «${esc(s.ans.flow)}». Это стоит исследовать.</p>`);
   parts.push(`<p class="muted" style="font-size:14px">Раввин Шнеор Ашкенази рассказывал: однажды он почти перестал преподавать, ведь его уроки смотрели всего сто-двести человек. И тут он прочитал: «Никогда не прекращай делать то, в чём ты хорош». Он не бросил.</p>`);
   return parts.join('');
@@ -508,7 +526,7 @@ function worldReport(){
   const lit=Object.keys(S.tools).map(k=>TOOLS[k][0]+' '+TOOLS[k][1].toLowerCase());
   return R([
     ['Город успеха',S.city?`Ты {выбрал|выбрала} ${CITY_LABEL[S.city]}. Вечером {ответил|ответила}: «${S.ans.evening||'—'}».`:'—','Можно получить всё и всё равно чувствовать, что чего-то не хватает.'],
-    ['Пазл',`{Нашёл|Нашла} все 8 слов חֵלֶק. Твои качества: ${myQualities().join(', ')||'—'}.`,'Каждый получает свою деталь, и никто — весь пазл.'],
+    ['Пазл',`{Нашёл|Нашла} все 8 слов חֵלֶק. Твои качества: ${myQualities().join(', ')||'—'}.`,'Каждый получает от Всевышнего свою деталь, и никто — весь пазл.'],
     ['Зеркало',`Ты {помог|помогла} героям зеркал разобраться, что с ними происходит, и {увидел|увидела}, к чему ведёт каждый выбор.`,'Чужая сильная сторона не делает твою слабее.'],
     ['Эфраим и Менаше',`Когда друг получил награду, ты {решил|решила}: «${S.ans.awardAct||'—'}».`,'Если у другого есть свой дар, твой от этого не исчезает.'],
     ['Мастерская',lit.length?`Загорелись инструменты: ${lit.join(', ')}.`:'Инструменты ещё ждут тебя.','У каждого свои инструменты. Важно понять, для чего они тебе.'],
@@ -556,7 +574,7 @@ function renderFinal(){
   const rep=worldReport();
   stage.innerHTML=`<section class="scene final-grid">
     <div class="final-hero"><span class="kicker">Финал · ${esc(heroName())}</span><h1 class="h1">Твой <span style="color:var(--pome)">Хелек</span></h1>
-    <p class="lead">Ты ${T('{обнаружил|обнаружила}')} несколько своих сильных сторон. Это не готовый ответ на всю жизнь. Это подсказки, которые можно исследовать дальше.</p></div>
+    <p class="lead">Ты ${T('{обнаружил|обнаружила}')} подсказки о своей доле — о детали, которую Всевышний дал именно тебе. Это не готовый ответ на всю жизнь. Это подсказки, которые можно исследовать дальше.</p></div>
 
     <article class="card cert-card"><div class="cert-head"><span class="kicker">Сертификат</span><span class="muted" style="font-size:14px">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">Имя на сертификате</label><input id="certname" maxlength="24" autocomplete="off" placeholder="Путник" value="${esc(S.hero.name)}"></div>
@@ -571,7 +589,7 @@ function renderFinal(){
     </div>
 
     <div class="duo">
-      <div class="card"><span class="kicker">Твои сильные стороны</span><div class="strengths">${strengths.map(x=>`<span>${esc(x)}</span>`).join('')||'<span>ещё впереди</span>'}</div></div>
+      <div class="card"><span class="kicker">Твои дары</span><div class="strengths">${strengths.map(x=>`<span>${esc(x)}</span>`).join('')||'<span>ещё впереди</span>'}</div></div>
       <div class="card"><span class="kicker">Твой следующий шаг</span><p class="h2" style="font-size:20px">${esc(S.ans.weekly||'Выбрать свой шаг')}</p><p class="muted">На этой неделе. Маленький, но настоящий.</p></div>
     </div>
 
@@ -582,16 +600,16 @@ function renderFinal(){
       <div class="rgrid">${rep.map((r,i)=>`<article class="rcard"><div class="rtop"><span class="rnum">${i+1}</span><b>${esc(r[0])}</b></div><p>${esc(r[1])}</p><p class="disc"><span>Открытие</span>${esc(r[2])}</p></article>`).join('')}</div>
     </section>
 
-    <div class="card"><span class="kicker">Разгадка тайны Коэлета</span><p>Царь Шломо проверил богатство, мудрость и славу и назвал всё это паром. Но в его книге 8 раз звучит слово <b class="heb" lang="he">חֵלֶק</b>, «доля». Счастье не в том, чтобы собрать весь пазл. Оно в том, чтобы найти свою деталь и радоваться ей.</p></div>
+    <div class="card"><span class="kicker">Разгадка тайны Коэлета</span><p>Царь Шломо проверил богатство, мудрость и славу и назвал всё это паром. Но в его книге 8 раз звучит слово <b class="heb" lang="he">חֵלֶק</b>, «доля». Детали раздаёт Всевышний: Он задумал всю картину. А последние слова книги (Коэлет 12:13) говорят, что основа у всех одна — «бойся Всевышнего и соблюдай Его заповеди». Счастье не в том, чтобы собрать весь пазл. Оно в том, чтобы найти свою деталь и радоваться ей.</p></div>
 
     <div class="card"><span class="kicker">Достижения</span>${achGrid()}</div>
 
     <div class="card talk-card"><span class="kicker">Для разговора дома или в классе</span>
-      <ol><li>Что у тебя получается так, что время летит незаметно?</li><li>Когда ты последний раз ${T('{радовался|радовалась}')} чужому успеху? Что при этом чувствовал?</li><li>Кому рядом с тобой сейчас нужно то, что умеешь ты?</li><li>Какую «деталь» в нашей семье или классе можешь добавить только ты?</li></ol></div>
+      <ol><li>Что у тебя получается так, что время летит незаметно?</li><li>Когда ты последний раз ${T('{радовался|радовалась}')} чужому успеху? Что при этом ${T('{чувствовал|чувствовала}')}?</li><li>Кому рядом с тобой сейчас нужно то, что умеешь ты?</li><li>Какую «деталь» в нашей семье или классе можешь добавить только ты?</li><li>Как ты думаешь, для чего Всевышний дал тебе именно твою деталь?</li></ol></div>
 
     <div class="actions"><button class="btn" id="map">Вернуться на карту</button><button class="btn ghost" id="again">Пройти заново</button></div>
     <div id="conf"></div>
-    <p class="foot">Для взрослых: игра основана на уроке раввина Шнеора Ашкенази «Тайна книги Коэлет». Источники: Коэлет 1:2, 3:22, 5:17–18, 9:9; Пиркей Авот 2:16, 4:1; Берешит 30:1, 48:14–20; Шмуэль I 18:7–9; Эстер 4:14; Бава Батра 21а, 75а. Два режима текстов: 8–11 и 12–15 лет. Ответы ребёнка хранятся только в этом браузере.</p>
+    <p class="foot">Для взрослых: игра основана на уроке раввина Шнеора Ашкенази «Тайна книги Коэлет». Источники: Коэлет 1:2, 3:22, 5:17–18, 9:9, 12:13; Пиркей Авот 2:16, 4:1; Берешит 30:1, 48:14–20; Шмуэль I 18:7–9; Эстер 4:14; Ваикра Раба 30:12; Бава Батра 21а, 75а; Санедрин 90а; Рамбам, Законы Свитка Торы 10:1. Слова книги Коэлет принадлежат царю Шломо, а записали её, по Талмуду (Бава Батра 15а), царь Хизкияу и его люди. Сравнение Моше и Йеошуа с солнцем и луной в Талмуде звучит с горечью; позитивное прочтение, как и мысль о том, что Менаше «не стал бороться», — толкования рава Ашкенази, они подписаны в тексте. Два режима текстов: 8–11 и 12–15 лет. Ответы ребёнка хранятся только в этом браузере.</p>
   </section>`;
   let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;$('#cert').innerHTML=`<img src="${url}" alt="Сертификат о прохождении приключения «Тайна Коэлета» для ${esc(heroName())}">`};
   paint();
