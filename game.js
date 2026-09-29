@@ -1,6 +1,6 @@
 /* Game runtime: state, rendering, interactions, and minigames. */
 const KEY='koelet-game-v1';
-const fresh=()=>({v:1,screen:'title',hero:{name:'',arch:0,look:0,outfit:0},w:0,s:0,ps:0,done:[0,0,0,0,0,0,0],sparks:0,ach:{},ans:{},qualities:[],lab:{can:[],like:[],need:[],help:[]},tools:{},help:0,insight:0,sound:false,phrase:null});
+const fresh=()=>({v:1,screen:'title',hero:{name:'',age:null,g:null,arch:0,look:0,outfit:0},w:0,s:0,ps:0,done:[0,0,0,0,0,0,0],sparks:0,ach:{},ans:{},qualities:[],lab:{can:[],like:[],need:[],help:[]},tools:{},help:0,insight:0,sound:false,phrase:null,own:{}});
 let S=fresh();
 function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&d.v===1)S=Object.assign(fresh(),d)}}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -10,8 +10,20 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
    ================================================================ */
 const $=s=>document.querySelector(s);
 const stage=$('#stage');
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s).replace(/[&<>"{}]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','{':'&#123;','}':'&#125;'}[c]));
 const heroName=()=>S.hero.name.trim()||'Путник';
+/* возраст и род */
+const young=()=>S.hero.age==='y';
+const T=s=>typeof s==='string'?s.replace(/\{([^{}|]*)\|([^{}|]*)\}/g,(_,m,f)=>S.hero.g==='f'?f:m):s;
+function R(v){
+  if(typeof v==='string')return T(v);
+  if(Array.isArray(v))return v.map(R);
+  if(v&&typeof v==='object'){if(v.__ag)return R(young()?v.y:v.t);const o={};for(const k in v)o[k]=R(v[k]);return o}
+  return v;
+}
+const byAge=a=>a.filter(s=>typeof s==='function'||!s.age||s.age===(young()?'y':'t'));
+const PRO=()=>byAge(PROLOGUE);
+const myQualities=()=>[...(S.qualities||[]),...(S.own&&S.own.quality?[S.own.quality]:[])];
 
 function avatar(p){
   const L=LOOKS[p.look||0], out=OUTFITS[p.outfit||0], a=p.arch;
@@ -58,7 +70,7 @@ function addSparks(n,el){
   hud();save();
 }
 function unlock(id){
-  if(S.ach[id])return;S.ach[id]=1;const a=ACHS[id];toast(a[0],'Достижение: '+a[1],a[2]);sfx.ach();save();hud();
+  if(S.ach[id])return;S.ach[id]=1;const a=ACHS[id];toast(a[0],'Достижение: '+T(a[1]),T(a[2]));sfx.ach();save();hud();
 }
 function toast(ic,title,sub){
   const t=document.createElement('div');t.className='toast';t.innerHTML=`<span class="ic">${ic}</span><div><b>${esc(title)}</b><small>${esc(sub)}</small></div>`;
@@ -80,7 +92,7 @@ function hud(){
   $('#achbtn').onclick=showAchs;
   const mb=$('#mapbtn');if(mb)mb.onclick=()=>go('map');
 }
-function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${a[0]}</span><b>${a[1]}</b><small>${a[2]}</small></div>`).join('')}</div>`}
+function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${a[0]}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
 function showAchs(){
   const m=document.createElement('div');m.className='modal';
   m.innerHTML=`<div class="sheet" role="dialog" aria-label="Достижения"><span class="kicker">Коллекция</span><h2 class="h2">Достижения</h2>${achGrid()}<p class="muted" style="font-size:14px">Здесь нет рейтинга и соревнования. Только твой собственный путь.</p><button class="btn ghost" id="closeM">Закрыть</button></div>`;
@@ -91,11 +103,11 @@ function showAchs(){
    SCREENS
    ================================================================ */
 function go(screen,skipPrologue){
-  if(skipPrologue){S.ps=PROLOGUE.length}
+  if(skipPrologue){S.ps=PRO().length}
   S.screen=screen;save();render();window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
-  hud();
+  stopReading();hud();
   ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal}[S.screen]||renderTitle)();
 }
 
@@ -104,7 +116,7 @@ function renderTitle(){
   let wall='';for(let i=0;i<15;i++){wall+= i===7?`<div class="pw-hole">${pieceSvg('none')}</div>`:pieceSvg(cols[(i*3)%cols.length])}
   const started=S.screen!=='title'||S.sparks>0||S.hero.name||S.done.some(Boolean);
   stage.innerHTML=`<section class="title-screen scene">
-    <span class="kicker">Интерактивное приключение · 10–15 лет</span>
+    <span class="kicker">Интерактивное приключение · 8–15 лет</span>
     <h1 class="h1">Тайна<br><span>Коэлета</span></h1>
     <p class="lead">Найди свою деталь в большом пазле.</p>
     <div class="puzzlewall" aria-hidden="true">${wall}</div>
@@ -125,26 +137,36 @@ function renderTitle(){
 
 function renderCreate(){
   const h=S.hero;
+  const seg=(attr,val,label)=>`<button class="segb ${h[attr]===val?'on':''}" data-${attr}="${val}" aria-pressed="${h[attr]===val}">${label}</button>`;
+  const ok=!!(h.age&&h.g);
   stage.innerHTML=`<section class="scene create">
     <span class="kicker">Перед путешествием</span>
     <h2 class="h2">Создай своего героя</h2>
     <div class="create-top"><div class="preview" id="pv">${avatar(h)}</div>
-      <div class="field"><label for="hname">Имя героя (можно придумать любое или оставить пустым)</label><input id="hname" maxlength="16" autocomplete="off" placeholder="Путник" value="${esc(h.name)}"></div></div>
+      <div class="idcol">
+        <div class="field"><label for="hname">Имя героя (можно придумать любое или оставить пустым)</label><input id="hname" maxlength="16" autocomplete="off" placeholder="Путник" value="${esc(h.name)}"></div>
+        <div class="field"><span class="lbl" id="agel">Сколько тебе лет?</span><div class="seg" role="group" aria-labelledby="agel">${seg('age','y','8–11 лет')}${seg('age','t','12–15 лет')}</div></div>
+        <div class="field"><span class="lbl" id="gl">Как к тебе обращаться?</span><div class="seg" role="group" aria-labelledby="gl">${seg('g','m','Ты готов')}${seg('g','f','Ты готова')}</div></div>
+      </div></div>
+    ${h.age?`<p class="agenote">${h.age==='y'?'Короткие тексты и картинки. Любой экран можно послушать вслух.':'Больше историй и вопросов для размышления: о Шауле и Давиде, о зависти, которая помогает расти.'}</p>`:''}
     <div class="group"><h3>Кто ты в этой истории</h3><div class="archs">${ARCHS.map((a,i)=>`<button class="arch ${h.arch===i?'on':''}" data-arch="${i}">${avatar({look:h.look,outfit:h.outfit,arch:i})}<span>${a.name}</span></button>`).join('')}</div></div>
     <div class="group"><h3>Внешность</h3><div class="swatches">${LOOKS.map((l,i)=>`<button class="sw ${h.look===i?'on':''}" data-look="${i}" aria-label="Вариант внешности ${i+1}"><span style="background:linear-gradient(135deg,${l.hair} 50%,${l.skin} 50%)"></span></button>`).join('')}</div></div>
     <div class="group"><h3>Одежда</h3><div class="swatches">${OUTFITS.map((o,i)=>`<button class="sw ${h.outfit===i?'on':''}" data-outfit="${i}" aria-label="Цвет одежды ${i+1}"><span style="background:${o}"></span></button>`).join('')}</div></div>
-    <div class="actions"><button class="btn" id="ready">Готово</button></div>
+    <div class="actions"><button class="btn" id="ready" ${ok?'':'disabled'}>Готово</button>${ok?'':'<span class="muted" style="font-size:14px">Выбери возраст и как к тебе обращаться</span>'}</div>
   </section>`;
+  const keep=()=>{const y=window.scrollY;renderCreate();window.scrollTo(0,y)};
   $('#hname').oninput=e=>{h.name=e.target.value;save()};
-  stage.querySelectorAll('[data-arch]').forEach(b=>b.onclick=()=>{h.arch=+b.dataset.arch;sfx.tap();save();renderCreate()});
-  stage.querySelectorAll('[data-look]').forEach(b=>b.onclick=()=>{h.look=+b.dataset.look;sfx.tap();save();renderCreate()});
-  stage.querySelectorAll('[data-outfit]').forEach(b=>b.onclick=()=>{h.outfit=+b.dataset.outfit;sfx.tap();save();renderCreate()});
-  $('#ready').onclick=()=>{sfx.good();if(!S.started)S.started=new Date().toISOString();go('welcome')};
+  stage.querySelectorAll('[data-age]').forEach(b=>b.onclick=()=>{h.age=b.dataset.age;sfx.tap();save();keep()});
+  stage.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{h.g=b.dataset.g;sfx.tap();save();keep()});
+  stage.querySelectorAll('[data-arch]').forEach(b=>b.onclick=()=>{h.arch=+b.dataset.arch;sfx.tap();save();keep()});
+  stage.querySelectorAll('[data-look]').forEach(b=>b.onclick=()=>{h.look=+b.dataset.look;sfx.tap();save();keep()});
+  stage.querySelectorAll('[data-outfit]').forEach(b=>b.onclick=()=>{h.outfit=+b.dataset.outfit;sfx.tap();save();keep()});
+  $('#ready').onclick=()=>{if(!(h.age&&h.g))return;sfx.good();if(!S.started)S.started=new Date().toISOString();go('welcome')};
 }
 
 function renderWelcome(){
   stage.innerHTML=`<section class="scene">
-    ${sayHTML('hero',`<b>${esc(heroName())}</b>, добро пожаловать в путешествие. Перед тобой большая загадка. Ты готов её разгадать?`)}
+    ${sayHTML('hero',`<b>${esc(heroName())}</b>, добро пожаловать в путешествие. Перед тобой большая загадка. Ты ${T('{готов|готова}')} её разгадать?`)}
     <div class="actions"><button class="btn" id="go">Начать приключение</button><button class="btn ghost" id="back">Изменить героя</button></div>
   </section>`;
   $('#go').onclick=()=>{sfx.good();S.ps=0;go('prologue')};
@@ -152,17 +174,18 @@ function renderWelcome(){
 }
 
 /* ---------- step engine ---------- */
-function steps(){return S.screen==='prologue'?PROLOGUE:WORLDS[S.w].steps}
-function idx(){return S.screen==='prologue'?S.ps:S.s}
+function steps(){return S.screen==='prologue'?PRO():byAge(WORLDS[S.w].steps)}
+function idx(){const n=steps().length-1;return Math.min(S.screen==='prologue'?S.ps:S.s,n)}
 function next(){
-  if(S.screen==='prologue'){S.ps++;if(S.ps>=PROLOGUE.length){return go('map')}}
-  else{S.s++;if(S.s>=WORLDS[S.w].steps.length)return completeWorld()}
+  if(S.screen==='prologue'){S.ps=idx()+1;if(S.ps>=PRO().length){return go('map')}}
+  else{S.s=idx()+1;if(S.s>=steps().length)return completeWorld()}
   save();render();window.scrollTo({top:0,behavior:'smooth'});
 }
 function head(){
   const st=steps(),i=idx();
   const label=S.screen==='prologue'?'Пролог · Библиотека':`Мир ${S.w+1} · ${WORLDS[S.w].name}`;
-  return `<div class="scene-head"><span class="kicker">${label}</span><div class="dots" aria-label="Шаг ${i+1} из ${st.length}">${st.map((_,k)=>`<i class="${k<i?'done':k===i?'on':''}"></i>`).join('')}</div></div>`;
+  const rd=young()&&canSpeak()?`<button class="iconbtn readbtn" data-read aria-label="Прочитать вслух">🔈 Послушать</button>`:'';
+  return `<div class="scene-head"><span class="kicker">${label}</span>${rd}<div class="dots" aria-label="Шаг ${i+1} из ${st.length}">${st.map((_,k)=>`<i class="${k<i?'done':k===i?'on':''}"></i>`).join('')}</div></div>`;
 }
 const LETTERS='АБВГДЕЖЗИК';
 function optHTML(o,i){return `<button class="opt" data-i="${i}"><span class="ic ${o.ic?'e':''}" aria-hidden="true">${o.ic||LETTERS[i]}</span><span class="ot"><span>${esc(o.t)}</span>${o.s?`<small>${esc(o.s)}</small>`:''}</span></button>`}
@@ -175,51 +198,68 @@ function toolbox(){if(!(S.screen==='world'&&WORLDS[S.w].tools))return '';
   return `<div class="toolbox" aria-label="Ящик с инструментами">${Object.entries(TOOLS).map(([k,t])=>`<div class="tool ${S.tools[k]?'on':''}" title="${t[1]}">${t[0]}${S.tools[k]>1?`<sup>${S.tools[k]}</sup>`:''}</div>`).join('')}</div>`}
 
 function renderStep(){
-  let st=steps()[idx()];if(typeof st==='function')st=st(S);
+  let st=steps()[idx()];if(typeof st==='function')st=st(S);st=R(st);
   S._last=S.screen;
-  const R={talk:rTalk,choice:rChoice,multi:rMulti,quote:rQuote,card:rCard,reveal:rReveal,mini:rMini}[st.type];
-  R(st);
+  const fn={talk:rTalk,choice:rChoice,multi:rMulti,quote:rQuote,card:rCard,reveal:rReveal,mini:rMini}[st.type];
+  fn(st);
 }
 function rTalk(st){
   stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text))}<div class="actions"><button class="btn" id="nx">Далее</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();next()};
 }
+function ownHTML(o){return `<div class="own"><label for="ownin">${esc(o.label)}</label><div class="ownrow"><input id="ownin" maxlength="60" autocomplete="off" placeholder="${esc(o.ph||'')}"><button class="btn small" id="ownok" disabled>Это моё</button></div><small>${esc(OWN_NOTE)}</small></div>`}
 function rChoice(st){
   const hint=st.hint||(st.neutral?DEF_HINT:null);
+  const whatif=st.whatif!==false&&new Set(st.options.map(o=>o.r)).size>1;
   stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text))}
     ${st.q?`<p class="h2" style="font-size:18px">${esc(st.q)}</p>`:''}
     <div class="opts ${st.compact?'compact':''}" role="group">${st.options.map((o,i)=>optHTML(o,i)).join('')}</div>
-    <div id="out"></div>
+    ${st.own?ownHTML(st.own):''}
+    <div id="out"></div><div id="wil"></div>
     <div class="actions" id="act">${hintBtn(hint)}</div></section>`;
   wireHint(hint);
-  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
-    const o=st.options[+b.dataset.i];
+  const pick=(o,b)=>{
     stage.querySelectorAll('.opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});
+    const ow=stage.querySelector('.own');if(ow){ow.querySelectorAll('input,button').forEach(x=>x.disabled=true);if(!o.own)ow.remove()}
     if(st.key){S.ans[st.key]=o.v||o.t;if(st.key==='city')S.city=o.v}
     if(o.help){S.help++;if(S.help>=3)unlock('friend')}
     if(o.insight){S.insight++;if(/^mirror\d/.test(st.key||''))S.mi=(S.mi||0)+1}
     let extra='';
     if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+1;const t=TOOLS[o.tool];extra=`<p><b>${t[0]} В ящике загорелся инструмент: ${t[1]}</b></p>`}
-    addSparks(o.help||o.insight||o.tool?15:10,b);sfx.good();
+    addSparks(10,b);sfx.good(); // искры одинаковые за любой ответ
     $('#out').innerHTML=`<div class="resp"><span class="who">Что произошло</span><p>${esc(o.r)}</p>${extra}${st.after?`<p class="muted">${esc(st.after)}</p>`:''}</div>`;
     const tb=stage.querySelector('.toolbox');if(tb)tb.outerHTML=toolbox();
-    $('#act').innerHTML=`<button class="btn" id="nx">Продолжить</button>`;
+    const others=st.options.filter(x=>x!==o&&x.r!==o.r);
+    $('#act').innerHTML=`${whatif&&others.length?'<button class="btn ghost small" id="wi">А что было бы, если…?</button>':''}<button class="btn" id="nx">Продолжить</button>`;
+    const wi=$('#wi');if(wi)wi.onclick=()=>{sfx.soft();wi.remove();
+      $('#wil').innerHTML=`<div class="whatif"><span class="kicker">Другие исходы · твой выбор остаётся твоим</span>${others.map(x=>`<div class="wi"><b>${x.ic?x.ic+' ':''}${esc(x.t)}</b><p>${esc(x.r)}</p></div>`).join('')}</div>`;
+      $('#wil').scrollIntoView({behavior:'smooth',block:'nearest'})};
     $('#nx').onclick=()=>{sfx.tap();next()};
     $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
-  });
+  };
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>pick(st.options[+b.dataset.i],b));
+  if(st.own){const inp=$('#ownin'),ok=$('#ownok');const prev=S.own[st.key]||'';inp.value=prev;ok.disabled=!prev.trim();
+    inp.oninput=()=>{ok.disabled=!inp.value.trim()};
+    inp.onkeydown=e=>{if(e.key==='Enter'&&!ok.disabled)ok.click()};
+    ok.onclick=()=>{const t=inp.value.trim().slice(0,60);if(!t)return;S.own[st.key]=t;save();pick({t,v:t,r:st.own.r||'Записано. Это твои собственные слова.',own:1},ok)}}
 }
 function rMulti(st){
-  let sel=(S[st.key]||[]).slice();
+  let sel=(S[st.key]||[]).filter(x=>st.options.includes(x));
+  const ok=st.own&&st.own.key;
+  const ownVal=()=>ok?(S.own[ok]||'').trim():'';
+  const need=()=>Math.max(1,st.min-(ownVal()?1:0));
   const draw=()=>{
     stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,esc(st.text))}
       <div class="chips">${st.options.map((o,i)=>`<button class="chip ${sel.includes(o)?'on':''}" data-i="${i}" aria-pressed="${sel.includes(o)}">${esc(o)}</button>`).join('')}</div>
       <p class="muted" style="font-size:14px">Выбрано ${sel.length} из ${st.max}</p>
-      <div class="actions">${hintBtn(st.hint)}<button class="btn" id="nx" ${sel.length<st.min?'disabled':''}>Выбрать</button></div></section>`;
+      ${ok?`<div class="own"><label for="ownin">${esc(st.own.label)}</label><input id="ownin" maxlength="40" autocomplete="off" placeholder="${esc(st.own.ph||'')}" value="${esc(S.own[ok]||'')}"><small>${esc(OWN_NOTE)}</small></div>`:''}
+      <div class="actions">${hintBtn(st.hint)}<button class="btn" id="nx" ${sel.length<need()?'disabled':''}>Выбрать</button></div></section>`;
     wireHint(st.hint);
     stage.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const o=st.options[+c.dataset.i];
       if(sel.includes(o))sel=sel.filter(x=>x!==o);else if(sel.length<st.max)sel.push(o);else{sel.shift();sel.push(o)}
       sfx.tap();draw()});
-    $('#nx').onclick=()=>{S[st.key]=sel;addSparks(15,$('#nx'));sfx.good();next()};
+    const inp=$('#ownin');if(inp)inp.oninput=()=>{S.own[ok]=inp.value.slice(0,40);save();$('#nx').disabled=sel.length<need()};
+    $('#nx').onclick=()=>{S[st.key]=sel;if(ok)S.own[ok]=ownVal();addSparks(15,$('#nx'));sfx.good();next()};
   };draw();
 }
 function rQuote(st){
@@ -249,7 +289,7 @@ function artHTML(a){
 function rCard(st){
   stage.innerHTML=`<section class="scene">${head()}<article class="card">
     <span class="kicker">${esc(st.kicker)}</span><h2 class="h2">${esc(st.title)}</h2>
-    ${st.heb?`<div class="bigheb" lang="he">${st.heb}</div>`:''}${artHTML(st.art)}${st.body}</article>
+    ${st.heb?`<div class="bigheb" lang="he">${st.heb}</div>`:''}${st.pic?`<div class="pic" aria-hidden="true">${st.pic}</div>`:''}${artHTML(st.art)}${st.body}</article>
     <div class="actions"><button class="btn" id="nx">${esc(st.btn||'Далее')}</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();addSparks(5);next()};
 }
@@ -303,10 +343,10 @@ function gTreasure(){
     };ar.appendChild(b);
   };
   const done=()=>{if(!document.body.contains(ar))return;addSparks(25,ar);
-    $('#out').innerHTML=`${sayHTML(M,'Шкала «Собрано» полная. А что ты заметил?')}<div class="opts" style="margin-top:12px">${['Вторая шкала почти не растёт','Надо собрать ещё больше','Кажется, игра сломалась'].map((t,i)=>optHTML({t},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
-    const R=['Ты это заметил сам. Собранного становится больше, а чувство «хватает» возвращается на место.','Давай проверим: вот ещё сто. Вторая шкала всё равно стоит на месте. Интересно, правда?','Игра работает. Это не ошибка: так устроена вторая шкала. Любопытно, почему.'];
+    $('#out').innerHTML=`${sayHTML(M,T('Шкала «Собрано» полная. А что ты {заметил|заметила}?'))}<div class="opts" style="margin-top:12px">${['Вторая шкала почти не растёт','Надо собрать ещё больше','Кажется, игра сломалась'].map((t,i)=>optHTML({t},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
+    const RR=['Ты это {заметил сам|заметила сама}. Собранного становится больше, а чувство «хватает» возвращается на место.','Давай проверим: вот ещё сто. Вторая шкала всё равно стоит на месте. Интересно, правда?','Игра работает. Это не ошибка: так устроена вторая шкала. Любопытно, почему.'];
     stage.querySelectorAll('#out .opt').forEach(b=>b.onclick=()=>{stage.querySelectorAll('#out .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});addSparks(10,b);sfx.good();
-      $('#o2').innerHTML=`<div class="resp"><span class="who">Что произошло</span><p>${R[+b.dataset.i]}</p></div>`;
+      $('#o2').innerHTML=`<div class="resp"><span class="who">Что произошло</span><p>${esc(T(RR[+b.dataset.i]))}</p></div>`;
       $('#act').innerHTML=`<button class="btn" id="nx">Продолжить</button>`;$('#nx').onclick=()=>{sfx.tap();next()}});
     $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
   };
@@ -402,22 +442,22 @@ function gCircles(){
 }
 
 function strengthMap(s){
-  const L=s.lab,q=s.qualities||[];const list=a=>a.map(esc).join(', ');
+  const L=s.lab,q=myQualities();const list=a=>a.map(esc).join(', ');
   const combos=[[/идеи|рисовать|писать/,'создавать что-то новое и полезное для других'],[/объяснять/,'помогать другим понять сложное'],[/слушать/,'быть рядом, когда кому-то трудно'],[/организовывать/,'собирать людей вместе и доводить дело до конца'],[/задачи|мастерить|детали/,'находить решения, которые другие не замечают'],[/спорт/,'заряжать других энергией и командным духом']];
   const joined=(L.can||[]).join(' ');const c=combos.find(x=>x[0].test(joined));
   const parts=[];
-  if(q.length)parts.push(`<p>Похоже, ты ${list(q)}.</p>`);
+  if(q.length)parts.push(`<p>Ты ${T('{отметил|отметила}')} в себе: ${list(q)}.</p>`);
   if(L.can.length)parts.push(`<p>У тебя хорошо получается: ${list(L.can)}.</p>`);
   if(L.like.length)parts.push(`<p>Тебе нравится: ${list(L.like)}.</p>`);
   if(L.need.length)parts.push(`<p>Ты замечаешь, что людям рядом нужно: ${list(L.need)}${L.help.length?'. И ты можешь помочь: '+list(L.help):''}.</p>`);
   parts.push(`<p style="font-size:19px;font-weight:600;color:var(--etrog)">Возможно, одна из твоих сильных сторон — ${c?c[1]:'делать мир вокруг чуть лучше своим способом'}.</p>`);
-  if(s.ans.flow)parts.push(`<p class="muted">Попробуй обратить внимание, когда время летит незаметно. Ты сказал: «${esc(s.ans.flow)}». Это стоит исследовать.</p>`);
+  if(s.ans.flow)parts.push(`<p class="muted">Попробуй обратить внимание, когда время летит незаметно. Ты ${T('{сказал|сказала}')}: «${esc(s.ans.flow)}». Это стоит исследовать.</p>`);
   parts.push(`<p class="muted" style="font-size:14px">Раввин Шнеор Ашкенази рассказывал: однажды он почти перестал преподавать, ведь его уроки смотрели всего сто-двести человек. И тут он прочитал: «Никогда не прекращай делать то, в чём ты хорош». Он не бросил.</p>`);
   return parts.join('');
 }
 
 function gFinal(){
-  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,'Вот он, большой пазл. Здесь все, кого ты встретил в пути. Каждый на своём месте. Одного места не хватает.')}
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,T('Вот он, большой пазл. Здесь все, кого ты {встретил|встретила} в пути. Каждый на своём месте. Одного места не хватает.'))}
     <div class="bigboard" id="bb">${BOARD.map((b,i)=>b[1]?`<div class="bp" style="background:${b[1]};animation-delay:${i*.06}s">${b[0]}</div>`:`<div class="bp me" id="me">${esc(heroName())}?</div>`).join('')}</div>
     <div class="actions" id="act"><button class="btn" id="put">Вставить свою деталь</button></div></section>`;
   $('#put').onclick=()=>{const me=$('#me');me.classList.add('in');me.innerHTML=avatar(S.hero);sfx.ach();
@@ -446,7 +486,7 @@ function renderDone(){
 function renderMap(){
   S._last='map';
   const firstOpen=S.done.findIndex(d=>!d);
-  const prologueDone=S.ps>=PROLOGUE.length;
+  const prologueDone=S.ps>=PRO().length;
   stage.innerHTML=`<section class="scene">
     <span class="kicker">Карта путешествия</span><h2 class="h2">Семь миров книги Коэлет</h2>
     <div class="progress-wrap"><div class="pieces">${S.done.map(d=>pieceSvg(d?'var(--gold)':'none',d?'':'#b3c7bd')).join('')}</div>
@@ -456,25 +496,25 @@ function renderMap(){
       return `<button class="node ${d?'done':''} ${o?'open':''}" data-w="${i}" ${lock?'disabled':''}><span class="disc">${d?pieceSvg('var(--gold)'):lock?'🔒':i+1}</span><span style="min-width:0"><span class="st">${d?'Пройден · можно снова':o?'Открыт':'Закрыт'}</span><br><span class="nm">${esc(w.name)}</span><br><span class="ds">${esc(w.desc)}</span></span></button>`}).join('')}</div>
     ${S.done.every(Boolean)?`<div class="actions"><button class="btn" id="fin">Мой Хелек</button></div>`:''}
   </section>`;
-  const pro=$('#pro');if(pro)pro.onclick=()=>{S.ps=Math.min(S.ps,PROLOGUE.length-1);go('prologue')};
+  const pro=$('#pro');if(pro)pro.onclick=()=>{S.ps=Math.min(S.ps,PRO().length-1);go('prologue')};
   stage.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{S.w=+b.dataset.w;S.s=0;sfx.good();go('world')});
   const f=$('#fin');if(f)f.onclick=()=>go('final');
 }
 const CITY_LABEL={wealth:'богатство',fame:'популярность',mind:'ум',power:'власть',beauty:'красивую жизнь',adventure:'приключения'};
 function fmtDate(iso){try{return new Date(iso||Date.now()).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}catch(e){return ''}}
-function strengthsList(){const q=S.qualities||[];const stem=x=>x.slice(0,6);
+function strengthsList(){const q=myQualities();const stem=x=>x.slice(0,6);
   const extra=(S.lab.can||[]).filter(x=>!q.some(y=>stem(y)===stem(x)||y.includes(x.split(' ').pop()))).slice(0,2);return [...q,...extra].slice(0,5)}
 function worldReport(){
   const lit=Object.keys(S.tools).map(k=>TOOLS[k][0]+' '+TOOLS[k][1].toLowerCase());
-  return [
-    ['Город успеха',S.city?`Ты выбрал ${CITY_LABEL[S.city]}. Вечером ответил: «${S.ans.evening||'—'}».`:'—','Можно получить всё и всё равно чувствовать, что чего-то не хватает.'],
-    ['Пазл',`Нашёл все 8 слов חֵלֶק. Твои качества: ${(S.qualities||[]).join(', ')||'—'}.`,'Каждый получает свою деталь, и никто — весь пазл.'],
-    ['Зеркало',`В ${S.mi||0} из 4 зеркал ты помог герою увидеть свою силу.`,'Чужая сильная сторона не делает твою слабее.'],
-    ['Эфраим и Менаше',`Когда друг получил награду, ты решил: «${S.ans.awardAct||'—'}».`,'Если у другого есть свой дар, твой от этого не исчезает.'],
+  return R([
+    ['Город успеха',S.city?`Ты {выбрал|выбрала} ${CITY_LABEL[S.city]}. Вечером {ответил|ответила}: «${S.ans.evening||'—'}».`:'—','Можно получить всё и всё равно чувствовать, что чего-то не хватает.'],
+    ['Пазл',`{Нашёл|Нашла} все 8 слов חֵלֶק. Твои качества: ${myQualities().join(', ')||'—'}.`,'Каждый получает свою деталь, и никто — весь пазл.'],
+    ['Зеркало',`Ты {помог|помогла} героям зеркал разобраться, что с ними происходит, и {увидел|увидела}, к чему ведёт каждый выбор.`,'Чужая сильная сторона не делает твою слабее.'],
+    ['Эфраим и Менаше',`Когда друг получил награду, ты {решил|решила}: «${S.ans.awardAct||'—'}».`,'Если у другого есть свой дар, твой от этого не исчезает.'],
     ['Мастерская',lit.length?`Загорелись инструменты: ${lit.join(', ')}.`:'Инструменты ещё ждут тебя.','У каждого свои инструменты. Важно понять, для чего они тебе.'],
     ['Лаборатория Хелека',`Время летит незаметно, когда: ${(S.ans.flow||'—').toLowerCase()}. Получается: ${(S.lab.can||[]).join(', ')||'—'}.`,'Где встречаются «умею», «люблю» и «нужно другим», там может быть твоя доля.'],
     ['Одна деталь',`Твой шаг на неделю: ${(S.ans.weekly||'—').toLowerCase()}.`,'Тебе не нужно собрать весь мир. Нужно найти свою деталь.']
-  ];
+  ]);
 }
 function wrapLines(ctx,text,maxW){const words=text.split(' ');const lines=[];let cur='';
   for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t}if(cur)lines.push(cur);return lines}
@@ -516,7 +556,7 @@ function renderFinal(){
   const rep=worldReport();
   stage.innerHTML=`<section class="scene final-grid">
     <div class="final-hero"><span class="kicker">Финал · ${esc(heroName())}</span><h1 class="h1">Твой <span style="color:var(--pome)">Хелек</span></h1>
-    <p class="lead">Ты обнаружил несколько своих сильных сторон. Это не готовый ответ на всю жизнь. Это подсказки, которые можно исследовать дальше.</p></div>
+    <p class="lead">Ты ${T('{обнаружил|обнаружила}')} несколько своих сильных сторон. Это не готовый ответ на всю жизнь. Это подсказки, которые можно исследовать дальше.</p></div>
 
     <article class="card cert-card"><div class="cert-head"><span class="kicker">Сертификат</span><span class="muted" style="font-size:14px">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">Имя на сертификате</label><input id="certname" maxlength="24" autocomplete="off" placeholder="Путник" value="${esc(S.hero.name)}"></div>
@@ -535,7 +575,7 @@ function renderFinal(){
       <div class="card"><span class="kicker">Твой следующий шаг</span><p class="h2" style="font-size:20px">${esc(S.ans.weekly||'Выбрать свой шаг')}</p><p class="muted">На этой неделе. Маленький, но настоящий.</p></div>
     </div>
 
-    <div class="card"><span class="kicker">Твоя фраза</span><p class="phrase" id="ph">${PHRASES[S.phrase]}</p><div class="actions"><button class="btn ghost small" id="nph">Другая фраза</button><button class="btn ghost small" id="cp">Скопировать</button></div></div>
+    <div class="card"><span class="kicker">Твоя фраза</span><p class="phrase" id="ph">${esc(T(PHRASES[S.phrase]))}</p><div class="actions"><button class="btn ghost small" id="nph">Другая фраза</button><button class="btn ghost small" id="cp">Скопировать</button></div></div>
 
     <section class="report"><div><span class="kicker">Отчёт о прохождении</span><h2 class="h2">Путь по семи мирам</h2>
       <p class="muted" style="font-size:15px">Начало: ${fmtDate(S.started)} · Финиш: ${fmtDate(S.finished)}</p></div>
@@ -547,23 +587,39 @@ function renderFinal(){
     <div class="card"><span class="kicker">Достижения</span>${achGrid()}</div>
 
     <div class="card talk-card"><span class="kicker">Для разговора дома или в классе</span>
-      <ol><li>Что у тебя получается так, что время летит незаметно?</li><li>Когда ты последний раз радовался чужому успеху? Что при этом чувствовал?</li><li>Кому рядом с тобой сейчас нужно то, что умеешь ты?</li><li>Какую «деталь» в нашей семье или классе можешь добавить только ты?</li></ol></div>
+      <ol><li>Что у тебя получается так, что время летит незаметно?</li><li>Когда ты последний раз ${T('{радовался|радовалась}')} чужому успеху? Что при этом чувствовал?</li><li>Кому рядом с тобой сейчас нужно то, что умеешь ты?</li><li>Какую «деталь» в нашей семье или классе можешь добавить только ты?</li></ol></div>
 
     <div class="actions"><button class="btn" id="map">Вернуться на карту</button><button class="btn ghost" id="again">Пройти заново</button></div>
     <div id="conf"></div>
-    <p class="foot">Для взрослых: игра основана на уроке раввина Шнеора Ашкенази «Тайна книги Коэлет». Источники: Коэлет 1:2, 3:22, 5:17–18, 9:9; Пиркей Авот 2:16, 4:1; Берешит 30:1, 48:14–20; Эстер 4:14; Бава Батра 75а. Ответы ребёнка хранятся только в этом браузере.</p>
+    <p class="foot">Для взрослых: игра основана на уроке раввина Шнеора Ашкенази «Тайна книги Коэлет». Источники: Коэлет 1:2, 3:22, 5:17–18, 9:9; Пиркей Авот 2:16, 4:1; Берешит 30:1, 48:14–20; Шмуэль I 18:7–9; Эстер 4:14; Бава Батра 21а, 75а. Два режима текстов: 8–11 и 12–15 лет. Ответы ребёнка хранятся только в этом браузере.</p>
   </section>`;
   let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;$('#cert').innerHTML=`<img src="${url}" alt="Сертификат о прохождении приключения «Тайна Коэлета» для ${esc(heroName())}">`};
   paint();
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
-  $('#nph').onclick=()=>{S.phrase=(S.phrase+1)%PHRASES.length;save();$('#ph').textContent=PHRASES[S.phrase];sfx.tap()};
-  $('#cp').onclick=()=>{const t=PHRASES[S.phrase];const ok=()=>{$('#cp').textContent='Скопировано'};
+  $('#nph').onclick=()=>{S.phrase=(S.phrase+1)%PHRASES.length;save();$('#ph').textContent=T(PHRASES[S.phrase]);sfx.tap()};
+  $('#cp').onclick=()=>{const t=T(PHRASES[S.phrase]);const ok=()=>{$('#cp').textContent='Скопировано'};
     try{navigator.clipboard.writeText(t).then(ok,()=>{selectText($('#ph'))})}catch(e){selectText($('#ph'))}};
   $('#map').onclick=()=>go('map');
   $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>Начать всё сначала? Прогресс будет стёрт.</p><div class="actions"><button class="btn small" id="yes">Да</button><button class="btn ghost small" id="no">Отмена</button></div></div>`;
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
 }
 function selectText(el){try{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(e){}}
+
+/* ---------- озвучка (для младших) ---------- */
+function canSpeak(){try{return 'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!=='undefined'}catch(e){return false}}
+function stopReading(){try{if(canSpeak())speechSynthesis.cancel()}catch(e){}const b=stage.querySelector('[data-read]');if(b)b.textContent='🔈 Послушать'}
+function readAloud(btn){
+  if(!canSpeak())return;
+  if(speechSynthesis.speaking){stopReading();return}
+  const sel='.bubble .txt, .card .h2, .card p, .reveal .h1, .resp p, .wi b, .wi p, .lead, p.h2, .opt:not(.dim) .ot > span';
+  const txt=[...stage.querySelectorAll(sel)].filter(el=>!el.closest('[lang="he"]')).map(el=>el.textContent.trim()).filter(Boolean).join('. ');
+  if(!txt)return;
+  const u=new SpeechSynthesisUtterance(txt.replace(/[«»]/g,''));u.lang='ru-RU';u.rate=.95;
+  const v=speechSynthesis.getVoices().find(x=>/^ru/i.test(x.lang));if(v)u.voice=v;
+  u.onend=u.onerror=()=>{if(btn&&btn.isConnected)btn.textContent='🔈 Послушать'};
+  btn.textContent='⏹ Стоп';speechSynthesis.speak(u);
+}
+stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)readAloud(b)});
 
 /* ---------- boot ---------- */
 function start(data){
