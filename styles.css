@@ -551,3 +551,18 @@ a.btn{text-decoration:none}
 .soundbar b{display:block;font-family:var(--display);font-size:14px}
 .soundbar small{color:var(--muted);font-size:13px}
 .soundbar .btn{padding:10px 16px}
+
+/* Герой игрока: портрет в HUD и реплики справа — выбранный персонаж виден на всех экранах */
+.hero-chip{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:40%;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 12px 3px 3px;font-size:13px}
+.hero-chip .hero-av{width:32px;height:32px;flex:none;border-radius:50%;overflow:hidden}
+.hero-chip .hero-av svg{width:100%;height:100%;display:block}
+.hero-chip b{font-family:var(--display);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.say.me{grid-template-columns:minmax(0,1fr) 68px}
+.say.me .av{grid-column:2;grid-row:1}
+.say.me .bubble{grid-column:1;grid-row:1;justify-self:end;background:var(--etrog-soft);border-color:rgba(201,149,31,.35);border-radius:20px 20px 6px 20px}
+#out .say.me{margin-bottom:10px}
+@media (max-width:480px){
+  .say.me{grid-template-columns:minmax(0,1fr) 52px}
+  .hero-chip{padding-right:10px}.hero-chip b{max-width:110px}
+  #menubtn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}

@@ -50,7 +50,7 @@ function speaker(who,mood){
 }
 function sayHTML(who,text,mood){
   const sp=speaker(who,mood);
-  return `<div class="say ${sp.m?'m':''}"><div class="av">${sp.svg}</div><div class="bubble"><span class="who">${esc(sp.name)}</span><div class="txt">${text}</div></div></div>`;
+  return `<div class="say ${sp.m?'m':''}${who==='hero'?' me':''}"><div class="av">${sp.svg}</div><div class="bubble"><span class="who">${esc(sp.name)}</span><div class="txt">${text}</div></div></div>`;
 }
 
 function setMood(mood){const a=stage.querySelector('.say.m .av');if(a)a.innerHTML=mentorSvg(mood)}
@@ -136,7 +136,8 @@ function hud(){
   const show=!['title','create','welcome'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
-  h.innerHTML=`<span class="pill" title="${t('hud.sparksTitle')}">${icon('sparkle')}<b>${S.sparks}</b><span class="sr-only">${t('hud.sparks')}</span></span>
+  h.innerHTML=`<span class="hero-chip" title="${esc(heroName())}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b></span>
+  <span class="pill" title="${t('hud.sparksTitle')}">${icon('sparkle')}<b>${S.sparks}</b><span class="sr-only">${t('hud.sparks')}</span></span>
   <span class="pill" title="${t('hud.piecesTitle')}">${icon('puzzle')}<b>${pieces}/7</b><span class="sr-only">${t('hud.pieces')}</span></span><span class="grow"></span>
   <button class="iconbtn" id="menubtn" aria-haspopup="dialog">${icon('menu')}<span>${t('hud.menu')}</span></button>`;
   $('#menubtn').onclick=showMenu;
@@ -319,6 +320,7 @@ function renderCreate(){
 function renderWelcome(){
   stage.innerHTML=`<section class="scene">
     ${sayHTML(M,t('welcome.text',{name:esc(heroName())}),'open')}
+    ${sayHTML('hero',esc(t('welcome.me')))}
     <div class="actions"><button class="btn" id="go">${t('welcome.go')}</button><button class="btn ghost" id="back">${t('welcome.back')}</button></div>
   </section>`;
   $('#go').onclick=()=>{sfx.good();S.ps=0;go('prologue')};
@@ -387,7 +389,7 @@ function rChoice(st){
     if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+1;const tool=TOOLS[o.tool];extra=`<p class="lit">${icon(tool[0])}<b>${t('choice.toolLit',{name:tool[1]})}</b></p>`}
     addSparks(10,b);sfx.good();setMood('warm'); // искры одинаковые за любой ответ
     Voice.say([o.r,st.after,t('voice.continue')]);
-    $('#out').innerHTML=`<div class="resp"><span class="who">${t('choice.what')}</span><p>${esc(o.r)}</p>${extra}${st.after?`<p class="muted">${esc(st.after)}</p>`:''}</div>`;
+    $('#out').innerHTML=`${sayHTML('hero',esc(o.t))}<div class="resp"><span class="who">${t('choice.what')}</span><p>${esc(o.r)}</p>${extra}${st.after?`<p class="muted">${esc(st.after)}</p>`:''}</div>`;
     const tb=stage.querySelector('.toolbox');if(tb)tb.outerHTML=toolbox();
     const others=st.options.filter(x=>x!==o&&x.r!==o.r);
     $('#act').innerHTML=`${whatif&&others.length?`<button class="btn ghost small" id="wi">${t('choice.whatif')}</button>`:''}<button class="btn" id="nx">${t('btn.continueShort')}</button>`;
