@@ -155,22 +155,19 @@ function guideScreen(){
 }
 
 /* ---------- Настройки (меню и титульный экран) ---------- */
-function audioPanelHTML(compact){
-  const P = Audio_.prefs;
-  const toggles = `<button class="mitem" data-audio="music" aria-pressed="${P.music}">${icon(P.music ? 'note' : 'mute')}<span>${t(P.music ? 'audio.musicOn' : 'audio.musicOff')}</span></button>
-    <button class="mitem" data-audio="voice" aria-pressed="${P.voice}">${icon(P.voice ? 'chat' : 'mute')}<span>${t(P.voice ? 'audio.voiceOn' : 'audio.voiceOff')}</span></button>`;
-  if (compact) {
-    const sw = (k, ic, on) => `<button class="swrow" role="switch" data-audio="${k}" aria-checked="${on}">${icon(on ? ic : 'mute')}<span>${t('audio.' + k)}</span><i class="switch" aria-hidden="true"></i></button>`;
-    return `<div class="audiopanel compact" role="group" aria-label="${t('audio.title')}"><span class="kicker">${t('audio.title')}</span>${sw('music', 'note', P.music)}${sw('voice', 'chat', P.voice)}</div>`;
-  }
+function audioPanelHTML(compact, opt){
+  const P = Audio_.prefs, o = opt || {};
+  const sw = (k, ic, on) => `<button class="swrow" role="switch" data-audio="${k}" aria-checked="${on}">${icon(on ? ic : 'mute')}<span>${t('audio.' + k)}</span><i class="switch" aria-hidden="true"></i></button>`;
+  const head = `<span class="kicker">${o.title || t('audio.title')}</span>${o.pre || ''}${sw('music', 'note', P.music)}${sw('voice', 'chat', P.voice)}`;
+  if (compact) return `<div class="audiopanel compact" role="group" aria-label="${t('audio.title')}">${head}</div>`;
   const opts = [['all', t('audio.all')], ...Audio_.tracks.map(tr => [tr.id, Music.title(tr)])];
-  return `<div class="audiopanel" role="group" aria-label="${t('audio.title')}"><span class="kicker">${t('audio.title')}</span>
-    <div class="menu-list">${toggles}</div>
+  return `<div class="audiopanel" role="group" aria-label="${o.title || t('audio.title')}">${head}
     ${Audio_.tracks.length ? `<span class="lbl" id="trk">${t('audio.track')}</span>
     <div class="chips" role="group" aria-labelledby="trk">${opts.map(([id, name]) => `<button class="chip ${P.track === id ? 'on' : ''}" data-track="${id}" aria-pressed="${P.track === id}">${esc(name)}</button>`).join('')}</div>
     <label class="lbl" for="vol">${t('audio.volume')}</label><input type="range" id="vol" min="0" max="100" step="5" value="${Math.round(P.volume * 100)}">
     <small class="muted">${t('audio.credit')}</small>` : ''}</div>`;
 }
+
 function wireAudioPanel(root, redraw){
   root.querySelectorAll('[data-audio]').forEach(b => b.onclick = () => {
     Audio_.unlocked = true;

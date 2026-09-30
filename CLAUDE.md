@@ -71,6 +71,7 @@ Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's
 - Icons only from `ICONS` in `art.js` (`icon('name')`), no emoji. The Keeper's moods: `smile`, `joy`, `think`, `wow`, `warm`, `point`.
 - Hero screen: age and boy/girl are required, numbered blocks; «Готово» without them turns the missing block red with a hint (`--err`), scrolls to it and speaks the hint.
 - Contrast WCAG AA; mobile first (375 px wide), one-line HUD, final screen in tabs.
+- HUD: the hero chip (top left) opens `showProfile()` — level, progress, achievements; the menu button (top right) opens `showMenu()` — navigation, sound switches, language, «О приложении», donate link. Both are bottom sheets built with `openSheet()` (title + ✕, Escape, tap outside).
 - New world visuals: add a theme to `THEMES`/`WORLD_THEME` and a backdrop to `SCENES` in `art.js`.
 
 ## Git

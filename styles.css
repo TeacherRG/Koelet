@@ -578,3 +578,20 @@ a.btn{text-decoration:none}
 @keyframes beat{0%,70%,100%{transform:scale(1)}78%{transform:scale(1.12)}86%{transform:scale(1)}92%{transform:scale(1.08)}}
 @media (prefers-reduced-motion:reduce){.donate{animation:none}}
 @media print{.donate{display:none}}
+
+/* Sheets: title row with ✕, hero profile, main menu */
+.modal .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:-22px;z-index:1;margin:-22px -22px -6px;padding:14px 16px 8px 22px;background:var(--sunk);border-radius:26px 26px 0 0}
+.sheet-h{margin:0;font-family:var(--display);font-size:20px;font-weight:700}
+.menu-sec{display:flex;flex-direction:column;gap:8px}
+.sheet.menu .audiopanel{gap:8px}
+.menu-foot{display:flex;flex-direction:column;border-bottom:1px solid var(--line)}
+.menu-foot .donate-link{color:var(--pome);text-decoration:none}
+.hero-chip{cursor:pointer;color:inherit;font:inherit;font-size:13px;transition:border-color .15s,box-shadow .15s}
+.hero-chip:hover{border-color:var(--etrog);box-shadow:0 0 0 3px var(--etrog-soft)}
+.prof-top{display:flex;align-items:center;gap:14px}
+.prof-av{width:76px;height:76px;flex:none;border-radius:24px;overflow:hidden;background:var(--panel);border:2px solid var(--etrog)}
+.prof-av svg{width:100%;height:100%;display:block}
+.prof-name{display:flex;flex-direction:column;gap:4px;min-width:0}
+.prof-name b{font-family:var(--display);font-size:22px;overflow-wrap:anywhere}
+.prof-name span{color:var(--muted);font-size:14px;font-weight:600}
+.modal .sheet.still{animation:none}

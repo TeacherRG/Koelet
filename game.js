@@ -136,39 +136,62 @@ function hud(){
   const show=!['title','create','welcome'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
-  h.innerHTML=`<span class="hero-chip" title="${esc(heroName())}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b></span>
+  h.innerHTML=`<button class="hero-chip" id="herobtn" aria-haspopup="dialog" title="${t('hud.profile')}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b><span class="sr-only">${t('hud.profile')}</span></button>
   <span class="pill" title="${t('hud.sparksTitle')}">${icon('sparkle')}<b>${S.sparks}</b><span class="sr-only">${t('hud.sparks')}</span></span>
   <span class="pill" title="${t('hud.piecesTitle')}">${icon('puzzle')}<b>${pieces}/7</b><span class="sr-only">${t('hud.pieces')}</span></span><span class="grow"></span>
   <button class="iconbtn" id="menubtn" aria-haspopup="dialog">${icon('menu')}<span>${t('hud.menu')}</span></button>`;
+  $('#herobtn').onclick=showProfile;
   $('#menubtn').onclick=showMenu;
 }
-function showMenu(){
-  const L=lvl(),into=L>=LEVELS.length?100:(S.sparks%130)/130*100;
+/* Bottom sheet with a title and ✕; closes on ✕, Escape or a tap outside and returns focus */
+function openSheet(cls,title,body,wire){
   const m=document.createElement('div');m.className='modal';
-  const draw=()=>{m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${t('hud.menu')}">
-    <div class="menu-lvl"><span class="kicker">${t('menu.level',{n:L})}</span><b>${T(LEVELS[L-1])}</b><div class="bar"><i style="width:${into}%"></i></div><small>${t('menu.stats',{sparks:S.sparks,pieces:S.done.filter(Boolean).length})}</small></div>
-    <div class="menu-list">
+  const back=document.activeElement;const close=()=>{m.remove();if(back&&back.isConnected)back.focus()};
+  let drawn=false;
+  const draw=()=>{
+    const a=document.activeElement,keep=a&&m.contains(a)&&['m','audio','track','lang'].map(k=>a.dataset[k]!==undefined&&`[data-${k}="${a.dataset[k]}"]`).find(Boolean);
+    m.innerHTML=`<div class="sheet ${cls}${drawn?' still':''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">
+    <div class="sheet-head"><h2 class="sheet-h" id="sheet-h">${title}</h2><button class="iconbtn qx" id="closeM" aria-label="${esc(t('btn.close'))}">✕</button></div>
+    ${body()}</div>`;
+    m.querySelector('#closeM').onclick=close;
+    if(wire)wire(m,draw,close);
+    const f=keep&&m.querySelector(keep);if(f)f.focus();
+    drawn=true;
+  };
+  document.body.appendChild(m);draw();m.querySelector('#closeM').focus();
+  m.onclick=e=>{if(e.target===m)close()};
+  m.onkeydown=e=>{if(e.key==='Escape')close()};
+}
+/* Hero chip → the hero's own progress: level, sparks, pieces and achievements */
+function showProfile(){
+  const L=lvl(),into=L>=LEVELS.length?100:(S.sparks%130)/130*100;
+  openSheet('profile',t('profile.title'),()=>`
+    <div class="prof-top"><div class="prof-av">${avatar(S.hero)}</div><div class="prof-name"><b>${esc(heroName())}</b><span>${t('menu.level',{n:L})} · ${T(LEVELS[L-1])}</span></div></div>
+    <div class="menu-lvl"><div class="bar"><i style="width:${into}%"></i></div><small>${t('menu.stats',{sparks:S.sparks,pieces:S.done.filter(Boolean).length})}</small></div>
+    <div class="menu-sec"><span class="kicker">${t('ach.count',{n:Object.keys(S.ach).length})}</span>${achGrid()}</div>
+    <p class="muted" style="font-size:14px">${t('ach.note')}</p>`);
+}
+/* Main menu: navigation first, then sound and language, then info and support */
+function showMenu(){
+  const sfxRow=`<button class="swrow" role="switch" data-m="snd" aria-checked="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sfx')}</span><i class="switch" aria-hidden="true"></i></button>`;
+  openSheet('menu',t('hud.menu'),()=>`
+    <nav class="menu-list" aria-label="${t('hud.menu')}">
       ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
-      <button class="mitem" data-m="snd" aria-pressed="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sound',{state:t(S.sound?'menu.on':'menu.off')})}</span></button>
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
-      <button class="mitem" data-m="about">${icon('info')}<span>${t('about.title')}</span></button>
-    </div>
-    ${audioPanelHTML()}
+    </nav>
+    ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow})}
     ${langPicker()}
-    <div><span class="kicker">${t('ach.count',{n:Object.keys(S.ach).length})}</span>${achGrid()}</div>
-    <p class="muted" style="font-size:14px">${t('ach.note')}</p>
-    <button class="btn ghost" id="closeM">${t('btn.close')}</button></div>`;
+    <div class="menu-foot">
+      <button class="qlink" data-m="about">${icon('info')}<span>${t('about.title')}</span></button>
+      <a class="qlink donate-link" href="${DONATE_URL}" target="_blank" rel="noopener">${icon('heart')}<span>${t('donate.label')}</span></a>
+    </div>`,
+  (m,draw,close)=>{
     wireLangPicker(m,()=>{draw();hud();render()});
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
       m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout()});
-    const c=m.querySelector('#closeM');c.onclick=()=>{m.remove();const mb=$('#menubtn');if(mb)mb.focus()};(m.querySelector('.mitem')||c).focus();
-  };
-  const back=document.activeElement;const close=()=>{m.remove();if(back&&back.isConnected)back.focus()};
-  document.body.appendChild(m);draw();
-  m.onclick=e=>{if(e.target===m)close()};
-  m.onkeydown=e=>{if(e.key==='Escape')close()};
+  });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
 /* ---------- выбор языка ---------- */
