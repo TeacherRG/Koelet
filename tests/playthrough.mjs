@@ -199,6 +199,22 @@ async function run(browser, base, sc) {
       await page.click('#closeM');
       if (await has('.sheet.profile')) add('profile did not close with ✕');
     }
+    // «К Шабату» from the menu: six A4 sheets, nothing spills over the page, print gets them all, «Назад» returns
+    await page.click('#menubtn'); await page.click('[data-m="shab"]');
+    const sh = await page.evaluate(() => ({screen: S.screen, thumbs: document.querySelectorAll('.shab-thumb .pp').length, text: document.querySelector('#stage').innerText}));
+    if (sh.screen !== 'shabbat' || sh.thumbs !== 6) add(`«К Шабату»: screen "${sh.screen}", ${sh.thumbs} sheets instead of 6`);
+    for (const p of textProblems(sh.text, sc.lang)) add(`[shabbat] ${p}`);
+    await snap('shabbat');
+    await page.evaluate(() => { window.__printed = -1; window.print = () => { window.__printed = document.querySelectorAll('#print-area .pp').length; }; });
+    await page.click('#shprint');
+    await page.waitForFunction(() => window.__printed >= 0, null, {timeout: 5000}).catch(() => {});
+    const pr = await page.evaluate(() => ({n: window.__printed, text: document.querySelector('#print-area').innerText,
+      over: [...document.querySelectorAll('.shab-thumb .pp-body')].filter(b => b.scrollHeight > b.clientHeight + 1).map(b => b.parentElement.className)}));
+    if (pr.n !== 6) add(`«К Шабату»: ${pr.n} sheets sent to print instead of 6`);
+    if (pr.over.length) add('«К Шабату»: content does not fit the A4 sheet: ' + pr.over.join(', '));
+    for (const p of textProblems(pr.text, sc.lang)) add(`[shabbat/print] ${p}`);
+    await page.click('#shback');
+    if (await page.evaluate(() => S.screen) !== 'final') add('«К Шабату»: «Назад» did not return to the final screen');
   }
   await ctx.close();
   return {name, steps, problems: [...problems]};
