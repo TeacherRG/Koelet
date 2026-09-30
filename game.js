@@ -278,7 +278,7 @@ function toolbox(){if(!(S.screen==='world'&&WORLDS[S.w].tools))return '';
   return `<div class="toolbox" aria-label="${t('toolbox.label')}">${Object.entries(TOOLS).map(([k,t])=>`<div class="tool ${S.tools[k]?'on':''}" title="${t[1]}" aria-label="${t[1]}">${icon(t[0])}${S.tools[k]>1?`<sup>${S.tools[k]}</sup>`:''}</div>`).join('')}</div>`}
 
 function renderStep(){
-  let st=steps()[idx()];if(typeof st==='function')st=st(S);if(st&&st.__dynamic)st=resolveDynamic(st);st=R(st);
+  let st=steps()[idx()];if(typeof st==='function')st=st(S);if(st&&(st.__dynamic||(st.body&&st.body.__dynamic)))st=resolveDynamic(st);st=R(st);
   S._last=S.screen;
   const fn={talk:rTalk,choice:rChoice,multi:rMulti,quote:rQuote,card:rCard,reveal:rReveal,mini:rMini}[st.type];
   fn(st);

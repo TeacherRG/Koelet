@@ -2,6 +2,15 @@
 
 Game text is stored per language in `/content/<lang>/`: shared labels and settings are in `shared.json`, the introduction is in `prologue.json`, and each of the seven worlds has its own JSON file. Interface strings (buttons, menus, certificate, mini-games) are in `/locales/<lang>.json`. Run the game through a web server so the browser can load these files.
 
+## Run and test
+
+- `npm start` — local server at http://localhost:8080 (no dependencies).
+- `npm test` — syntax check, data check for all languages, and a full playthrough in Chromium for ru/uk/de, both age groups. Needs `npm install` once (Playwright).
+- `npm run test:data` — fast check of texts only (no browser): catches missing translations, broken JSON, wrong placeholders or gender forms.
+- `npm run test:play -- --shots` — playthrough with screenshots of every screen in `tests/screenshots/`.
+
+Project rules for contributors and Claude Code are in `CLAUDE.md`.
+
 ## Languages
 
 Available: Russian (`ru`, default), Ukrainian (`uk`) and German (`de`). The game picks the saved language, otherwise the browser language, otherwise Russian. Players can switch on the title screen and in the menu.
