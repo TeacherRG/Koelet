@@ -419,6 +419,23 @@ a.btn{text-decoration:none}
 .banner .dots{background:rgba(255,255,255,.95);padding:7px 9px;border-radius:999px}
 .sheet .achs{grid-template-columns:repeat(2,minmax(0,1fr))}
 
+/* Настоящий пазл (headbreaker) */
+.jig{position:relative;width:100%;min-height:260px;border-radius:18px;background:radial-gradient(circle at 50% 40%,#fffdf6,#efe7d3);border:1px solid var(--line);overflow:hidden;touch-action:none;box-shadow:inset 0 2px 10px rgba(23,40,46,.08)}
+.jig canvas{display:block}
+.jig-wait{padding:24px;text-align:center}
+.jig.solved{border-color:var(--gold-edge);box-shadow:0 0 0 4px var(--etrog-soft),inset 0 2px 10px rgba(23,40,46,.08)}
+
+/* Настоящее зеркало (камера) */
+.selfmirror{display:flex;flex-direction:column;align-items:center;gap:12px}
+.sm-frame{width:min(280px,76vw);aspect-ratio:3/4;border-radius:50%/42%;padding:14px;background:linear-gradient(135deg,#f3dc97,#b8862b 30%,#f6e3a6 55%,#a9761f 80%,#e8c979);box-shadow:0 18px 36px -18px rgba(23,40,46,.6),inset 0 0 0 3px rgba(255,255,255,.35)}
+.sm-glass{position:relative;width:100%;height:100%;border-radius:50%/42%;overflow:hidden;background:radial-gradient(circle at 50% 35%,#ffffff,#d9e5f1);box-shadow:inset 0 0 0 3px rgba(90,60,10,.35)}
+.sm-glass::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(125deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,0) 35%,rgba(255,255,255,0) 70%,rgba(255,255,255,.18) 100%);pointer-events:none}
+.sm-avatar,.sm-avatar svg{width:100%;height:100%;display:block}
+.sm-video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+.sm-cap{min-height:1.4em;font-family:var(--display);font-weight:700;font-size:17px;text-align:center;color:var(--accent);text-wrap:balance}
+.sm-note{font-size:14px;display:flex;gap:8px;align-items:flex-start}
+.sm-note .ico{flex:none;margin-top:2px;color:var(--accent)}
+
 /* Выбор языка */
 .langpick{display:flex;flex-direction:column;gap:6px}
 .langpick.title{align-self:flex-end;width:min(360px,100%)}

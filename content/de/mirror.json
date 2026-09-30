@@ -180,6 +180,10 @@
       "game": "sky"
     },
     {
+      "type": "mini",
+      "game": "selfmirror"
+    },
+    {
       "type": "choice",
       "who": "mentor",
       "text": "Was hast du im Spiegelsaal bemerkt?",

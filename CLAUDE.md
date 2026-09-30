@@ -1,0 +1,64 @@
+# Koelet — «Тайна Коэлета»
+
+Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's lesson on the Book of Kohelet. Plain HTML/CSS/JS, no framework and no build step. The team talks in Russian; answer in Russian unless asked otherwise.
+
+## Run and test
+
+- `npm start` → http://localhost:8080. The game loads its texts with `fetch()`, so it **must** run over http, not `file://`. The camera (mirror) works only on `localhost` or `https://`.
+- `npm run lint` — `node --check` for every script, JSON validity (skips `vendor/`).
+- `npm run test:data` — fast, no browser. Compares every language with Russian: keys, structure, technical values, `{{placeholders}}`, gender forms, alphabet.
+- `npm run test:quick` — plays the whole game in Chromium once per language (~1 min).
+- `npm run test:play` — all 6 scenarios (ru/uk/de × 8–11 girl / 12–15 boy), ~2 min. Options: `--lang=de`, `--quick`, `--shots` (screenshots of every screen → `tests/screenshots/`, gitignored), `--headed`.
+- `npm test` — all of the above. Run it before every commit that touches game code or texts.
+- Cloud sessions: `.claude/hooks/session-start.sh` installs Playwright (pinned to 1.56.1, browsers are preinstalled in `/opt/pw-browsers`; never run `playwright install`).
+- If the playthrough gets stuck on a new screen type, teach the driver loop in `tests/playthrough.mjs` how to pass it.
+
+## Files
+
+| File | What it is |
+|---|---|
+| `index.html` | Page shell; loads scripts in order: `i18n.js` → `game-data.js` → `art.js` → `game.js` |
+| `i18n.js` | Language module: `LANGS`, `t('key', {vars})`, `tl('key')`, language detection, `loadLang()`/`setLang()` |
+| `game-data.js` | Loads texts for the chosen language (falls back to Russian) |
+| `game.js` | Runtime: state `S` (localStorage `koelet-game-v1`), screens, step engine, mini-games, certificate |
+| `art.js` | Icon set (`ICONS`, `icon()`), the Keeper (`mentorSvg(mood)`), world themes and backdrops (`SCENES`) |
+| `styles.css` | All styles; colours are CSS variables, world accent in `--accent` |
+| `content/<lang>/*.json` | Story: `shared.json` (lists, labels), `prologue.json`, one file per world |
+| `locales/<lang>.json` | Interface strings (buttons, menu, mini-games, certificate, report) |
+| `vendor/headbreaker.js` | Third-party jigsaw library (headbreaker 3.0.0 + Konva 6.0.0), loaded only on the puzzle step. Do not edit; licenses in `vendor/LICENSES.md` |
+| `tools/`, `tests/` | Dev server, lint, data check, browser playthrough |
+
+## Texts and languages (the most common source of mistakes)
+
+- Languages: `ru` (reference, default), `uk`, `de`. **Every text change must be made in all three languages**: `content/ru|uk|de/…` and `locales/ru|uk|de.json` have identical keys and structure. `npm run test:data` catches gaps.
+- Never hard-code visible text in `game.js`: add a key to all three `locales/*.json` and use `t('key')` / `tl('key')` (for lists, objects and age variants). Escape user input with `esc()`.
+- Gender of the player: `{boy form|girl form}` inside a string, e.g. `ты {прошёл|прошла}`, `{Wanderer|Wanderin}`. Resolved by `T()`; `t()` and step data (via `R()`) apply it automatically. Ukrainian needs forms wherever Russian has them; German rarely does.
+- Age groups: `{"__ag": 1, "y": "8–11 text", "t": "12–15 text"}` for any value. A whole step only for one group: `"age": "y"` or `"age": "t"`. Texts for 8–11: 30–40 words per screen, 6 options + «Свой вариант».
+- Interface placeholders: `{{name}}` (not to be confused with gender forms).
+- Technical values in content JSON are never translated: `type`, `key`, `ic`, `game`, `art`, `mood`, `age`, `tool`, `who: "mentor"`, Hebrew in `he`/`heb`.
+- New language: copy `content/ru/` and `locales/ru.json`, translate, add a line to `LANGS` in `i18n.js`, add an alphabet rule to `tests/check-data.mjs` and scenarios to `tests/playthrough.mjs`.
+
+## Content rules (agreed with the rabbi and the pedagogue)
+
+- Chelek (доля) is a **gift from the Almighty**, not just «strengths». Write «Всевышний» / «Всевишній» / «G-tt», never «Бог».
+- Interpretations of Rav Ashkenazi are labelled as such («Рав Ашкенази объясняет…»); sources are cited precisely; the source list for adults is `final.foot` in the locales.
+- No «right answer» choices: every option gets the same sparks (10) and a nuanced outcome; «А что было бы, если…?» shows the others.
+- Emotional safety: no pressure, no rankings, no data leaves the device. Optional own-answer fields stay in localStorage.
+
+## Steps and mini-games
+
+- A world is `{name, desc, steps:[…]}`; step types: `talk`, `choice`, `multi`, `quote`, `card`, `reveal`, `mini` (see `renderStep()` in `game.js`). Dynamic steps use `__dynamic` (`city-year`, `city-evening`, or `body: {"__dynamic": "strength-map"}`) and are built in `resolveDynamic()`.
+- Mini-games are registered in `rMini()`: `book`, `treasure`, `find`, `puzzle` (real jigsaw), `selfmirror` (camera), `species`, `sky`, `hands`, `circles`, `final`.
+- Adding a step shifts step indices of saved games — that is acceptable, but add it in all three languages at the same position.
+- Camera (`selfmirror`): starts only after the button, stops in `render()` / on `pagehide` via `stopCamera()`; always keep the no-camera path.
+
+## Design
+
+- Icons only from `ICONS` in `art.js` (`icon('name')`), no emoji. The Keeper's moods: `smile`, `joy`, `think`, `wow`, `warm`, `point`.
+- Contrast WCAG AA; mobile first (375 px wide), one-line HUD, final screen in tabs.
+- New world visuals: add a theme to `THEMES`/`WORLD_THEME` and a backdrop to `SCENES` in `art.js`.
+
+## Git
+
+- Work on the branch given in the task; `main` is updated through PRs. Other contributors (including Copilot) also push to `main` — fetch and merge `origin/main` before opening a PR, then re-run `npm test`.
+- Commit messages in Russian, describing what changed for players and teachers.
