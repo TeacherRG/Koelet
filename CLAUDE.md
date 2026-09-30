@@ -59,7 +59,7 @@ Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's
 - Browsers block sound until the first tap, so every page load starts with the gate (`showGate()`): «Начать с музыкой» starts the music and speaks the greeting; «Без звука» turns both off for this visit only. Music and voice are **on at every page load**; only track and volume are saved.
 - A minute of silence (the Keeper is not speaking, the player taps nothing) → the Keeper asks «Тебе чем-то помочь?» (`voice.idle`) and repeats the screen's hint (`Voice.idle()`, `Voice.idleMs`).
 - After every `render()` the voice guide speaks the main text of the screen plus what to do (`guideParts()` in `music.js`). Hints are locale keys `voice.*`: one per step type (`voice.talk`, `voice.choice`, …) and one per mini-game (`voice.mini.<game>`). **A new step type or mini-game needs a `voice.*` key in all three locales.** After a choice the outcome is spoken.
-- Music ducks to 30 % while the voice speaks and pauses in a hidden tab. Settings (music, track, volume, voice) live in the menu and as quick toggles on the title screen; they are separate from game progress.
+- Music ducks to 30 % while the voice speaks and pauses in a hidden tab. Settings (music, track, volume, voice) live in the menu; the title screen has one settings button in the top corner that opens a popover (`quickMenu()` in `game.js`: language, music and voice switches, «О приложении»). They are separate from game progress.
 - New track: put the mp3 into `music/` (Latin file name) and add it to `music/tracks.json` with titles for every language. Only add music the project has the right to use.
 
 ## About window
@@ -69,6 +69,7 @@ Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's
 ## Design
 
 - Icons only from `ICONS` in `art.js` (`icon('name')`), no emoji. The Keeper's moods: `smile`, `joy`, `think`, `wow`, `warm`, `point`.
+- Hero screen: age and boy/girl are required, numbered blocks; «Готово» without them turns the missing block red with a hint (`--err`), scrolls to it and speaks the hint.
 - Contrast WCAG AA; mobile first (375 px wide), one-line HUD, final screen in tabs.
 - New world visuals: add a theme to `THEMES`/`WORLD_THEME` and a backdrop to `SCENES` in `art.js`.
 

@@ -159,7 +159,10 @@ function audioPanelHTML(compact){
   const P = Audio_.prefs;
   const toggles = `<button class="mitem" data-audio="music" aria-pressed="${P.music}">${icon(P.music ? 'note' : 'mute')}<span>${t(P.music ? 'audio.musicOn' : 'audio.musicOff')}</span></button>
     <button class="mitem" data-audio="voice" aria-pressed="${P.voice}">${icon(P.voice ? 'chat' : 'mute')}<span>${t(P.voice ? 'audio.voiceOn' : 'audio.voiceOff')}</span></button>`;
-  if (compact) return `<div class="audiopanel compact" role="group" aria-label="${t('audio.title')}">${toggles}</div>`;
+  if (compact) {
+    const sw = (k, ic, on) => `<button class="swrow" role="switch" data-audio="${k}" aria-checked="${on}">${icon(on ? ic : 'mute')}<span>${t('audio.' + k)}</span><i class="switch" aria-hidden="true"></i></button>`;
+    return `<div class="audiopanel compact" role="group" aria-label="${t('audio.title')}"><span class="kicker">${t('audio.title')}</span>${sw('music', 'note', P.music)}${sw('voice', 'chat', P.voice)}</div>`;
+  }
   const opts = [['all', t('audio.all')], ...Audio_.tracks.map(tr => [tr.id, Music.title(tr)])];
   return `<div class="audiopanel" role="group" aria-label="${t('audio.title')}"><span class="kicker">${t('audio.title')}</span>
     <div class="menu-list">${toggles}</div>
@@ -189,7 +192,7 @@ function showGate(onDone){
     <button class="btn" id="gate-go">${icon('note')}<span>${t('gate.go')}</span></button>
     <button class="btn ghost small" id="gate-quiet">${t('gate.quiet')}</button></div>`;
   document.body.appendChild(g);
-  const close = () => { g.remove(); onDone(); };
+  const close = () => { g.remove(); onDone(); if (typeof refreshQuickBtn === 'function') refreshQuickBtn(); };
   g.querySelector('#gate-go').onclick = () => {
     Audio_.unlocked = true;
     Audio_.prefs.music = Audio_.prefs.voice = true;
