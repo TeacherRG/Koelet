@@ -71,8 +71,45 @@ function applyTheme(){
 }
 
 /* ---------- sound (off by default) ---------- */
+/* Браузеры (Chrome, Safari, Firefox) не дают странице играть звук до жеста пользователя
+   и не показывают для этого запрос в адресной строке. Поэтому проверяем сами:
+   «будим» AudioContext на первом касании и, если браузер всё равно держит его на паузе,
+   показываем внутри страницы плашку с кнопкой «Включить звук» (нажатие = разрешение). */
 let actx=null;
-function tone(f,d,type,vol){if(!S.sound)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol||.05,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+d+.05)}catch(e){}}
+function getCtx(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){actx=null}return actx}
+async function unlockAudio(){
+  const c=getCtx();if(!c)return 'unsupported';
+  try{if(c.state!=='running')await Promise.race([c.resume(),new Promise(r=>setTimeout(r,800))])}catch(e){}
+  try{const b=c.createBuffer(1,1,22050),src=c.createBufferSource();src.buffer=b;src.connect(c.destination);src.start(0)}catch(e){}
+  return c.state==='running'?'ok':'blocked';
+}
+function soundBar(show){
+  let bar=$('#soundbar');
+  if(!show){if(bar)bar.remove();return}
+  if(bar)return;
+  bar=document.createElement('div');bar.id='soundbar';bar.className='soundbar';bar.setAttribute('role','alert');
+  bar.innerHTML=`<span class="ic">${icon('mute')}</span><div><b>${esc(t('sound.blocked'))}</b><small>${esc(t('sound.blockedSub'))}</small></div>
+    <button class="btn" id="sndon">${esc(t('sound.enable'))}</button><button class="iconbtn" id="sndoff" aria-label="${esc(t('btn.close'))}">✕</button>`;
+  document.body.appendChild(bar);
+  bar.querySelector('#sndon').onclick=async()=>{
+    S.sound=true;save();
+    const r=await unlockAudio();
+    if(r==='ok'){soundBar(false);sfx.good()}
+    else toast('mute',t('toast.soundBlocked'),t('sound.settings'));
+  };
+  bar.querySelector('#sndoff').onclick=()=>soundBar(false);
+}
+async function checkSound(){
+  if(!S.sound)return;
+  const r=await unlockAudio();
+  if(r==='unsupported'){toast('mute',t('toast.soundFail'),t('toast.soundFailSub'));return}
+  soundBar(r!=='ok');
+}
+/* первое касание / клавиша на странице — пробуем разрешить звук */
+['pointerdown','keydown','touchend'].forEach(ev=>document.addEventListener(ev,()=>{if(S.sound&&(!actx||actx.state!=='running'))checkSound()},{capture:true,passive:true}));
+function tone(f,d,type,vol){if(!S.sound)return;try{const c=getCtx();if(!c)return;
+  const play=()=>{const o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol||.05,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(c.destination);o.start(t);o.stop(t+d+.05)};
+  if(c.state==='running')play();else c.resume().then(()=>{if(c.state==='running')play()}).catch(()=>{})}catch(e){}}
 const sfx={tap:()=>tone(520,.09),good:()=>{tone(660,.16);setTimeout(()=>tone(880,.22),110)},soft:()=>tone(330,.18,'triangle',.04),ach:()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.28),i*120))};
 
 /* ---------- progress ---------- */
@@ -116,7 +153,7 @@ function showMenu(){
     <button class="btn ghost" id="closeM">${t('btn.close')}</button></div>`;
     wireLangPicker(m,()=>{draw();hud();render()});
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
-      if(k==='snd'){S.sound=!S.sound;save();sfx.good();draw();return}
+      if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
       m.remove();if(k==='map')go('map');if(k==='home')go('title')});
     const c=m.querySelector('#closeM');c.onclick=()=>{m.remove();const mb=$('#menubtn');if(mb)mb.focus()};(m.querySelector('.mitem')||c).focus();
   };
@@ -715,12 +752,20 @@ function readAloud(btn){
   if(!txt)return;
   const u=new SpeechSynthesisUtterance(txt.replace(/[«»„“]/g,''));u.lang=langLocale();u.rate=.95;
   const v=speechSynthesis.getVoices().find(x=>x.lang&&x.lang.toLowerCase().startsWith(LANG));if(v)u.voice=v;
-  u.onend=()=>{if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`};
+  let started=false;
+  u.onstart=()=>{started=true};
+  u.onend=()=>{started=true;if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`};
   u.onerror=e=>{
+    started=true;
     if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`;
     if(e.error==='not-allowed')toast('mute',t('toast.soundBlocked'),t('toast.soundBlockedSub'));
   };
   btn.innerHTML=icon('stop')+`<span>${t('read.stop')}</span>`;
+  /* Chrome на Android иногда «зависает» с паузой в очереди — сбрасываем и будим */
+  try{speechSynthesis.cancel();speechSynthesis.resume()}catch(e){}
+  unlockAudio();
+  /* если речь так и не началась — браузер молча её заблокировал */
+  setTimeout(()=>{if(!started){try{speechSynthesis.cancel()}catch(e){}if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`;toast('mute',t('toast.soundBlocked'),t('toast.soundBlockedSub'))}},3000);
   try{speechSynthesis.speak(u)}catch(e){
     btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`;
     toast('mute',t('toast.soundFail'),t('toast.soundFailSub'));
