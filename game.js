@@ -219,7 +219,9 @@ function donateBtn(){
   let a=document.getElementById('donate');
   if(!a){a=document.createElement('a');a.id='donate';a.className='donate';a.target='_blank';a.rel='noopener';a.href=DONATE_URL;document.body.appendChild(a)}
   a.innerHTML=icon('heart');a.title=t('donate.label');a.setAttribute('aria-label',t('donate.label'));
-  a.hidden=S.screen==='title';
+  /* во время мини-игр сердечко прячется: оно закрывает угол игрового поля (монеты, детали пазла) */
+  const st=(S.screen==='world'||S.screen==='prologue')&&steps()[idx()];
+  a.hidden=S.screen==='title'||!!(st&&st.type==='mini');
 }
 function showAbout(){
   const m=document.createElement('div');m.className='modal';

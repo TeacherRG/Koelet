@@ -129,6 +129,7 @@ async function run(browser, base, sc) {
     if (clicked) continue;
     if (await has('.mz-card')) { seen.maslow = true; await page.click('.mz-card'); await page.click(`.mz-drop >> nth=${(await has('.mz-chip')) ? 3 : 0}`); continue; }
     if (await has('.tl-ev')) { seen.timeline = true; const n = (await page.$$('.tl-slot.in')).length; if (!n) await page.click('.tl-ev[data-n="1"]'); await page.click(`.tl-ev[data-n="${n}"]`); continue; }
+    if (await has('.item') && await page.evaluate(() => { const d = document.querySelector('#donate'); return !!d && !d.hidden; })) add('donate heart is shown over a mini-game');
     if (await has('.item')) { await page.click('.item:not(.got)', {force: true}).catch(() => {}); await page.waitForTimeout(250); continue; }
     if (await has('.tile')) { for (const t of await page.$$('.tile[data-t="1"]:not(.hit)')) await t.click(); continue; }
     if (await has('.sp:not(.on)')) { await page.click('.sp:not(.on)'); continue; }
