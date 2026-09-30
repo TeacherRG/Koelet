@@ -173,7 +173,7 @@ function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=
 /* ---------- выбор языка ---------- */
 function langPicker(where){
   const codes=Object.keys(LANGS);if(codes.length<2)return '';
-  return `<div class="langpick ${where||''}" role="group" aria-label="${t('lang.label')}">${where==='title'?'':`<span class="kicker">${t('lang.label')}</span>`}<div class="seg">${codes.map(c=>`<button class="segb ${c===LANG?'on':''}" data-lang="${c}" lang="${c}" aria-pressed="${c===LANG}">${LANGS[c].name}</button>`).join('')}</div>${where==='title'||!S.started?'':`<small class="muted">${t('lang.note')}</small>`}</div>`;
+  return `<div class="langpick ${where||''}" role="group" aria-label="${t('lang.label')}"><span class="kicker">${t('lang.label')}</span><div class="seg">${codes.map(c=>`<button class="segb ${c===LANG?'on':''}" data-lang="${c}" lang="${c}" aria-pressed="${c===LANG}">${LANGS[c].name}</button>`).join('')}</div>${where==='title'||!S.started?'':`<small class="muted">${t('lang.note')}</small>`}</div>`;
 }
 function wireLangPicker(root,after){
   root.querySelectorAll('[data-lang]').forEach(b=>b.onclick=async()=>{
@@ -219,11 +219,8 @@ function render(){
 function renderTitle(){
   const cols=['#cfe3d6','#f3d9a0','#bcd6ea','#9fd0ae','#f2b8c2','#f2be3d','#d9cdea'];
   let wall='';for(let i=0;i<15;i++){wall+= i===7?`<div class="pw-hole">${pieceSvg('none')}</div>`:pieceSvg(cols[(i*3)%cols.length])}
-  const started=S.screen!=='title'||S.sparks>0||S.hero.name||S.done.some(Boolean);
   stage.innerHTML=`<section class="title-screen scene">
-    ${langPicker('title')}
-    ${audioPanelHTML(true)}
-    <span class="kicker">${t('title.kicker')}</span>
+    <div class="title-bar"><span class="kicker">${t('title.kicker')}</span>${quickBtnHTML()}</div>
     <h1 class="h1">${t('title.h1a')}<br><span>${t('title.h1b')}</span></h1>
     <p class="lead">${t('title.lead')}</p>
     <div class="puzzlewall" aria-hidden="true">${wall}</div>
@@ -233,8 +230,7 @@ function renderTitle(){
     <div id="conf"></div>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
   </section>`;
-  wireLangPicker(stage,renderTitle);
-  wireAudioPanel(stage,renderTitle);
+  $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
@@ -244,25 +240,63 @@ function renderTitle(){
     $('#no').onclick=()=>{$('#conf').innerHTML=''};
   };
 }
+/* ---------- быстрые настройки на титульном экране: язык, музыка, голос ---------- */
+function quickBtnHTML(){
+  const P=Audio_.prefs,on=P.music||P.voice;
+  return `<button class="qbtn" id="setbtn" aria-haspopup="dialog" aria-expanded="false" aria-label="${t('settings.title')}">${icon('globe')}<b>${LANG.toUpperCase()}</b><i class="qsep" aria-hidden="true"></i>${icon(on?'note':'mute')}</button>`;
+}
+function refreshQuickBtn(){
+  const b=$('#setbtn');if(!b)return;const P=Audio_.prefs;
+  b.querySelector('.ico:last-child').outerHTML=icon(P.music||P.voice?'note':'mute');
+}
+function quickMenu(){
+  const btn=$('#setbtn');if(!btn||$('#qmenu'))return;
+  const m=document.createElement('div');m.className='qmenu';m.id='qmenu';
+  m.setAttribute('role','dialog');m.setAttribute('aria-label',t('settings.title'));
+  const draw=()=>{
+    m.innerHTML=`<div class="qhead"><span class="kicker">${t('settings.title')}</span><button class="iconbtn qx" id="qclose" aria-label="${esc(t('btn.close'))}">✕</button></div>
+      ${langPicker('title')}
+      ${audioPanelHTML(true)}
+      <button class="qlink" id="qabout">${icon('info')}<span>${t('about.title')}</span></button>`;
+    wireLangPicker(m,()=>{close(false);renderTitle();quickMenu()});
+    m.querySelectorAll('[data-audio]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.audio;setTimeout(()=>{const f=m.querySelector(`[data-audio="${k}"]`);if(f)f.focus()})}));
+    wireAudioPanel(m,()=>{draw();refreshQuickBtn()});
+    m.querySelector('#qclose').onclick=()=>close(true);
+    m.querySelector('#qabout').onclick=()=>{close(false);showAbout()};
+  };
+  const outside=e=>{if(!m.contains(e.target)&&!e.target.closest('#setbtn'))close(false)};
+  const close=focus=>{m.remove();document.removeEventListener('pointerdown',outside,true);const b=$('#setbtn');if(b){b.setAttribute('aria-expanded','false');if(focus)b.focus()}};
+  btn.setAttribute('aria-expanded','true');
+  btn.onclick=()=>close(true);
+  btn.closest('.title-bar').appendChild(m);draw();
+  m.onkeydown=e=>{if(e.key==='Escape')close(true)};
+  document.addEventListener('pointerdown',outside,true);
+  (m.querySelector('.segb.on')||m.querySelector('button')).focus();
+  sfx.tap();
+}
 
+/* «Готово» без возраста или обращения: поля с пропуском подсвечиваются красным */
+let createTried=false;
 function renderCreate(){
   const h=S.hero;
-  const seg=(attr,val,label)=>`<button class="segb ${h[attr]===val?'on':''}" data-${attr}="${val}" aria-pressed="${h[attr]===val}">${label}</button>`;
+  const seg=(attr,val,label,sub,ic)=>`<button class="segb big ${h[attr]===val?'on':''}" data-${attr}="${val}" aria-pressed="${h[attr]===val}">${icon(h[attr]===val?'check':ic)}<span><b>${label}</b>${sub?`<small>${sub}</small>`:''}</span></button>`;
   const ok=!!(h.age&&h.g);
+  const req=(id,n,title,miss,msg,body)=>{const bad=createTried&&miss;
+    return `<div class="req ${bad?'bad':''} ${miss?'':'ok'}" id="${id}"><h3 class="req-h" id="${id}-l"><span class="num" aria-hidden="true">${miss?n:icon('check')}</span>${title}</h3>
+      <div class="seg" role="group" aria-labelledby="${id}-l"${bad?` aria-describedby="${id}-e" aria-invalid="true"`:''}>${body}</div>
+      ${bad?`<p class="req-err" id="${id}-e" role="alert">${icon('info')}<span>${msg}</span></p>`:''}</div>`};
   stage.innerHTML=`<section class="scene create">
     <span class="kicker">${t('create.kicker')}</span>
     <h2 class="h2">${t('create.title')}</h2>
     <div class="create-top"><div class="preview" id="pv">${avatar(h)}</div>
-      <div class="idcol">
-        <div class="field"><label for="hname">${t('create.name')}</label><input id="hname" maxlength="16" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(h.name)}"></div>
-        <div class="field"><span class="lbl" id="agel">${t('create.age')}</span><div class="seg" role="group" aria-labelledby="agel">${seg('age','y',t('create.ageY'))}${seg('age','t',t('create.ageT'))}</div></div>
-        <div class="field"><span class="lbl" id="gl">${t('create.address')}</span><div class="seg" role="group" aria-labelledby="gl">${seg('g','m',t('create.m'))}${seg('g','f',t('create.f'))}</div></div>
-      </div></div>
+      <div class="field"><label for="hname">${t('create.name')}</label><input id="hname" maxlength="16" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(h.name)}"></div></div>
+    ${req('f-age',1,t('create.age'),!h.age,t('create.needAge'),seg('age','y',t('create.ageY'),t('create.ageYs'),'book')+seg('age','t',t('create.ageT'),t('create.ageTs'),'compass'))}
     ${h.age?`<p class="agenote">${t(h.age==='y'?'create.noteY':'create.noteT')}</p>`:''}
+    ${req('f-g',2,t('create.address'),!h.g,t('create.needG'),seg('g','m',t('create.m'),t('create.mSub'),'smile')+seg('g','f',t('create.f'),t('create.fSub'),'smile'))}
     <div class="group"><h3>${t('create.role')}</h3><div class="archs">${ARCHS.map((a,i)=>`<button class="arch ${h.arch===i?'on':''}" data-arch="${i}">${avatar({look:h.look,outfit:h.outfit,arch:i})}<span>${esc(T(a.name))}</span></button>`).join('')}</div></div>
     <div class="group"><h3>${t('create.looks')}</h3><div class="swatches">${LOOKS.map((l,i)=>`<button class="sw ${h.look===i?'on':''}" data-look="${i}" aria-label="${t('create.lookN',{n:i+1})}"><span style="background:linear-gradient(135deg,${l.hair} 50%,${l.skin} 50%)"></span></button>`).join('')}</div></div>
     <div class="group"><h3>${t('create.outfit')}</h3><div class="swatches">${OUTFITS.map((o,i)=>`<button class="sw ${h.outfit===i?'on':''}" data-outfit="${i}" aria-label="${t('create.outfitN',{n:i+1})}"><span style="background:${o}"></span></button>`).join('')}</div></div>
-    <div class="actions"><button class="btn" id="ready" ${ok?'':'disabled'}>${t('create.ready')}</button>${ok?'':`<span class="muted" style="font-size:14px">${t('create.need')}</span>`}</div>
+    <div class="actions"><button class="btn ${ok?'':'wait'}" id="ready">${t('create.ready')}</button>${ok?'':`<span class="need ${createTried?'bad':''}">${icon('info')}${t(!h.age&&!h.g?'create.need':!h.age?'create.needAge':'create.needG')}</span>`}</div>
   </section>`;
   const keep=()=>{const y=window.scrollY;renderCreate();window.scrollTo(0,y)};
   $('#hname').oninput=e=>{h.name=e.target.value;save()};
@@ -271,7 +305,15 @@ function renderCreate(){
   stage.querySelectorAll('[data-arch]').forEach(b=>b.onclick=()=>{h.arch=+b.dataset.arch;sfx.tap();save();keep()});
   stage.querySelectorAll('[data-look]').forEach(b=>b.onclick=()=>{h.look=+b.dataset.look;sfx.tap();save();keep()});
   stage.querySelectorAll('[data-outfit]').forEach(b=>b.onclick=()=>{h.outfit=+b.dataset.outfit;sfx.tap();save();keep()});
-  $('#ready').onclick=()=>{if(!(h.age&&h.g))return;sfx.good();if(!S.started)S.started=new Date().toISOString();go('welcome')};
+  $('#ready').onclick=()=>{
+    if(!(h.age&&h.g)){
+      createTried=true;sfx.soft();haptic('choice');renderCreate();
+      const f=$('#f-age.bad')||$('#f-g.bad');
+      if(f){f.scrollIntoView({behavior:'smooth',block:'center'});f.querySelector('.segb').focus({preventScroll:true})}
+      if(Audio_.prefs.voice&&Audio_.unlocked)Voice.say(!h.age?t('create.needAge'):t('create.needG'));
+      return;
+    }
+    createTried=false;sfx.good();if(!S.started)S.started=new Date().toISOString();go('welcome')};
 }
 
 function renderWelcome(){

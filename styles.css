@@ -2,7 +2,7 @@
    World: a daylight sukkah — sage-mint ground, white cards, sechach green, etrog gold, pomegranate. Deliberately single light theme; the library and the sky stay as painted scenes. */
 :root{
   --bg:#edf3ef; --sunk:#e1ebe5; --panel:#ffffff; --panel-2:#f5faf7; --line:#cfddd5;
-  --ink:#17282e; --muted:#4a5d58; --leaf:#2a7043; --etrog:#8a5d00; --accent:#8a5d00; --gold:#f2be3d; --gold-edge:#c9951f; --pome:#c8445b; --sky:#3d7fb0;
+  --ink:#17282e; --muted:#4a5d58; --leaf:#2a7043; --etrog:#8a5d00; --accent:#8a5d00; --gold:#f2be3d; --gold-edge:#c9951f; --pome:#c8445b; --err:#b3263f; --sky:#3d7fb0;
   --etrog-ink:#2a2004; --leaf-soft:rgba(47,125,74,.10); --etrog-soft:rgba(242,190,61,.20); --pome-soft:rgba(200,68,91,.09);
   --shadow:0 14px 30px -20px rgba(23,40,46,.45);
   --display:"Unbounded","Trebuchet MS",system-ui,sans-serif;
@@ -104,6 +104,26 @@ p{margin:0}
 .puzzlewall{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;max-width:520px;width:100%}
 .puzzlewall svg{width:100%;height:auto;display:block}
 .pw-hole path{fill:none!important;stroke:var(--etrog)!important;stroke-width:3!important;stroke-dasharray:7 6;animation:dash 6s linear infinite}
+.title-bar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.qbtn{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:44px;padding:6px 14px;border-radius:999px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);font-size:13px}
+.qbtn b{font-family:var(--display);font-size:12px;letter-spacing:.06em}
+.qbtn .ico{width:20px;height:20px;color:var(--accent)}
+.qbtn[aria-expanded=true]{border-color:var(--etrog);background:var(--etrog-soft)}
+.qsep{width:1px;height:18px;background:var(--line);margin-inline:2px}
+.qmenu{position:absolute;top:calc(100% + 8px);right:0;z-index:20;width:min(340px,calc(100vw - 32px));display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:22px;background:var(--panel);border:1px solid var(--line);box-shadow:0 24px 48px -20px rgba(23,40,46,.55);animation:qpop .18s ease both;transform-origin:top right}
+@keyframes qpop{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:none}}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.qx{display:grid;place-items:center;width:44px;height:44px;padding:0;font-size:16px}
+.qmenu .audiopanel.compact{flex-direction:column;gap:6px}
+.swrow{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 12px;border-radius:14px;background:var(--panel-2);border:1.5px solid var(--line);font-weight:600;font-size:15px;text-align:left}
+.swrow span{flex:1}
+.swrow .ico{width:22px;height:22px;color:var(--accent)}
+.switch{position:relative;width:46px;height:28px;flex:none;border-radius:999px;background:#8b9a95;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.swrow[aria-checked=true] .switch{background:var(--leaf)}
+.swrow[aria-checked=true] .switch::after{transform:translateX(18px)}
+.qlink{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 4px;border:0;border-top:1px solid var(--line);background:none;color:var(--leaf);font-weight:700;font-size:14px;text-align:left}
+.qlink .ico{width:20px;height:20px}
 .foot{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
 
 /* Create */
@@ -126,6 +146,28 @@ p{margin:0}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .segb{min-height:48px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);font-size:15px;font-weight:500;padding:8px 6px}
 .segb.on{border-color:var(--etrog);background:var(--etrog-soft);font-weight:700}
+.req{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:20px;background:var(--panel);border:1.5px solid var(--line);transition:border-color .2s,background .2s}
+.req.ok{border-color:rgba(42,112,67,.35)}
+.req-h{display:flex;align-items:center;gap:10px;margin:0;font-family:var(--display);font-size:16px;font-weight:700;line-height:1.25}
+.num{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;background:var(--etrog-soft);color:var(--etrog-ink);font-size:14px}
+.req.ok .num{background:var(--leaf);color:#fff}
+.num .ico{width:18px;height:18px}
+.segb.big{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:92px;padding:10px 8px;text-align:center}
+.segb.big .ico{width:26px;height:26px;flex:none;color:var(--accent)}
+.segb.big span{display:flex;flex-direction:column;align-items:center;min-width:0}
+.segb.big b{font-weight:700;font-size:16px}
+.segb.big small{font-size:12.5px;color:var(--muted);font-weight:400;line-height:1.3}
+.segb.big.on{box-shadow:0 0 0 3px var(--etrog-soft)}
+.segb.big.on .ico{color:var(--leaf)}
+.req.bad{border-color:var(--err);background:#fdf1f3;animation:shake .4s ease}
+.req.bad .num{background:var(--err);color:#fff}
+.req.bad .segb{border-color:rgba(179,38,63,.45)}
+.req-err{display:flex;align-items:center;gap:8px;margin:0;color:var(--err);font-weight:700;font-size:15px}
+.req-err .ico,.need .ico{width:20px;height:20px;flex:none}
+.need{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.need.bad{color:var(--err);font-weight:700}
+#ready.wait{background:#f4e6bb;box-shadow:0 6px 0 -1px #dccb94}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 .agenote{font-size:14px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
 
 /* Own words, what-if, pictures, read aloud */
@@ -475,7 +517,6 @@ a.btn{text-decoration:none}
 
 /* Выбор языка */
 .langpick{display:flex;flex-direction:column;gap:6px}
-.langpick.title{align-self:flex-end;width:min(360px,100%)}
 .langpick .seg{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
 .langpick .segb{min-height:44px;font-size:14px;padding-inline:4px}
 .langpick small{font-size:12px}

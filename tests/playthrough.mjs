@@ -80,7 +80,14 @@ async function run(browser, base, sc) {
   const snap = async label => { if (shotsDir) await page.screenshot({path: `${shotsDir}/${name}-${String(++shot).padStart(3, '0')}-${label}.png`, fullPage: true}); };
   await snap('title');
   const [heroName, ownFlow, ownQuality] = INPUT[sc.lang];
+  // quick settings on the title screen: language + music/voice switches
+  await page.click('#setbtn');
+  if (!(await page.$('#qmenu [data-lang]')) || (await page.$$('#qmenu [data-audio]')).length !== 2) add('title settings menu is incomplete');
+  await page.keyboard.press('Escape');
   await page.click('#start');
+  // «Готово» without age and gender → both fields turn red with a hint
+  await page.click('#ready');
+  if ((await page.$$('.req.bad .req-err')).length !== 2 || await page.evaluate(() => S.screen) !== 'create') add('missing age/gender is not highlighted on the hero screen');
   await page.click(`[data-age="${sc.age}"]`); await page.click(`[data-g="${sc.g}"]`);
   await page.fill('#hname', heroName);
   await snap('create');
