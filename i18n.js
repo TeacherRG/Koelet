@@ -8,6 +8,7 @@
    ================================================================ */
 const LANGS = {
   ru:{name:'Русский', locale:'ru-RU'},
+  uk:{name:'Українська', locale:'uk-UA'},
   de:{name:'Deutsch', locale:'de-DE'}
 };
 const DEFAULT_LANG = 'ru';
@@ -15,6 +16,7 @@ const LANG_KEY = 'koelet-lang';
 const CONTENT_FILES = ['shared','prologue','city-of-success','puzzle','mirror','brothers','workshop','heleq-lab','one-piece'];
 const LOAD_ERROR = {
   ru:['Не удалось загрузить тексты игры','Проверь подключение и обнови страницу.'],
+  uk:['Не вдалося завантажити тексти гри','Перевір підключення й онови сторінку.'],
   de:['Die Texte des Spiels konnten nicht geladen werden','Prüfe die Verbindung und lade die Seite neu.']
 };
 

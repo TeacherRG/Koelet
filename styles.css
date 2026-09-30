@@ -421,8 +421,9 @@ a.btn{text-decoration:none}
 
 /* Выбор языка */
 .langpick{display:flex;flex-direction:column;gap:6px}
-.langpick.title{align-self:flex-end;width:min(260px,100%)}
-.langpick .segb{min-height:44px;font-size:14px}
+.langpick.title{align-self:flex-end;width:min(360px,100%)}
+.langpick .seg{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.langpick .segb{min-height:44px;font-size:14px;padding-inline:4px}
 .langpick small{font-size:12px}
 
 /* Печать сертификата A4 */
