@@ -97,7 +97,7 @@ function mentorSvg(mood){
     wow:`<circle cx="52" cy="44" r="2.7" fill="${ink}"/><circle cx="68" cy="44" r="2.7" fill="${ink}"/><path d="M46.5 32 Q52 28 56.5 32 M63.5 32 Q68 28 73.5 32" stroke="#bfb8ac" stroke-width="2.2" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="62" rx="2.8" ry="3.4" fill="#7a3b2e"/>`,
     warm:`<path d="M48.5 43.5 Q52 46.5 55.5 43.5 M64.5 43.5 Q68 46.5 71.5 43.5" stroke="${ink}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M46.5 35 Q52 33 56.5 35 M63.5 35 Q68 33 73.5 35" stroke="#bfb8ac" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M54 61 Q60 65 66 61" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="46" cy="52" r="3" fill="#e58f7a" opacity=".35"/><circle cx="74" cy="52" r="3" fill="#e58f7a" opacity=".35"/>`
   };
-  return `<svg class="mentor" viewBox="0 0 120 150" role="img" aria-label="Хранитель">
+  return `<svg class="mentor" viewBox="0 0 120 150" role="img" aria-label="${typeof t==='function'?t('mentor.name'):''}">
     <ellipse cx="60" cy="146" rx="34" ry="4" fill="rgba(23,40,46,.12)"/>
     <path d="M40 70 Q60 61 80 70 L96 146 H24Z" fill="${robe}"/>
     <path d="M26 132 H94 M25 138 H95" stroke="#1d2b44" stroke-width="2.5" opacity=".5"/>
