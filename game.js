@@ -169,7 +169,7 @@ function showProfile(){
     <div class="prof-top"><div class="prof-av">${avatar(S.hero)}</div><div class="prof-name"><b>${esc(heroName())}</b><span>${t('menu.level',{n:L})} · ${T(LEVELS[L-1])}</span></div></div>
     <div class="menu-lvl"><div class="bar"><i style="width:${into}%"></i></div><small>${t('menu.stats',{sparks:S.sparks,pieces:S.done.filter(Boolean).length})}</small></div>
     <div class="menu-sec"><span class="kicker">${t('ach.count',{n:Object.keys(S.ach).length})}</span>${achGrid()}</div>
-    <p class="muted" style="font-size:14px">${t('ach.note')}</p>`);
+    <p class="muted" style="font-size:0.875rem">${t('ach.note')}</p>`);
 }
 /* Main menu: navigation first, then sound and language, then info and support */
 function showMenu(){
@@ -210,6 +210,8 @@ function wireLangPicker(root,after){
 
 /* ---------- О приложении ---------- */
 const PROJECT_URL='https://mychitas.app';
+const APP_URL='https://mylot.mychitas.app';
+const COPYRIGHT='©mychitas.app 5787';
 const DONATE_URL='https://donate.mychitas.app';
 function donateBtn(){
   let a=document.getElementById('donate');
@@ -395,7 +397,7 @@ function resolveDynamic(st){
   return st;
 }
 function rTalk(st){
-  stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'point')}<div class="actions"><button class="btn" id="nx">${t('btn.next')}</button></div></section>`;
+  stage.innerHTML=`<section class="scene talk">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'point')}<div class="actions"><button class="btn" id="nx">${t('btn.next')}</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();next()};
 }
 function ownHTML(o){return `<div class="own"><label for="ownin">${esc(o.label)}</label><div class="ownrow"><input id="ownin" maxlength="60" autocomplete="off" placeholder="${esc(o.ph||'')}"><button class="btn small" id="ownok" disabled>${t('own.ok')}</button></div><small>${esc(OWN_NOTE)}</small></div>`}
@@ -403,7 +405,7 @@ function rChoice(st){
   const hint=st.hint||(st.neutral?DEF_HINT:null);
   const whatif=st.whatif!==false&&new Set(st.options.map(o=>o.r)).size>1;
   stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'think')}
-    ${st.q?`<p class="h2" style="font-size:18px">${esc(st.q)}</p>`:''}
+    ${st.q?`<p class="h2" style="font-size:1.125rem">${esc(st.q)}</p>`:''}
     <div class="opts ${st.compact?'compact':''}" role="group">${st.options.map((o,i)=>optHTML(o,i)).join('')}</div>
     ${st.own?ownHTML(st.own):''}
     <div id="out"></div><div id="wil"></div>
@@ -444,7 +446,7 @@ function rMulti(st){
   const draw=()=>{
     stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,esc(st.text),'think')}
       <div class="chips">${st.options.map((o,i)=>`<button class="chip ${sel.includes(o)?'on':''}" data-i="${i}" aria-pressed="${sel.includes(o)}">${esc(o)}</button>`).join('')}</div>
-      <p class="muted" style="font-size:14px">${t('multi.count',{n:sel.length,max:st.max})}</p>
+      <p class="muted" style="font-size:0.875rem">${t('multi.count',{n:sel.length,max:st.max})}</p>
       ${ok?`<div class="own"><label for="ownin">${esc(st.own.label)}</label><input id="ownin" maxlength="40" autocomplete="off" placeholder="${esc(st.own.ph||'')}" value="${esc(S.own[ok]||'')}"><small>${esc(OWN_NOTE)}</small></div>`:''}
       <div class="actions">${hintBtn(st.hint)}<button class="btn" id="nx" ${sel.length<need()?'disabled':''}>${t('btn.choose')}</button></div></section>`;
     wireHint(st.hint);
@@ -461,7 +463,7 @@ function rQuote(st){
     <div id="qq"></div>
     <div class="actions" id="act"><button class="btn" id="show">${t('quote.show')}</button></div></section>`;
   $('#show').onclick=()=>{sfx.tap();
-    $('#tr').innerHTML=`<p style="font-size:19px;font-weight:500">${esc(st.tr??st.ru)}</p><p class="muted">${esc(st.plain)}</p>`;
+    $('#tr').innerHTML=`<p style="font-size:1.1875rem;font-weight:500">${esc(st.tr??st.ru)}</p><p class="muted">${esc(st.plain)}</p>`;
     $('#qq').innerHTML=`${sayHTML(M,esc(st.q),'think')}<div class="opts" style="margin-top:12px">${st.options.map((o,i)=>optHTML({t:o},i)).join('')}</div><div id="out" style="margin-top:12px"></div>`;
     $('#act').innerHTML=hintBtn(DEF_HINT);wireHint(DEF_HINT);
     stage.querySelectorAll('#qq .opt').forEach(b=>b.onclick=()=>{
@@ -477,7 +479,7 @@ function rQuote(st){
 function artHTML(a){
   if(a==='solomon')return `<div style="display:grid;gap:8px">${tl('art.solomon').map(x=>[x]).map((r,i)=>`<div class="stat"><span>${r[0]}</span><div class="bar"><i style="animation-delay:${i*.15}s"></i></div></div>`).join('')}</div>`;
   if(a==='brothers')return `<div style="display:flex;gap:12px;align-items:flex-end;justify-content:center"><div style="text-align:center"><div style="width:84px;height:84px;border-radius:24px;overflow:hidden">${avatar({look:0,outfit:0})}</div><small class="muted">${t('art.menashe')}</small></div><div style="text-align:center"><div style="width:70px;height:70px;border-radius:20px;overflow:hidden;margin:0 auto">${avatar({look:1,outfit:2})}</div><small class="muted">${t('art.efraim')}</small></div></div>`;
-  if(a==='map')return `<div style="display:flex;gap:14px;align-items:center"><div style="width:72px;height:72px;flex:none;border-radius:22px;overflow:hidden;border:2px solid var(--etrog)">${avatar(S.hero)}</div><div><span class="kicker">${esc(heroName())}</span><p class="muted" style="font-size:14px">${t('art.mapNote')}</p></div></div>`;
+  if(a==='map')return `<div style="display:flex;gap:14px;align-items:center"><div style="width:72px;height:72px;flex:none;border-radius:22px;overflow:hidden;border:2px solid var(--etrog)">${avatar(S.hero)}</div><div><span class="kicker">${esc(heroName())}</span><p class="muted" style="font-size:0.875rem">${t('art.mapNote')}</p></div></div>`;
   return '';
 }
 function rCard(st){
@@ -596,7 +598,7 @@ function gPuzzle(){
   const P=tl('puzzle.pieces');const shown=new Set();let done=false;
   stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('puzzle.say'),'point')}
     <div class="jig" id="jig" aria-label="${esc(t('puzzle.label'))}"><p class="muted jig-wait">${t('puzzle.loading')}</p></div>
-    <p class="muted" id="jigcnt" style="font-size:14px">${t('puzzle.count',{n:0})}</p>
+    <p class="muted" id="jigcnt" style="font-size:0.875rem">${t('puzzle.count',{n:0})}</p>
     <div id="out"></div><div class="actions" id="act">${hintBtn(t('puzzle.hint'))}<button class="btn ghost small" id="autosolve">${t('puzzle.solve')}</button></div></section>`;
   wireHint(t('puzzle.hint'));
   const box=$('#jig');
@@ -751,10 +753,10 @@ function strengthMap(s){
   if(L.can.length)parts.push(`<p>${t('sm.can',{list:list(L.can)})}</p>`);
   if(L.like.length)parts.push(`<p>${t('sm.like',{list:list(L.like)})}</p>`);
   if(L.need.length)parts.push(`<p>${t('sm.need',{list:list(L.need)})}${L.help.length?t('sm.help',{list:list(L.help)}):''}.</p>`);
-  parts.push(`<p style="font-size:19px;font-weight:600;color:var(--etrog)">${t('sm.share',{what:c?c[1]:t('sm.default')})}</p>`);
+  parts.push(`<p style="font-size:1.1875rem;font-weight:600;color:var(--etrog)">${t('sm.share',{what:c?c[1]:t('sm.default')})}</p>`);
   parts.push(`<p>${t('sm.gift')}</p>`);
   if(s.ans.flow)parts.push(`<p class="muted">${t('sm.flow',{flow:esc(s.ans.flow)})}</p>`);
-  parts.push(`<p class="muted" style="font-size:14px">${t('sm.rabbi')}</p>`);
+  parts.push(`<p class="muted" style="font-size:0.875rem">${t('sm.rabbi')}</p>`);
   return parts.join('');
 }
 
@@ -853,15 +855,17 @@ async function drawCertificate(sc){
     x.fillStyle='#17282e';x.font=`500 32px ${B}`;wrapLines(x,st.join(' · '),1200).slice(0,2).forEach((l,i)=>x.fillText(l,W/2,706+i*44))}
   x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(t('cert.stats',{lvl:lvl(),lname:T(LEVELS[lvl()-1]),sparks:S.sparks,ach:Object.keys(S.ach).length}),W/2,820);
   // seal
-  x.save();x.translate(W/2,950);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=i%2?74:84,a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
+  x.save();x.translate(W/2,922);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=i%2?74:84,a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
   x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,62,0,Math.PI*2);x.fill();x.fillStyle='#c8445b';x.font=`700 50px ${HB}`;x.fillText('חֵלֶק',0,16);x.restore();
-  x.textAlign='left';x.fillStyle='#17282e';x.font=`500 28px ${B}`;x.fillText(fmtDate(S.finished),190,960);
-  x.strokeStyle='#b3c7bd';x.lineWidth=2;x.beginPath();x.moveTo(190,975);x.lineTo(560,975);x.stroke();
-  x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText(t('cert.date'),190,1005);
-  x.textAlign='right';x.fillStyle='#17282e';x.font=`italic 500 32px ${B}`;x.fillText(t('cert.keeper'),W-190,960);
-  x.beginPath();x.moveTo(W-560,975);x.lineTo(W-190,975);x.stroke();
-  x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText(t('cert.sign'),W-190,1005);
-  x.textAlign='center';x.font=`400 20px ${B}`;x.fillText(t('cert.foot'),W/2,1062);
+  x.textAlign='left';x.fillStyle='#17282e';x.font=`500 28px ${B}`;x.fillText(fmtDate(S.finished),190,930);
+  x.strokeStyle='#b3c7bd';x.lineWidth=2;x.beginPath();x.moveTo(190,945);x.lineTo(560,945);x.stroke();
+  x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText(t('cert.date'),190,975);
+  x.textAlign='right';x.fillStyle='#17282e';x.font=`italic 500 32px ${B}`;x.fillText(t('cert.keeper'),W-190,930);
+  x.beginPath();x.moveTo(W-560,945);x.lineTo(W-190,945);x.stroke();
+  x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText(t('cert.sign'),W-190,975);
+  x.textAlign='center';x.font=`400 20px ${B}`;x.fillText(t('cert.foot'),W/2,1028);
+  // app link and copyright: the printed PDF is this same image
+  x.fillStyle='#2f7d4a';x.font=`700 24px ${B}`;x.fillText(`${APP_URL.replace(/^https:\/\//,'')}   ·   ${COPYRIGHT}`,W/2,1058);
   return c.toDataURL('image/png');
 }
 function renderFinal(){
@@ -886,11 +890,11 @@ function renderFinal(){
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
 }
 function finalCert(){
-  return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted" style="font-size:14px">${fmtDate(S.finished)}</span></div>
+  return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted" style="font-size:0.875rem">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">${t('cert.nameLabel')}</label><input id="certname" maxlength="24" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(S.hero.name)}"></div>
       <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
       <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a></div>
-      <p class="muted" style="font-size:14px" id="printnote">${t('cert.note')}</p></article>`;
+      <p class="muted" style="font-size:0.875rem" id="printnote">${t('cert.note')}</p></article>`;
 }
 function wireCert(){
   let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;
@@ -909,11 +913,11 @@ function finalPath(){
   const strengths=strengthsList(),rep=worldReport();
   return `<div class="duo">
       <div class="card"><span class="kicker">${t('path.gifts')}</span><div class="strengths">${strengths.map(x=>`<span>${esc(x)}</span>`).join('')||`<span>${t('path.none')}</span>`}</div></div>
-      <div class="card"><span class="kicker">${t('path.step')}</span><p class="h2" style="font-size:20px">${esc(S.ans.weekly||t('path.stepDefault'))}</p><p class="muted">${t('path.stepNote')}</p></div>
+      <div class="card"><span class="kicker">${t('path.step')}</span><p class="h2" style="font-size:1.25rem">${esc(S.ans.weekly||t('path.stepDefault'))}</p><p class="muted">${t('path.stepNote')}</p></div>
     </div>
     <div class="card"><span class="kicker">${t('path.phrase')}</span><p class="phrase" id="ph">${esc(T(PHRASES[S.phrase]))}</p><div class="actions"><button class="btn ghost small" id="nph">${t('path.otherPhrase')}</button><button class="btn ghost small" id="cp">${t('path.copy')}</button></div></div>
     <section class="report"><div><span class="kicker">${t('path.report')}</span><h2 class="h2">${t('path.reportTitle')}</h2>
-      <p class="muted" style="font-size:15px">${t('path.dates',{a:fmtDate(S.started),b:fmtDate(S.finished)})}</p></div>
+      <p class="muted" style="font-size:0.9375rem">${t('path.dates',{a:fmtDate(S.started),b:fmtDate(S.finished)})}</p></div>
       <div class="rgrid">${rep.map((r,i)=>`<article class="rcard"><div class="rtop"><span class="rnum">${i+1}</span><b>${esc(r[0])}</b></div><p>${esc(r[1])}</p><p class="disc"><span>${t('path.discovery')}</span>${esc(r[2])}</p></article>`).join('')}</div>
     </section>
     <div class="card"><span class="kicker">${t('path.solve')}</span><p>${t('path.solveText')}</p></div>
@@ -932,7 +936,7 @@ function finalAch(){
       <div class="statcard"><span class="k">${t('stat.pieces')}</span><b>${S.done.filter(Boolean).length}/7</b></div>
       <div class="statcard"><span class="k">${t('stat.ach')}</span><b>${Object.keys(S.ach).length}/6</b></div>
     </div>
-    <div class="card"><span class="kicker">${t('ach.collection')}</span>${achGrid()}<p class="muted" style="font-size:14px">${t('ach.note')}</p></div>`;
+    <div class="card"><span class="kicker">${t('ach.collection')}</span>${achGrid()}<p class="muted" style="font-size:0.875rem">${t('ach.note')}</p></div>`;
 }
 function selectText(el){try{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(e){}}
 
