@@ -104,14 +104,17 @@ async function run(browser, base, sc) {
 
   const has = async s => (await page.$(s)) !== null;
   const enabled = async s => { const e = await page.$(s); return !!e && await e.isEnabled(); };
-  let steps = 0, ownUsed = false, i = 0;
+  // where the driver got stuck: screen, step type, open sheet, visible buttons
+  const where = () => page.evaluate(() => { let st = ['world', 'prologue'].includes(S.screen) ? steps()[idx()] : null; if (typeof st === 'function') st = null;
+    return `${S.screen}/${st ? st.type + (st.game ? ':' + JSON.stringify(st.game) : '') : '-'}${document.querySelector('.sheet') ? ' + open sheet' : ''}; buttons: ` + [...document.querySelectorAll('#stage button:not([disabled])')].slice(0, 6).map(b => (b.id || b.className) + (b.innerText ? ' «' + b.innerText.slice(0, 20) + '»' : '')).join(', ') || '—'; });
+  let steps = 0, ownUsed = false, i = 0, waits = 0;
   for (; i < 700; i++) {
     const screen = await page.evaluate(() => S.screen);
     const text = await page.evaluate(() => document.querySelector('#stage').innerText);
     for (const p of textProblems(text, sc.lang)) add(`[${screen}] ${p}`);
     if (screen === 'final') break;
     if (!(await has('.whatif')) && await has('#wi')) { await page.click('#wi'); continue; }
-    if (await enabled('#nx')) { await snap(screen); await page.click('#nx'); steps++; continue; }
+    if (await enabled('#nx')) { await snap(screen); await page.click('#nx'); steps++; waits = 0; continue; }
     if (screen === 'map') { const n = await page.$('.mnode.open'); if (n) { await n.click(); continue; } if (await has('#fin')) { await page.click('#fin'); continue; } }
     if (await has('#autosolve')) {
       seen.jigsaw = !!(await page.waitForSelector('#jig canvas', {timeout: 10000}).catch(() => null));
@@ -135,14 +138,11 @@ async function run(browser, base, sc) {
     if (await has('.sp:not(.on)')) { await page.click('.sp:not(.on)'); continue; }
     if (await has('.circ')) { for (let k = 0; k < 4; k++) { await page.click(`.circ >> nth=${k}`); await page.click('[data-o="0"]'); } continue; }
     if (await has('.chip')) { if (await has('#ownin')) await page.fill('#ownin', ownQuality); await page.click('.chip:not(.on)'); await page.click('.chip:not(.on) >> nth=1'); continue; }
-    add(`stuck on screen "${screen}"`); break;
+    // nothing to press yet: screens change with a delay (e.g. after the last coin in the treasure game)
+    if (++waits < 25) { i--; await page.waitForTimeout(200); continue; }
+    add('stuck on ' + await where()); break;
   }
-  if (i >= 700) {
-    // say where the driver got stuck: screen, step type, open sheet, visible buttons
-    const where = await page.evaluate(() => { let st = typeof steps === 'function' && ['world', 'prologue'].includes(S.screen) ? steps()[idx()] : null; if (typeof st === 'function') st = null;
-      return `${S.screen}/${st ? st.type + (st.game ? ':' + JSON.stringify(st.game) : '') : '-'}${document.querySelector('.sheet') ? ' + open sheet' : ''}; buttons: ` + [...document.querySelectorAll('#stage button:not([disabled])')].slice(0, 6).map(b => (b.id || b.className) + (b.innerText ? ' «' + b.innerText.slice(0, 20) + '»' : '')).join(', '); });
-    add('did not reach the final screen — stuck on ' + where);
-  }
+  if (i >= 700) add('did not reach the final screen — stuck on ' + await where());
 
   const spoken = await page.evaluate(() => window.__spoken);
   // every sentence the Keeper says must have a ready-made recording (tools/tts.mjs)
