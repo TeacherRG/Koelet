@@ -129,13 +129,20 @@ const Voice = {
       a.play().then(() => { if (my !== this.seq) a.pause(); }, () => end(false));
     });
   },
+  /* Хранитель — мужчина: из голосов браузера берём мужской (по имени голоса),
+     иначе — любой голос этого языка. */
+  MALE: /\b(male|mann|dmitr|dmitry|pavel|yuri|maxim|mikhail|ostap|conrad|killian|stefan|markus|florian|hans|jonas|bernd|christoph|ralf|kasper)\b|муж|чолов/i,
+  maleVoice(){
+    const all = speechSynthesis.getVoices().filter(x => x.lang && x.lang.toLowerCase().startsWith(LANG));
+    return all.find(x => this.MALE.test(x.name) && !/female|frau|жен/i.test(x.name)) || all[0] || null;
+  },
   _synth(text, my){
     if (!this.synthOk()) return Promise.resolve(false);
     return new Promise(res => {
       let fin = false; const end = ok => { if (!fin) { fin = true; res(ok); } };
       const u = new SpeechSynthesisUtterance(text.replace(/[«»„“"]/g, ''));
       u.lang = langLocale(); u.rate = typeof young === 'function' && young() ? .92 : 1; u.pitch = .95;
-      const v = speechSynthesis.getVoices().find(x => x.lang && x.lang.toLowerCase().startsWith(LANG)); if (v) u.voice = v;
+      const v = this.maleVoice(); if (v) u.voice = v;
       u.onend = () => end(true); u.onerror = () => end(false);
       try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { end(false); }
       setTimeout(() => { if (my === this.seq && !speechSynthesis.speaking) end(false); }, 4000);
