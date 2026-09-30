@@ -181,7 +181,7 @@
   "puzzle.fail": "Das Puzzle konnte nicht geladen werden. Macht nichts – wir gehen weiter.",
 
   "mirror.say": {"__ag": 1, "y": "All diese Spiegel haben andere gezeigt. Aber dieser Spiegel gehört dir. Möchtest du hineinschauen? Dafür braucht es die Kamera.", "t": "Alle Spiegel in diesem Saal haben jemand anderen gezeigt. Aber dieser Spiegel gehört dir: Er zeigt nur dich. Möchtest du hineinschauen? Dafür braucht es die Kamera."},
-  "mirror.privacy": {"__ag": 1, "y": "Das Kamerabild wird nirgendwohin gesendet und nicht aufgenommen. Wenn du möchtest, frag einen Erwachsenen um Erlaubnis.", "t": "Das Kamerabild wird nirgendwohin gesendet und nicht aufgenommen. Die Kamera geht aus, sobald du weitergehst."},
+  "mirror.privacy": {"__ag": 1, "y": "Das Kamerabild wird nirgendwohin geschickt. Ein Foto für die Urkunde wird nur gespeichert, wenn du selbst auf den Knopf drückst, und nur auf diesem Gerät. Wenn du magst, frag vorher einen Erwachsenen.", "t": "Das Kamerabild wird nirgendwohin geschickt. Ein Foto für die Urkunde wird nur gespeichert, wenn du selbst auf den Knopf drückst, und nur auf diesem Gerät. Die Kamera geht aus, sobald du weitergehst."},
   "mirror.on": "Spiegel einschalten",
   "mirror.skip": "Ohne Kamera",
   "mirror.off": "Kamera ausschalten",
@@ -191,6 +191,9 @@
   "mirror.denied": "Kein Problem: Die Kamera ist nicht angegangen. Der Spiegel zeigt deine Figur. Er vergleicht dich mit niemandem: Hier bist nur du mit deinem Teil.",
   "mirror.unsupported": "Die Kamera ließ sich hier nicht einschalten. Der Spiegel zeigt deine Figur. Er vergleicht dich mit niemandem: Hier bist nur du mit deinem Teil.",
   "mirror.videoLabel": "Dein Spiegelbild von der Kamera",
+  "mirror.saved": "Foto gespeichert — es erscheint auf deiner Urkunde.",
+  "mirror.retake": "Foto neu machen",
+  "mirror.snap": "Foto für die Urkunde",
 
   "species.say": {"__ag": 1, "y": "An Sukkot nimmt man vier Pflanzen zusammen. Tippe auf jede und binde einen Strauß.", "t": "Darum liest man Kohelet gerade an Sukkot. An diesem Fest bindet man vier Pflanzenarten zusammen. Der Midrasch sieht in ihnen vier Arten von Menschen. Tippe auf jede Pflanze und binde einen Strauß."},
   "species.empty": "Der Strauß ist noch leer",
@@ -286,6 +289,9 @@
   "cert.note": "Der Druck öffnet ein A4-Blatt (Querformat). Wenn Drucken nicht möglich ist, lade das Bild herunter oder halte den Finger darauf, um es zu speichern.",
   "cert.noPrint": "Drucken ist hier nicht möglich. Lade das Bild herunter und drucke es auf A4 (Querformat).",
   "cert.alt": "Urkunde für das Abenteuer „Das Geheimnis von Kohelet“ für {{name}}",
+  "cert.photoHint": "Möchtest du ein Foto auf der Urkunde? Mach eins im Zauberspiegel.",
+  "cert.photoDel": "Foto löschen",
+  "cert.photoOn": "Foto aus dem Spiegel auf der Urkunde",
 
   "final.tabs": "Ergebnisse",
   "final.tabCert": "Urkunde",
@@ -344,7 +350,7 @@
   "voice.mini.treasure": "Tippe so schnell du kannst auf die Dinge und achte auf beide Anzeigen.",
   "voice.mini.find": "Finde auf dem Feld alle acht Wörter „Chelek“.",
   "voice.mini.puzzle": "Zieh die Teile und setz das Bild zusammen. Passende Teile rasten von selbst ein.",
-  "voice.mini.selfmirror": "Du kannst den Spiegel mit der Kamera einschalten oder ohne Kamera weitergehen.",
+  "voice.mini.selfmirror": "Du kannst den Spiegel mit der Kamera einschalten oder ohne Kamera weitergehen. Wenn du magst, mach ein Foto für die Urkunde.",
   "voice.mini.species": "Tippe auf jede der vier Pflanzen und binde einen Strauß.",
   "voice.mini.sky": "Tippe auf „Es wird Nacht“ und schau, was passiert.",
   "voice.mini.hands": "Tippe auf „Ansehen“ und erfahre, was Jaakow getan hat.",
@@ -373,6 +379,6 @@
   "about.codeH": "Software",
   "about.code": "Das Puzzle nutzt die freien Bibliotheken headbreaker (ISC-Lizenz) und Konva (MIT-Lizenz). Die Stimme des Hüters wurde vorab mit der Sprachsynthese von Microsoft Azure AI Speech aufgenommen; was nicht aufgenommen ist (etwa der Name des Helden), liest die Stimme des Browsers.",
   "about.privacyH": "Datenschutz",
-  "about.privacy": "Das Spiel sendet nichts ins Internet: Fortschritt, Antworten und Einstellungen bleiben nur auf diesem Gerät. Die Kamera in der Welt „Spiegel“ geht nur per Knopfdruck an, das Bild wird nicht aufgezeichnet.",
+  "about.privacy": "Das Spiel sendet nichts ins Internet: Fortschritt, Antworten und Einstellungen bleiben nur auf diesem Gerät. Die Kamera in der Welt „Spiegel“ geht nur per Knopfdruck an, das Bild wird nicht aufgezeichnet. Ein Foto für die Urkunde wird nur per Knopfdruck und nur auf diesem Gerät gespeichert; du kannst es auf der Urkunden-Seite löschen.",
   "donate.label": "Projekt unterstützen"
 }
