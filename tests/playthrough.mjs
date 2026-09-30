@@ -137,7 +137,12 @@ async function run(browser, base, sc) {
     if (await has('.chip')) { if (await has('#ownin')) await page.fill('#ownin', ownQuality); await page.click('.chip:not(.on)'); await page.click('.chip:not(.on) >> nth=1'); continue; }
     add(`stuck on screen "${screen}"`); break;
   }
-  if (i >= 700) add('did not reach the final screen');
+  if (i >= 700) {
+    // say where the driver got stuck: screen, step type, open sheet, visible buttons
+    const where = await page.evaluate(() => { let st = typeof steps === 'function' && ['world', 'prologue'].includes(S.screen) ? steps()[idx()] : null; if (typeof st === 'function') st = null;
+      return `${S.screen}/${st ? st.type + (st.game ? ':' + JSON.stringify(st.game) : '') : '-'}${document.querySelector('.sheet') ? ' + open sheet' : ''}; buttons: ` + [...document.querySelectorAll('#stage button:not([disabled])')].slice(0, 6).map(b => (b.id || b.className) + (b.innerText ? ' «' + b.innerText.slice(0, 20) + '»' : '')).join(', '); });
+    add('did not reach the final screen — stuck on ' + where);
+  }
 
   const spoken = await page.evaluate(() => window.__spoken);
   // every sentence the Keeper says must have a ready-made recording (tools/tts.mjs)
