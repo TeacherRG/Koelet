@@ -147,11 +147,13 @@ function showMenu(){
       <button class="mitem" data-m="snd" aria-pressed="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sound',{state:t(S.sound?'menu.on':'menu.off')})}</span></button>
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
     </div>
+    ${audioPanelHTML()}
     ${langPicker()}
     <div><span class="kicker">${t('ach.count',{n:Object.keys(S.ach).length})}</span>${achGrid()}</div>
     <p class="muted" style="font-size:14px">${t('ach.note')}</p>
     <button class="btn ghost" id="closeM">${t('btn.close')}</button></div>`;
     wireLangPicker(m,()=>{draw();hud();render()});
+    wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
       m.remove();if(k==='map')go('map');if(k==='home')go('title')});
@@ -186,7 +188,9 @@ function go(screen,skipPrologue){
 }
 function render(){
   stopReading();stopCamera();applyTheme();hud();
+  Voice.cancel();
   ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal}[S.screen]||renderTitle)();
+  if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
 
 function renderTitle(){
@@ -195,6 +199,7 @@ function renderTitle(){
   const started=S.screen!=='title'||S.sparks>0||S.hero.name||S.done.some(Boolean);
   stage.innerHTML=`<section class="title-screen scene">
     ${langPicker('title')}
+    ${audioPanelHTML(true)}
     <span class="kicker">${t('title.kicker')}</span>
     <h1 class="h1">${t('title.h1a')}<br><span>${t('title.h1b')}</span></h1>
     <p class="lead">${t('title.lead')}</p>
@@ -206,6 +211,7 @@ function renderTitle(){
     <p class="foot">${t('title.foot')}</p>
   </section>`;
   wireLangPicker(stage,renderTitle);
+  wireAudioPanel(stage,renderTitle);
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
   const n=$('#newg');if(n)n.onclick=()=>{
@@ -313,6 +319,7 @@ function rChoice(st){
     let extra='';
     if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+1;const tool=TOOLS[o.tool];extra=`<p class="lit">${icon(tool[0])}<b>${t('choice.toolLit',{name:tool[1]})}</b></p>`}
     addSparks(10,b);sfx.good();setMood('warm'); // искры одинаковые за любой ответ
+    Voice.say([o.r,st.after,t('voice.continue')]);
     $('#out').innerHTML=`<div class="resp"><span class="who">${t('choice.what')}</span><p>${esc(o.r)}</p>${extra}${st.after?`<p class="muted">${esc(st.after)}</p>`:''}</div>`;
     const tb=stage.querySelector('.toolbox');if(tb)tb.outerHTML=toolbox();
     const others=st.options.filter(x=>x!==o&&x.r!==o.r);
@@ -866,6 +873,7 @@ function start(data){
   if(data&&data.state&&data.state.v===1)S=Object.assign(fresh(),data.state);
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
+  showGate(()=>{});
 }
 window.claude?.hot?.snapshot?.(()=>({state:S}));
 window.GAME_DATA_READY.then(()=>{

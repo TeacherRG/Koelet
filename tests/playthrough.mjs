@@ -5,7 +5,8 @@
 //  - no leftover {boy|girl} forms, {{placeholders}}, raw locale keys or "undefined";
 //  - the right alphabet (no Cyrillic in German, no ы/э/ъ/ё in Ukrainian);
 //  - all 7 worlds done, final tabs render, certificate image is drawn;
-//  - the real jigsaw appears and the mirror step works without a camera.
+//  - the real jigsaw appears and the mirror step works without a camera;
+//  - the start screen turns on music, the greeting is spoken, every screen gets a voice hint.
 //
 // Options:
 //   --lang=de        only scenarios in this language (ru | uk | de)
@@ -56,10 +57,24 @@ async function run(browser, base, sc) {
   page.on('pageerror', e => add('JS error: ' + e.message));
   page.on('requestfailed', r => { if (r.url().startsWith(base)) add('failed to load ' + r.url().slice(base.length)); });
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) add('console error: ' + m.text()); });
-  await page.addInitScript(l => { try { localStorage.setItem('koelet-lang', l); } catch (e) {} }, sc.lang);
+  await page.addInitScript(l => {
+    try { localStorage.setItem('koelet-lang', l); } catch (e) {}
+    // record everything the voice guide says (headless browsers have no audible voices)
+    window.__spoken = [];
+    if (window.speechSynthesis) { const orig = speechSynthesis.speak.bind(speechSynthesis); speechSynthesis.speak = u => { window.__spoken.push(u.text); try { orig(u); } catch (e) {} }; }
+  }, sc.lang);
   await page.goto(base + 'index.html');
   await page.waitForSelector('#start', {timeout: 15000});
   let shot = 0;
+  // start screen: the tap turns on music and the greeting
+  if (!(await page.waitForSelector('#gate-go', {timeout: 5000}).catch(() => null))) add('start screen (music gate) did not appear');
+  else {
+    await page.click('#gate-go');
+    await page.waitForTimeout(1500);
+    const a = await page.evaluate(() => ({playing: Music.playing, t: Music.el ? Music.el.currentTime : 0, spoken: window.__spoken.slice()}));
+    if (!a.playing || a.t <= 0) add('background music is not playing after the start screen');
+    if (!a.spoken.length) add('greeting was not spoken');
+  }
   const snap = async label => { if (shotsDir) await page.screenshot({path: `${shotsDir}/${name}-${String(++shot).padStart(3, '0')}-${label}.png`, fullPage: true}); };
   await snap('title');
   const [heroName, ownFlow, ownQuality] = INPUT[sc.lang];
@@ -103,6 +118,9 @@ async function run(browser, base, sc) {
   }
   if (i >= 700) add('did not reach the final screen');
 
+  const spoken = await page.evaluate(() => window.__spoken);
+  for (const text of spoken) for (const p of textProblems(text, sc.lang)) add(`[voice] ${p}`);
+  if (spoken.length < steps) add(`voice hints: only ${spoken.length} phrases for ${steps} screens`);
   const state = await page.evaluate(() => ({screen: S.screen, done: S.done.filter(Boolean).length}));
   if (state.screen !== 'final') add(`ended on "${state.screen}" instead of "final"`);
   if (state.done !== 7) add(`only ${state.done} of 7 worlds done`);
@@ -132,7 +150,7 @@ try {
   const results = await Promise.all(scenarios.map(sc => run(browser, base, sc).catch(e => ({name: `${sc.lang}-${sc.age}-${sc.g}`, steps: 0, problems: ['crashed: ' + e.message]}))));
   for (const r of results) {
     if (r.problems.length) { failed++; console.log(`✗ ${r.name} (${r.steps} steps)\n    ` + r.problems.join('\n    ')); }
-    else console.log(`✓ ${r.name} — ${r.steps} steps, all 7 worlds, certificate`);
+    else console.log(`✓ ${r.name} — ${r.steps} steps, all 7 worlds, certificate, music and voice`);
   }
 } finally { await browser.close(); server.close(); }
 if (shotsDir) console.log(`Screenshots: ${shotsDir}`);

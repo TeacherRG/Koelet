@@ -29,6 +29,10 @@ Placeholders in interface strings look like `{{name}}`. Forms that depend on the
 
 `vendor/headbreaker.js` is [headbreaker](https://github.com/flbulgarelli/headbreaker) 3.0.0 (ISC) bundled with [Konva](https://konvajs.org) 6.0.0 (MIT), built from the official npm sources. It powers the real jigsaw in the “Puzzle” world. It is stored in the repository and loaded only on that step, so the game does not contact any outside server. License texts are in `vendor/LICENSES.md`.
 
+## Music and voice
+
+The game is a spoken quest: when it opens, the Keeper greets the player, and on every screen a voice says what to do (browser speech synthesis in the chosen language). Background music plays from `music/` — four Chabad niggunim listed in `music/tracks.json`. Browsers allow sound only after the first tap, so the game starts with a screen «Начать с музыкой» / «Без звука». Music, track, volume and voice hints can be changed in the menu and on the title screen.
+
 ## Camera (mirror)
 
 In the “Mirror” world the player can turn on the camera to see themselves in a mirror. The camera starts only after the player presses the button and the browser grants access. The picture stays in the browser: it is not sent or recorded anywhere, and the camera turns off when the player moves on. Without a camera, or if access is denied, the mirror shows the player’s avatar. Browsers allow the camera only over `https://` or on `localhost`.

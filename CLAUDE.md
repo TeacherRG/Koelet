@@ -17,10 +17,12 @@ Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's
 
 | File | What it is |
 |---|---|
-| `index.html` | Page shell; loads scripts in order: `i18n.js` → `game-data.js` → `art.js` → `game.js` |
+| `index.html` | Page shell; loads scripts in order: `i18n.js` → `game-data.js` → `art.js` → `music.js` → `game.js` |
 | `i18n.js` | Language module: `LANGS`, `t('key', {vars})`, `tl('key')`, language detection, `loadLang()`/`setLang()` |
 | `game-data.js` | Loads texts for the chosen language (falls back to Russian) |
 | `game.js` | Runtime: state `S` (localStorage `koelet-game-v1`), screens, step engine, mini-games, certificate |
+| `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Prefs in localStorage `koelet-audio` |
+| `music/` | Background music (4 Chabad niggunim, mp3) and `tracks.json` (playlist with titles in he/ru/uk/de) |
 | `art.js` | Icon set (`ICONS`, `icon()`), the Keeper (`mentorSvg(mood)`), world themes and backdrops (`SCENES`) |
 | `styles.css` | All styles; colours are CSS variables, world accent in `--accent` |
 | `content/<lang>/*.json` | Story: `shared.json` (lists, labels), `prologue.json`, one file per world |
@@ -51,6 +53,13 @@ Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's
 - Mini-games are registered in `rMini()`: `book`, `treasure`, `find`, `puzzle` (real jigsaw), `selfmirror` (camera), `species`, `sky`, `hands`, `circles`, `final`.
 - Adding a step shifts step indices of saved games — that is acceptable, but add it in all three languages at the same position.
 - Camera (`selfmirror`): starts only after the button, stops in `render()` / on `pagehide` via `stopCamera()`; always keep the no-camera path.
+
+## Music and voice («музыкальный текстовый квест»)
+
+- Browsers block sound until the first tap, so every page load starts with the gate (`showGate()`): «Начать с музыкой» starts the music and speaks the greeting; «Без звука» turns both off (saved).
+- After every `render()` the voice guide speaks the main text of the screen plus what to do (`guideParts()` in `music.js`). Hints are locale keys `voice.*`: one per step type (`voice.talk`, `voice.choice`, …) and one per mini-game (`voice.mini.<game>`). **A new step type or mini-game needs a `voice.*` key in all three locales.** After a choice the outcome is spoken.
+- Music ducks to 30 % while the voice speaks and pauses in a hidden tab. Settings (music, track, volume, voice) live in the menu and as quick toggles on the title screen; they are separate from game progress.
+- New track: put the mp3 into `music/` (Latin file name) and add it to `music/tracks.json` with titles for every language. Only add music the project has the right to use.
 
 ## Design
 
