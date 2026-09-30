@@ -187,10 +187,6 @@ function go(screen,skipPrologue){
   S.screen=screen;save();render();window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
-  if(document.startViewTransition){
-    document.startViewTransition(()=>renderNow());
-    return;
-  }
   renderNow();
 }
 function renderNow(){
