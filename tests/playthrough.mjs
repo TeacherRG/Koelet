@@ -177,6 +177,9 @@ async function run(browser, base, sc) {
       await page.keyboard.press('Escape');
       if (await has('.sheet.about')) add('«About» did not close with Escape');
     }
+    // donate button (heart) leads to mychitas.app/donate
+    const donate = await page.evaluate(() => (document.querySelector('#donate') || {}).href);
+    if (donate !== 'https://mychitas.app/donate') add(`donate link is "${donate}" instead of https://mychitas.app/donate`);
     // the hero chip opens the profile with level and all achievements
     await page.click('#herobtn');
     const prof = await page.evaluate(() => { const d = document.querySelector('.sheet.profile'); return d && {text: d.innerText, achs: d.querySelectorAll('.ach').length}; });

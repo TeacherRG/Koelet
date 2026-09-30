@@ -214,7 +214,7 @@ function wireLangPicker(root,after){
 const PROJECT_URL='https://mychitas.app';
 const APP_URL='https://mylot.mychitas.app';
 const COPYRIGHT='©mychitas.app 5787';
-const DONATE_URL='https://donate.mychitas.app';
+const DONATE_URL='https://mychitas.app/donate';
 function donateBtn(){
   let a=document.getElementById('donate');
   if(!a){a=document.createElement('a');a.id='donate';a.className='donate';a.target='_blank';a.rel='noopener';a.href=DONATE_URL;document.body.appendChild(a)}
