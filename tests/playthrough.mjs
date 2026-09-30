@@ -161,6 +161,17 @@ async function run(browser, base, sc) {
       await page.keyboard.press('Escape');
       if (await has('.sheet.about')) add('«About» did not close with Escape');
     }
+    // the hero chip opens the profile with level and all achievements
+    await page.click('#herobtn');
+    const prof = await page.evaluate(() => { const d = document.querySelector('.sheet.profile'); return d && {text: d.innerText, achs: d.querySelectorAll('.ach').length}; });
+    if (!prof) add('hero chip did not open the profile');
+    else {
+      if (prof.achs !== 6) add(`profile: ${prof.achs} achievements instead of 6`);
+      for (const p of textProblems(prof.text, sc.lang)) add(`[profile] ${p}`);
+      await snap('profile');
+      await page.click('#closeM');
+      if (await has('.sheet.profile')) add('profile did not close with ✕');
+    }
   }
   await ctx.close();
   return {name, steps, problems: [...problems]};
