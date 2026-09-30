@@ -13,6 +13,7 @@ const REF = 'ru';
 const TECH = new Set(['type','key','game','ic','art','mood','age','tool','he','heb','pic','item','__dynamic','__ag','skin','hair','style','M']);
 const ALPHABET = {
   de: {bad: /[А-Яа-яЁёІіЇїЄєҐґ]/, what: 'Cyrillic letters'},
+  en: {bad: /[А-Яа-яЁёІіЇїЄєҐґ]/, what: 'Cyrillic letters'},
   uk: {bad: /[ЫыЭэЪъЁё]/, what: 'Russian-only letters (ы, э, ъ, ё)'}
 };
 const errors = [];

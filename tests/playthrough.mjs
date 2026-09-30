@@ -31,15 +31,17 @@ const ALL = [
   {lang: 'ru', age: 't', g: 'm'}, {lang: 'ru', age: 'y', g: 'f'},
   {lang: 'uk', age: 'y', g: 'f'}, {lang: 'uk', age: 't', g: 'm'},
   {lang: 'de', age: 't', g: 'm'}, {lang: 'de', age: 'y', g: 'f'},
-  {lang: 'ru', age: 'a', g: 'f'}, {lang: 'uk', age: 'a', g: 'm'}, {lang: 'de', age: 'a', g: 'f'}
+  {lang: 'en', age: 't', g: 'f'}, {lang: 'en', age: 'y', g: 'm'},
+  {lang: 'ru', age: 'a', g: 'f'}, {lang: 'uk', age: 'a', g: 'm'}, {lang: 'de', age: 'a', g: 'f'}, {lang: 'en', age: 'a', g: 'm'}
 ];
 let scenarios = ALL.filter(s => !onlyLang || s.lang === onlyLang);
 if (quick) scenarios = scenarios.filter((s, i, a) => a.findIndex(x => x.lang === s.lang) === i);
 if (!scenarios.length) { console.error(`No scenarios for --lang=${onlyLang}`); process.exit(2); }
 
-const INPUT = {ru: ['Тест', 'собираю модели', 'умею мирить друзей'], uk: ['Тест', 'збираю моделі', 'вмію мирити друзів'], de: ['Test', 'Modelle bauen', 'Streit schlichten']};
-const ALPHABET = {de: /[А-Яа-яЁёІіЇїЄєҐґ]/, uk: /[ЫыЭэЪъЁё]/};
-const localeKeys = Object.keys(JSON.parse(await readFile(ROOT + 'locales/ru.json', 'utf8')));
+const INPUT = {ru: ['Тест', 'собираю модели', 'умею мирить друзей'], uk: ['Тест', 'збираю моделі', 'вмію мирити друзів'], de: ['Test', 'Modelle bauen', 'Streit schlichten'], en: ['Test', 'building models', 'making peace between friends']};
+const ALPHABET = {de: /[А-Яа-яЁёІіЇїЄєҐґ]/, en: /[А-Яа-яЁёІіЇїЄєҐґ]/, uk: /[ЫыЭэЪъЁё]/};
+// only dotted keys: a bare key like «letters» is an ordinary English word
+const localeKeys = Object.keys(JSON.parse(await readFile(ROOT + 'locales/ru.json', 'utf8'))).filter(k => k.includes('.'));
 const KEY_RE = new RegExp('(^|\\s)(' + localeKeys.map(k => k.replace(/\./g, '\\.')).join('|') + ')(\\s|$)');
 
 function textProblems(text, lang) {

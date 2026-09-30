@@ -5,7 +5,7 @@ Game text is stored per language in `/content/<lang>/`: shared labels and settin
 ## Run and test
 
 - `npm start` — local server at http://localhost:8080 (no dependencies).
-- `npm test` — syntax check, data check for all languages, and a full playthrough in Chromium for ru/uk/de, both age groups. Needs `npm install` once (Playwright).
+- `npm test` — syntax check, data check for all languages, and a full playthrough in Chromium for ru/uk/de/en, all age groups. Needs `npm install` once (Playwright).
 - `npm run test:data` — fast check of texts only (no browser): catches missing translations, broken JSON, wrong placeholders or gender forms.
 - `npm run test:play -- --shots` — playthrough with screenshots of every screen in `tests/screenshots/`.
 
