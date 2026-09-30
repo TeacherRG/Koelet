@@ -146,6 +146,7 @@ function showMenu(){
       ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
       <button class="mitem" data-m="snd" aria-pressed="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sound',{state:t(S.sound?'menu.on':'menu.off')})}</span></button>
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
+      <button class="mitem" data-m="about">${icon('info')}<span>${t('about.title')}</span></button>
     </div>
     ${audioPanelHTML()}
     ${langPicker()}
@@ -156,7 +157,7 @@ function showMenu(){
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title')});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout()});
     const c=m.querySelector('#closeM');c.onclick=()=>{m.remove();const mb=$('#menubtn');if(mb)mb.focus()};(m.querySelector('.mitem')||c).focus();
   };
   const back=document.activeElement;const close=()=>{m.remove();if(back&&back.isConnected)back.focus()};
@@ -177,6 +178,24 @@ function wireLangPicker(root,after){
     try{await setLang(b.dataset.lang);sfx.tap()}catch(e){toast('mute',LOAD_ERROR[b.dataset.lang]?.[0]||'Error','')}
     after();
   });
+}
+
+/* ---------- О приложении ---------- */
+const PROJECT_URL='https://mychitas.app';
+function showAbout(){
+  const m=document.createElement('div');m.className='modal';
+  const link=`<a href="${PROJECT_URL}" target="_blank" rel="noopener">mychitas.app</a>`;
+  const sec=(h,txt)=>`<section class="about-sec"><h3>${t(h)}</h3><p>${t(txt)}</p></section>`;
+  m.innerHTML=`<div class="sheet about" role="dialog" aria-modal="true" aria-labelledby="about-h">
+    <div class="about-head"><div class="about-m">${mentorSvg('smile')}</div><div><span class="kicker">${t('about.title')}</span>
+    <h2 class="h2" id="about-h">${t('title.h1a')} ${t('title.h1b')}</h2><p class="about-made">${t('about.made',{link})}</p></div></div>
+    <p>${t('about.text')}</p>
+    ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}
+    <button class="btn ghost" id="closeA">${t('btn.close')}</button></div>`;
+  const back=document.activeElement;const close=()=>{m.remove();if(back&&back.isConnected)back.focus()};
+  document.body.appendChild(m);
+  m.onclick=e=>{if(e.target===m)close()};m.onkeydown=e=>{if(e.key==='Escape')close()};
+  const c=m.querySelector('#closeA');c.onclick=close;c.focus({preventScroll:true});m.querySelector('.sheet').scrollTop=0;
 }
 
 /* ================================================================
@@ -208,10 +227,11 @@ function renderTitle(){
       ${S.sparks>0?`<button class="btn" id="cont">${t('btn.continue')}</button><button class="btn ghost" id="newg">${t('btn.restart')}</button>`:`<button class="btn" id="start">${t('btn.start')}</button>`}
     </div>
     <div id="conf"></div>
-    <p class="foot">${t('title.foot')}</p>
+    <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
   </section>`;
   wireLangPicker(stage,renderTitle);
   wireAudioPanel(stage,renderTitle);
+  $('#aboutbtn').onclick=showAbout;
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
   const n=$('#newg');if(n)n.onclick=()=>{

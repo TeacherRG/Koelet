@@ -454,6 +454,17 @@ a.btn{text-decoration:none}
 .audiopanel.compact .mitem{flex:1 1 150px;min-height:46px;font-size:14px;padding:8px 12px}
 .audiopanel.compact .mitem .ico{width:20px;height:20px}
 
+/* О приложении */
+.sheet.about p{font-size:15px}
+.about-head{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:center}
+.about-m .mentor{width:100%;height:auto;display:block}
+.about-made{margin-top:4px}
+.about-made a,.about a{color:var(--leaf);font-weight:700}
+.about-sec{display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:1px solid var(--line)}
+.about-sec h3{margin:0;font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.linkbtn{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:6px 0;min-height:44px;color:var(--leaf);font-weight:700;font-size:13px;text-decoration:underline}
+.linkbtn .ico{width:16px;height:16px}
+
 /* Выбор языка */
 .langpick{display:flex;flex-direction:column;gap:6px}
 .langpick.title{align-self:flex-end;width:min(360px,100%)}

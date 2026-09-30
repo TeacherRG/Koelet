@@ -39,6 +39,7 @@ const ICONS = {
   medal:'<path d="M8 3l3 6M16 3l-3 6"/><circle class="f" cx="12" cy="14.5" r="5.5"/><path d="M12 12v5M10 14.5h4"/>',
   map:'<path class="f" d="M3 6l6-2.5 6 2.5 6-2.5v14l-6 2.5-6-2.5-6 2.5z"/><path d="M9 3.5v14M15 6v14"/>',
   menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+  info:'<circle class="f" cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".6"/>',
   sound:'<path class="f" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
   mute:'<path class="f" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
   up:'<circle class="f" cx="12" cy="12" r="8.5"/><path d="M12 16.5v-9M8 11l4-4 4 4"/>',
