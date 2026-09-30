@@ -52,6 +52,10 @@
   "toast.soundBlockedSub": "Erlaube Ton für diese Seite im Menü neben der Adresse oder in den Website-Einstellungen und tippe dann noch einmal auf „Anhören“.",
   "toast.soundFail": "Der Ton ließ sich nicht einschalten",
   "toast.soundFailSub": "Prüfe die Ton-Erlaubnis für diese Seite im Menü neben der Adresse oder in den Website-Einstellungen.",
+  "sound.blocked": "Der Browser blockiert den Ton",
+  "sound.blockedSub": "Tippe auf „Ton einschalten“, um ihn auf dieser Seite zu erlauben.",
+  "sound.enable": "Ton einschalten",
+  "sound.settings": "Tippe auf das Symbol links neben der Adresse → „Website-Einstellungen“ → „Ton“ → „Zulassen“, prüfe die Lautstärke und den Lautlos-Modus und lade die Seite neu.",
 
   "hud.sparksTitle": "Funken – dein persönlicher Fortschritt",
   "hud.sparks": "Funken",
