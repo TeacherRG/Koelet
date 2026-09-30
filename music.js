@@ -4,17 +4,20 @@
      громкость, приглушение во время речи, пауза в скрытой вкладке.
    - Voice: голос Хранителя (синтез речи браузера): приветствие, подсказка «что делать»
      на каждом экране и рассказ о последствиях выбора.
-   - Настройки хранятся отдельно от прогресса (localStorage «koelet-audio»):
-     «Начать заново» их не сбрасывает.
+   - Музыка и голос включены при каждом открытии игры: «Без звука» и
+     выключатели в меню действуют до перезагрузки страницы. Мелодия и
+     громкость запоминаются (localStorage «koelet-audio», отдельно от прогресса).
+   - Если Хранитель молчит минуту, он спрашивает «Тебе чем-то помочь?» и
+     повторяет, что делать на этом экране.
    Браузеры не дают играть звук до первого касания, поэтому звук включается
    кнопкой на приветственном экране (gate) — это и есть «разрешение».
    ================================================================ */
 const AUDIO_KEY = 'koelet-audio';
 const AUDIO_DEFAULTS = {music: true, voice: true, track: 'all', volume: 0.35};
 const Audio_ = {prefs: {...AUDIO_DEFAULTS}, tracks: [], unlocked: false};
-try { Object.assign(Audio_.prefs, JSON.parse(localStorage.getItem(AUDIO_KEY) || '{}')); } catch (e) {}
+try { const p = JSON.parse(localStorage.getItem(AUDIO_KEY) || '{}'); for (const k of ['track', 'volume']) if (k in p) Audio_.prefs[k] = p[k]; } catch (e) {}
 const MUSIC_READY = (async () => { try { const r = await fetch('music/tracks.json'); if (r.ok) Audio_.tracks = (await r.json()).tracks || []; } catch (e) {} })();
-function saveAudioPrefs(){ try { localStorage.setItem(AUDIO_KEY, JSON.stringify(Audio_.prefs)); } catch (e) {} }
+function saveAudioPrefs(){ try { const {track, volume} = Audio_.prefs; localStorage.setItem(AUDIO_KEY, JSON.stringify({track, volume})); } catch (e) {} }
 
 /* ---------- Музыка ---------- */
 const Music = {
@@ -80,9 +83,9 @@ document.addEventListener('visibilitychange', () => {
 
 /* ---------- Голос-гид ---------- */
 const Voice = {
-  seq: 0,
+  seq: 0, idleMs: 60000, idleT: null,
   can(){ try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'; } catch (e) { return false; } },
-  cancel(){ this.seq++; try { if (this.can()) speechSynthesis.cancel(); } catch (e) {} Music.duck(false); },
+  cancel(){ this.seq++; this.idle(); try { if (this.can()) speechSynthesis.cancel(); } catch (e) {} Music.duck(false); },
   /* Произносит текст (или несколько фраз подряд). Возвращает Promise, который
      завершается, когда речь закончилась или не смогла начаться. */
   say(parts, {force = false} = {}){
@@ -94,15 +97,27 @@ const Voice = {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = langLocale(); u.rate = young() ? .92 : 1; u.pitch = .95;
       const v = speechSynthesis.getVoices().find(x => x.lang && x.lang.toLowerCase().startsWith(LANG)); if (v) u.voice = v;
-      const done = ok => { if (my === this.seq) Music.duck(false); res(ok); };
-      u.onstart = () => { if (my === this.seq) Music.duck(true); };
+      const done = ok => { if (my === this.seq) { Music.duck(false); this.idle(); } res(ok); };
+      u.onstart = () => { if (my === this.seq) { Music.duck(true); clearTimeout(this.idleT); } };
       u.onend = () => done(true); u.onerror = () => done(false);
       try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { done(false); }
       setTimeout(() => { if (!speechSynthesis.speaking && my === this.seq) done(false); }, 4000);
     });
   },
-  setVoice(on){ Audio_.prefs.voice = on; saveAudioPrefs(); if (!on) this.cancel(); }
+  setVoice(on){ Audio_.prefs.voice = on; saveAudioPrefs(); if (!on) this.cancel(); },
+  /* Минута тишины (Хранитель молчит, игрок ничего не нажимает) → «Тебе чем-то помочь?»
+     и снова подсказка, что делать. Отсчёт заново после каждой речи и каждого касания. */
+  idle(){
+    clearTimeout(this.idleT);
+    if (!Audio_.prefs.voice || !Audio_.unlocked) return;
+    this.idleT = setTimeout(() => {
+      if (document.hidden || document.querySelector('#gate, .sheet') || (this.can() && speechSynthesis.speaking)) return this.idle();
+      const hint = guideParts().filter(Boolean).pop();
+      this.say([t('voice.idle'), hint]);
+    }, this.idleMs);
+  }
 };
+['pointerdown', 'keydown'].forEach(e => document.addEventListener(e, () => Voice.idle(), {passive: true, capture: true}));
 
 /* ---------- Подсказка «что делать» для текущего экрана ---------- */
 /* Первая фраза — главный текст экрана (слова Хранителя), вторая — что нажать. */
@@ -166,7 +181,6 @@ function wireAudioPanel(root, redraw){
 
 /* ---------- Приветственный экран: первое касание включает звук ---------- */
 function showGate(onDone){
-  if (!Audio_.prefs.music && !Audio_.prefs.voice) { Audio_.unlocked = true; onDone(); return; }
   const g = document.createElement('div');
   g.className = 'gate'; g.id = 'gate'; g.setAttribute('role', 'dialog'); g.setAttribute('aria-modal', 'true'); g.setAttribute('aria-labelledby', 'gate-h');
   g.innerHTML = `<div class="gate-card"><div class="gate-m">${mentorSvg('joy')}</div>
@@ -178,13 +192,13 @@ function showGate(onDone){
   const close = () => { g.remove(); onDone(); };
   g.querySelector('#gate-go').onclick = () => {
     Audio_.unlocked = true;
-    if (!Audio_.prefs.music && !Audio_.prefs.voice) { Audio_.prefs.music = Audio_.prefs.voice = true; saveAudioPrefs(); }
+    Audio_.prefs.music = Audio_.prefs.voice = true;
     if (typeof unlockAudio === 'function') unlockAudio();
     Music.start().then(ok => { if (!ok) MUSIC_READY.then(() => Music.start()); });   // тут же, в обработчике нажатия
     Voice.say(t(S.sparks > 0 ? 'voice.titleBack' : 'voice.title'));
     Audio_.greeted = true;
     close();
   };
-  g.querySelector('#gate-quiet').onclick = () => { Audio_.unlocked = true; Audio_.prefs.music = false; Audio_.prefs.voice = false; saveAudioPrefs(); close(); };
+  g.querySelector('#gate-quiet').onclick = () => { Audio_.unlocked = true; Audio_.prefs.music = false; Audio_.prefs.voice = false; close(); };   // только до перезагрузки
   g.querySelector('#gate-go').focus();
 }
