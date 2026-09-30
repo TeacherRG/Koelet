@@ -213,7 +213,7 @@ function guideParts(){
   let st = steps()[idx()]; if (!st) return [];
   if (typeof st === 'function') st = st(S);
   if (st.__dynamic || (st.body && st.body.__dynamic)) st = resolveDynamic(st);
-  const type = st.type, game = R(st.game);
+  const type = st.type, game = st.game;
   if (!type) return [];
   if (type === 'mini') return [txt($s('.bubble .txt')) || txt($s('.lead')), t('voice.mini.' + game)];
   if (type === 'card') return [txt($s('.card .h2')), young() ? txt($s('.card p')) : '', t('voice.card')];

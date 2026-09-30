@@ -26,7 +26,7 @@ export function collect(lang) {
       texts.push(v); if (own) (values[field] = values[field] || new Set()).add(v);
     }
     else if (Array.isArray(v)) v.forEach(x => walk(x, field, own));
-    else if (v && typeof v === 'object') for (const k in v) if (!SKIP_FIELDS.has(k) && k !== '__ag') walk(v[k], k === 'y' || k === 't' || k === 'a' ? field : k, own);
+    else if (v && typeof v === 'object') for (const k in v) if (!SKIP_FIELDS.has(k) && k !== '__ag') walk(v[k], k === 'y' || k === 't' ? field : k, own);
   };
   const dir = join(ROOT, 'content', lang);
   for (const f of readdirSync(dir)) if (f.endsWith('.json')) walk(read(`content/${lang}/${f}`), '', true);

@@ -179,39 +179,6 @@
       ]
     },
     {
-      "age": "a",
-      "type": "card",
-      "kicker": "Talmud, Joma 22b",
-      "title": "Ein Fehltritt und zwei",
-      "body": "<p>Der Talmud stellt eine schwere Frage. Schaul fehlte einmal und verlor das Königtum. David fehlte zweimal, in der Geschichte mit Urija und bei der Volkszählung, und blieb König.</p><p>Raw Aschkenasi bringt die Erklärung des Lubawitscher Rebbe. Als Schaul Agag, den König Amaleks, verschonte, wich er vom Kern des Auftrags ab, für den er König geworden war. Davids Fehler waren schwere persönliche Vergehen, und er wurde dafür hart bestraft. Seiner Aufgabe als König aber blieb er treu.</p><p>Raw Aschkenasis Folgerung: <b>Solange ein Mensch seiner wichtigsten Bestimmung treu bleibt, bewahrt G-tt ihm seinen Platz in der Welt.</b></p>"
-    },
-    {
-      "age": "a",
-      "type": "choice",
-      "who": "mentor",
-      "text": "Und was heißt für dich, „seiner Aufgabe treu zu bleiben“?",
-      "key": "missionTrue",
-      "neutral": true,
-      "options": [
-        {
-          "t": "Das Wichtigste nicht aufgeben, auch wenn es schwer ist",
-          "r": "Ein schwerer Weg. Dafür entscheiden Schwierigkeiten nicht mehr darüber, womit du dich beschäftigst."
-        },
-        {
-          "t": "Fehler zugeben und nicht aufgeben",
-          "r": "Davids Weg: schwere Fehler, echte Umkehr und Treue zur eigenen Aufgabe."
-        },
-        {
-          "t": "Die eigene Aufgabe nicht gegen fremde Erwartungen tauschen",
-          "r": "Schaul gab es selbst zu: „Ich fürchtete das Volk und hörte auf sie“ (Schmuel I 15:24). Fremde Erwartungen brachten ihn von seiner Aufgabe ab."
-        },
-        {
-          "t": "Ich weiß noch nicht, was meine Aufgabe ist",
-          "r": "Ehrlich. Genau dafür gibt es das Chelek-Labor: Dort findest du drei Zeichen, an denen man sie erkennt."
-        }
-      ]
-    },
-    {
       "type": "quote",
       "he": "וַתְּקַנֵּא רָחֵל בַּאֲחֹתָהּ",
       "src": "Bereschit 30:1",

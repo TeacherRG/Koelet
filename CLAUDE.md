@@ -1,6 +1,6 @@
 # Koelet — «Тайна Коэлета»
 
-Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi Shneor Ashkenazi's lesson on the Book of Kohelet. Plain HTML/CSS/JS, no framework and no build step. The team talks in Russian; answer in Russian unless asked otherwise.
+Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's lesson on the Book of Kohelet. Plain HTML/CSS/JS, no framework and no build step. The team talks in Russian; answer in Russian unless asked otherwise.
 
 ## Run and test
 
@@ -8,7 +8,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - `npm run lint` — `node --check` for every script, JSON validity (skips `vendor/`).
 - `npm run test:data` — fast, no browser. Compares every language with Russian: keys, structure, technical values, `{{placeholders}}`, gender forms, alphabet.
 - `npm run test:quick` — plays the whole game in Chromium once per language (~1 min).
-- `npm run test:play` — all 9 scenarios (ru/uk/de × 8–11 girl / 12–15 boy / 16+), ~3 min. Options: `--lang=de`, `--quick`, `--shots` (screenshots of every screen → `tests/screenshots/`, gitignored), `--headed`.
+- `npm run test:play` — all 6 scenarios (ru/uk/de × 8–11 girl / 12–15 boy), ~2 min. Options: `--lang=de`, `--quick`, `--shots` (screenshots of every screen → `tests/screenshots/`, gitignored), `--headed`.
 - `npm run voice:dry` — how many sentences/characters would be sent to Azure; `npm run voice` generates them (needs `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`; `--lang=`, `--rpm=`, `--jobs=`, `--force`).
 - `npm test` — all of the above. Run it before every commit that touches game code or texts.
 - Cloud sessions: `.claude/hooks/session-start.sh` installs Playwright (pinned to 1.56.1, browsers are preinstalled in `/opt/pw-browsers`; never run `playwright install`).
@@ -40,7 +40,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Languages: `ru` (reference, default), `uk`, `de`. **Every text change must be made in all three languages**: `content/ru|uk|de/…` and `locales/ru|uk|de.json` have identical keys and structure. `npm run test:data` catches gaps.
 - Never hard-code visible text in `game.js`: add a key to all three `locales/*.json` and use `t('key')` / `tl('key')` (for lists, objects and age variants). Escape user input with `esc()`.
 - Gender of the player: `{boy form|girl form}` inside a string, e.g. `ты {прошёл|прошла}`, `{Wanderer|Wanderin}`. Resolved by `T()`; `t()` and step data (via `R()`) apply it automatically. Ukrainian needs forms wherever Russian has them; German rarely does.
-- Age groups: `y` (8–11), `t` (12–15), `a` (16+, adults). `{"__ag": 1, "y": "8–11 text", "t": "12–15 text", "a": "16+ text"}` for any value; `a` is optional and falls back to `t`. A whole step only for some groups: `"age": "y"` (8–11 only), `"age": "t"` (12+, i.e. 12–15 **and** 16+), `"age": "a"` (16+ only). The 16+ version follows the full lesson (Maslow, the Netziv, Yoma 22b, the Rebbe and Rabin, Rav Ashkenazi's own story), each idea with its source. Texts for 8–11: 30–40 words per screen, 6 options + «Свой вариант».
+- Age groups: `{"__ag": 1, "y": "8–11 text", "t": "12–15 text"}` for any value. A whole step only for one group: `"age": "y"` or `"age": "t"`. Texts for 8–11: 30–40 words per screen, 6 options + «Свой вариант».
 - Interface placeholders: `{{name}}` (not to be confused with gender forms).
 - Technical values in content JSON are never translated: `type`, `key`, `ic`, `game`, `art`, `mood`, `age`, `tool`, `who: "mentor"`, Hebrew in `he`/`heb`.
 - New language: copy `content/ru/` and `locales/ru.json`, translate, add a line to `LANGS` in `i18n.js`, add an alphabet rule to `tests/check-data.mjs` and scenarios to `tests/playthrough.mjs`.
@@ -55,7 +55,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 ## Steps and mini-games
 
 - A world is `{name, desc, steps:[…]}`; step types: `talk`, `choice`, `multi`, `quote`, `card`, `reveal`, `mini` (see `renderStep()` in `game.js`). Dynamic steps use `__dynamic` (`city-year`, `city-evening`, or `body: {"__dynamic": "strength-map"}`) and are built in `resolveDynamic()`.
-- Mini-games are registered in `rMini()`: `book`, `treasure`, `find`, `puzzle` (real jigsaw; 3×3 pieces, 5×5 for 16+), `selfmirror` (camera), `species`, `sky`, `hands`, `circles`, `final`; 16+ only: `maslow` (Solomon's experiments from Kohelet 2 on Maslow's pyramid, replaces `treasure` via `"game": {"__ag":1,…,"a":"maslow"}`) and `timeline` (history as a puzzle: events in order, the player's piece last).
+- Mini-games are registered in `rMini()`: `book`, `treasure`, `find`, `puzzle` (real jigsaw), `selfmirror` (camera), `species`, `sky`, `hands`, `circles`, `final`.
 - Adding a step shifts step indices of saved games — that is acceptable, but add it in all three languages at the same position.
 - Camera (`selfmirror`): starts only after the button, stops in `render()` / on `pagehide` via `stopCamera()`; always keep the no-camera path.
 

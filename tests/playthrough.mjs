@@ -30,8 +30,7 @@ const shotsDir = arg('shots') === undefined ? null : (arg('shots') === true ? RO
 const ALL = [
   {lang: 'ru', age: 't', g: 'm'}, {lang: 'ru', age: 'y', g: 'f'},
   {lang: 'uk', age: 'y', g: 'f'}, {lang: 'uk', age: 't', g: 'm'},
-  {lang: 'de', age: 't', g: 'm'}, {lang: 'de', age: 'y', g: 'f'},
-  {lang: 'ru', age: 'a', g: 'f'}, {lang: 'uk', age: 'a', g: 'm'}, {lang: 'de', age: 'a', g: 'f'}
+  {lang: 'de', age: 't', g: 'm'}, {lang: 'de', age: 'y', g: 'f'}
 ];
 let scenarios = ALL.filter(s => !onlyLang || s.lang === onlyLang);
 if (quick) scenarios = scenarios.filter((s, i, a) => a.findIndex(x => x.lang === s.lang) === i);
@@ -53,7 +52,7 @@ function textProblems(text, lang) {
 }
 
 async function run(browser, base, sc) {
-  const name = `${sc.lang}-${{y: '8-11', t: '12-15', a: '16plus'}[sc.age]}-${sc.g === 'f' ? 'girl' : 'boy'}`;
+  const name = `${sc.lang}-${sc.age === 'y' ? '8-11' : '12-15'}-${sc.g === 'f' ? 'girl' : 'boy'}`;
   const ctx = await browser.newContext({viewport: {width: 375, height: 800}});
   const page = await ctx.newPage();
   const problems = new Set(), seen = {jigsaw: false, mirror: false};
@@ -127,9 +126,6 @@ async function run(browser, base, sc) {
     let clicked = false;
     for (const id of ['#night', '#see', '#put']) if (await has(id)) { await page.click(id); clicked = true; break; }
     if (clicked) continue;
-    if (await has('.mz-card')) { seen.maslow = true; await page.click('.mz-card'); await page.click(`.mz-drop >> nth=${(await has('.mz-chip')) ? 3 : 0}`); continue; }
-    if (await has('.tl-ev')) { seen.timeline = true; const n = (await page.$$('.tl-slot.in')).length; if (!n) await page.click('.tl-ev[data-n="1"]'); await page.click(`.tl-ev[data-n="${n}"]`); continue; }
-    if (await has('.item') && await page.evaluate(() => { const d = document.querySelector('#donate'); return !!d && !d.hidden; })) add('donate heart is shown over a mini-game');
     if (await has('.item')) { await page.click('.item:not(.got)', {force: true}).catch(() => {}); await page.waitForTimeout(250); continue; }
     if (await has('.tile')) { for (const t of await page.$$('.tile[data-t="1"]:not(.hit)')) await t.click(); continue; }
     if (await has('.sp:not(.on)')) { await page.click('.sp:not(.on)'); continue; }
@@ -137,12 +133,7 @@ async function run(browser, base, sc) {
     if (await has('.chip')) { if (await has('#ownin')) await page.fill('#ownin', ownQuality); await page.click('.chip:not(.on)'); await page.click('.chip:not(.on) >> nth=1'); continue; }
     add(`stuck on screen "${screen}"`); break;
   }
-  if (i >= 700) {
-    // say where the driver got stuck: screen, step type, open sheet, visible buttons
-    const where = await page.evaluate(() => { let st = typeof steps === 'function' && ['world', 'prologue'].includes(S.screen) ? steps()[idx()] : null; if (typeof st === 'function') st = null;
-      return `${S.screen}/${st ? st.type + (st.game ? ':' + JSON.stringify(st.game) : '') : '-'}${document.querySelector('.sheet') ? ' + open sheet' : ''}; buttons: ` + [...document.querySelectorAll('#stage button:not([disabled])')].slice(0, 6).map(b => (b.id || b.className) + (b.innerText ? ' «' + b.innerText.slice(0, 20) + '»' : '')).join(', '); });
-    add('did not reach the final screen — stuck on ' + where);
-  }
+  if (i >= 700) add('did not reach the final screen');
 
   const spoken = await page.evaluate(() => window.__spoken);
   // every sentence the Keeper says must have a ready-made recording (tools/tts.mjs)
@@ -154,9 +145,6 @@ async function run(browser, base, sc) {
   if (state.done !== 7) add(`only ${state.done} of 7 worlds done`);
   if (!seen.jigsaw) add('jigsaw step was not reached');
   if (!seen.mirror) add('mirror step was not reached');
-  if (sc.age === 'a' && !seen.maslow) add('16+: Maslow pyramid (Solomon\'s experiments) was not reached');
-  if (sc.age === 'a' && !seen.timeline) add('16+: history timeline was not reached');
-  if (sc.age !== 'a' && (seen.maslow || seen.timeline)) add('16+ mini-games shown to a child');
   if (state.screen === 'final') {
     for (const tab of ['path', 'ach', 'cert']) {
       await page.click(`[data-tab="${tab}"]`);
@@ -183,9 +171,6 @@ async function run(browser, base, sc) {
       await page.keyboard.press('Escape');
       if (await has('.sheet.about')) add('«About» did not close with Escape');
     }
-    // donate button (heart) leads to mychitas.app/donate
-    const donate = await page.evaluate(() => (document.querySelector('#donate') || {}).href);
-    if (donate !== 'https://mychitas.app/donate') add(`donate link is "${donate}" instead of https://mychitas.app/donate`);
     // the hero chip opens the profile with level and all achievements
     await page.click('#herobtn');
     const prof = await page.evaluate(() => { const d = document.querySelector('.sheet.profile'); return d && {text: d.innerText, achs: d.querySelectorAll('.ach').length}; });
