@@ -436,6 +436,24 @@ a.btn{text-decoration:none}
 .sm-note{font-size:14px;display:flex;gap:8px;align-items:flex-start}
 .sm-note .ico{flex:none;margin-top:2px;color:var(--accent)}
 
+/* Приветственный экран (первое касание включает музыку и голос) */
+.gate{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:16px;background:rgba(23,40,46,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:rise .35s ease both}
+.gate-card{width:min(420px,100%);background:var(--panel);border-radius:28px;padding:22px 22px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
+.gate-m{width:132px}
+.gate-m .mentor{width:100%;height:auto;display:block}
+.gate-card p{color:var(--muted)}
+.gate-card .btn:not(.ghost){width:100%;min-height:60px;font-size:16px}
+.gate-card .btn .ico{width:24px;height:24px}
+
+/* Музыка и голос: настройки */
+.audiopanel{display:flex;flex-direction:column;gap:8px}
+.audiopanel .chips .chip{min-height:44px;font-size:15px}
+.audiopanel input[type=range]{width:100%;accent-color:var(--leaf);min-height:36px}
+.audiopanel small{font-size:12px}
+.audiopanel.compact{flex-direction:row;flex-wrap:wrap;gap:8px}
+.audiopanel.compact .mitem{flex:1 1 150px;min-height:46px;font-size:14px;padding:8px 12px}
+.audiopanel.compact .mitem .ico{width:20px;height:20px}
+
 /* Выбор языка */
 .langpick{display:flex;flex-direction:column;gap:6px}
 .langpick.title{align-self:flex-end;width:min(360px,100%)}

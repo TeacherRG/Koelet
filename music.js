@@ -1,0 +1,190 @@
+/* ================================================================
+   Музыка и голос-гид («музыкальный текстовый квест»)
+   - Music: фоновая музыка из music/tracks.json (одна мелодия по кругу или все по очереди),
+     громкость, приглушение во время речи, пауза в скрытой вкладке.
+   - Voice: голос Хранителя (синтез речи браузера): приветствие, подсказка «что делать»
+     на каждом экране и рассказ о последствиях выбора.
+   - Настройки хранятся отдельно от прогресса (localStorage «koelet-audio»):
+     «Начать заново» их не сбрасывает.
+   Браузеры не дают играть звук до первого касания, поэтому звук включается
+   кнопкой на приветственном экране (gate) — это и есть «разрешение».
+   ================================================================ */
+const AUDIO_KEY = 'koelet-audio';
+const AUDIO_DEFAULTS = {music: true, voice: true, track: 'all', volume: 0.35};
+const Audio_ = {prefs: {...AUDIO_DEFAULTS}, tracks: [], unlocked: false};
+try { Object.assign(Audio_.prefs, JSON.parse(localStorage.getItem(AUDIO_KEY) || '{}')); } catch (e) {}
+const MUSIC_READY = (async () => { try { const r = await fetch('music/tracks.json'); if (r.ok) Audio_.tracks = (await r.json()).tracks || []; } catch (e) {} })();
+function saveAudioPrefs(){ try { localStorage.setItem(AUDIO_KEY, JSON.stringify(Audio_.prefs)); } catch (e) {} }
+
+/* ---------- Музыка ---------- */
+const Music = {
+  el: null, idx: 0, ducked: false, fadeT: null,
+  title(tr){ return tr ? (tr.title && (tr.title[LANG] || tr.title[DEFAULT_LANG])) || tr.he || tr.id : ''; },
+  current(){ return Audio_.tracks[this.idx]; },
+  _pick(){
+    const p = Audio_.prefs.track, i = Audio_.tracks.findIndex(x => x.id === p);
+    if (i >= 0) this.idx = i;
+    else if (this.idx >= Audio_.tracks.length) this.idx = 0;
+  },
+  _ensure(){
+    if (this.el) return this.el;
+    const a = document.createElement('audio');
+    a.preload = 'none';
+    a.addEventListener('ended', () => {            // «все по очереди» → следующая мелодия
+      if (Audio_.prefs.track === 'all' && Audio_.tracks.length) { this.idx = (this.idx + 1) % Audio_.tracks.length; this._src(); this._play(); }
+    });
+    this.el = a; return a;
+  },
+  _src(){
+    const a = this._ensure(), tr = this.current(); if (!tr) return;
+    a.loop = Audio_.prefs.track !== 'all';
+    if (!a.src.endsWith(tr.file)) a.src = tr.file;
+  },
+  _target(){ return Math.max(0, Math.min(1, Audio_.prefs.volume)) * (this.ducked ? 0.3 : 1); },
+  _fade(to, ms = 600){
+    const a = this.el; if (!a) return;
+    clearInterval(this.fadeT);
+    const from = a.volume, steps = 12; let k = 0;
+    this.fadeT = setInterval(() => { k++; a.volume = Math.max(0, Math.min(1, from + (to - from) * k / steps)); if (k >= steps) clearInterval(this.fadeT); }, ms / steps);
+  },
+  _play(){
+    const a = this.el; if (!a) return Promise.resolve(false);
+    return a.play().then(() => true, () => false);
+  },
+  /* Запуск (вызывать из обработчика нажатия — так браузер разрешит звук). */
+  async start(){
+    if (!Audio_.prefs.music || !Audio_.tracks.length) return false;
+    this._pick(); this._src();
+    const a = this.el; a.volume = 0;
+    const ok = await this._play();
+    if (ok) this._fade(this._target(), 1500);
+    return ok;
+  },
+  stop(){ if (this.el) { clearInterval(this.fadeT); this.el.pause(); } },
+  get playing(){ return !!(this.el && !this.el.paused); },
+  setMusic(on){ Audio_.prefs.music = on; saveAudioPrefs(); on ? this.start() : this.stop(); },
+  setTrack(id){
+    Audio_.prefs.track = id; saveAudioPrefs();
+    if (id === 'all') { if (this.el) this.el.loop = false; return; }
+    this._pick(); this._src();
+    if (Audio_.prefs.music) { this.el.currentTime = 0; this.start(); }
+  },
+  setVolume(v){ Audio_.prefs.volume = v; saveAudioPrefs(); if (this.el) { clearInterval(this.fadeT); this.el.volume = this._target(); } },
+  duck(on){ if (this.ducked === on) return; this.ducked = on; if (this.playing) this._fade(this._target(), 400); }
+};
+/* Скрытая вкладка — пауза, вернулись — продолжаем. */
+document.addEventListener('visibilitychange', () => {
+  if (!Music.el || !Audio_.prefs.music || !Audio_.unlocked) return;
+  if (document.hidden) Music.el.pause(); else Music._play();
+});
+
+/* ---------- Голос-гид ---------- */
+const Voice = {
+  seq: 0,
+  can(){ try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'; } catch (e) { return false; } },
+  cancel(){ this.seq++; try { if (this.can()) speechSynthesis.cancel(); } catch (e) {} Music.duck(false); },
+  /* Произносит текст (или несколько фраз подряд). Возвращает Promise, который
+     завершается, когда речь закончилась или не смогла начаться. */
+  say(parts, {force = false} = {}){
+    if ((!Audio_.prefs.voice && !force) || !this.can() || !Audio_.unlocked) return Promise.resolve(false);
+    const text = [].concat(parts).filter(Boolean).map(s => String(s).replace(/<[^>]+>/g, ' ').replace(/[«»„“"]/g, '').replace(/\s+/g, ' ').trim()).filter(Boolean).join(' … ');
+    if (!text) return Promise.resolve(false);
+    this.cancel(); const my = this.seq;
+    return new Promise(res => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = langLocale(); u.rate = young() ? .92 : 1; u.pitch = .95;
+      const v = speechSynthesis.getVoices().find(x => x.lang && x.lang.toLowerCase().startsWith(LANG)); if (v) u.voice = v;
+      const done = ok => { if (my === this.seq) Music.duck(false); res(ok); };
+      u.onstart = () => { if (my === this.seq) Music.duck(true); };
+      u.onend = () => done(true); u.onerror = () => done(false);
+      try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { done(false); }
+      setTimeout(() => { if (!speechSynthesis.speaking && my === this.seq) done(false); }, 4000);
+    });
+  },
+  setVoice(on){ Audio_.prefs.voice = on; saveAudioPrefs(); if (!on) this.cancel(); }
+};
+
+/* ---------- Подсказка «что делать» для текущего экрана ---------- */
+/* Первая фраза — главный текст экрана (слова Хранителя), вторая — что нажать. */
+function guideParts(){
+  const $s = sel => document.querySelector('#stage ' + sel);
+  const txt = el => el ? el.textContent.trim() : '';
+  const scr = S.screen;
+  if (scr === 'title') return [t(S.sparks > 0 ? 'voice.titleBack' : 'voice.title')];
+  if (scr === 'create') return [t('voice.create')];
+  if (scr === 'welcome') return [txt($s('.bubble .txt')), t('voice.welcome')];
+  if (scr === 'map') {
+    if (S.done.every(Boolean)) return [t('voice.mapDone')];
+    const open = S.ps < PRO().length ? t('map.proName') : (WORLDS[S.done.findIndex(d => !d)] || {}).name;
+    return [t('voice.map', {name: open || ''})];
+  }
+  if (scr === 'done') return [txt($s('.reveal .h2')), t('voice.done')];
+  if (scr === 'final') return [t('voice.final')];
+  if (scr !== 'world' && scr !== 'prologue') return [];
+  let st = steps()[idx()]; if (!st) return [];
+  if (typeof st === 'function') st = st(S);
+  if (st.__dynamic || (st.body && st.body.__dynamic)) st = resolveDynamic(st);
+  const type = st.type, game = st.game;
+  if (!type) return [];
+  if (type === 'mini') return [txt($s('.bubble .txt')) || txt($s('.lead')), t('voice.mini.' + game)];
+  if (type === 'card') return [txt($s('.card .h2')), young() ? txt($s('.card p')) : '', t('voice.card')];
+  if (type === 'reveal') return [txt($s('.reveal .h1')), t('voice.reveal')];
+  if (type === 'quote') return [t('voice.quote')];
+  return [txt($s('.bubble .txt')), txt($s('p.h2')), t('voice.' + type)];
+}
+let guideTimer = null;
+function guideScreen(){
+  clearTimeout(guideTimer);
+  if (!Audio_.prefs.voice || !Audio_.unlocked) return;
+  guideTimer = setTimeout(() => { const parts = guideParts(); if (parts.some(Boolean)) Voice.say(parts); }, 450);
+}
+
+/* ---------- Настройки (меню и титульный экран) ---------- */
+function audioPanelHTML(compact){
+  const P = Audio_.prefs;
+  const toggles = `<button class="mitem" data-audio="music" aria-pressed="${P.music}">${icon(P.music ? 'note' : 'mute')}<span>${t(P.music ? 'audio.musicOn' : 'audio.musicOff')}</span></button>
+    <button class="mitem" data-audio="voice" aria-pressed="${P.voice}">${icon(P.voice ? 'chat' : 'mute')}<span>${t(P.voice ? 'audio.voiceOn' : 'audio.voiceOff')}</span></button>`;
+  if (compact) return `<div class="audiopanel compact" role="group" aria-label="${t('audio.title')}">${toggles}</div>`;
+  const opts = [['all', t('audio.all')], ...Audio_.tracks.map(tr => [tr.id, Music.title(tr)])];
+  return `<div class="audiopanel" role="group" aria-label="${t('audio.title')}"><span class="kicker">${t('audio.title')}</span>
+    <div class="menu-list">${toggles}</div>
+    ${Audio_.tracks.length ? `<span class="lbl" id="trk">${t('audio.track')}</span>
+    <div class="chips" role="group" aria-labelledby="trk">${opts.map(([id, name]) => `<button class="chip ${P.track === id ? 'on' : ''}" data-track="${id}" aria-pressed="${P.track === id}">${esc(name)}</button>`).join('')}</div>
+    <label class="lbl" for="vol">${t('audio.volume')}</label><input type="range" id="vol" min="0" max="100" step="5" value="${Math.round(P.volume * 100)}">
+    <small class="muted">${t('audio.credit')}</small>` : ''}</div>`;
+}
+function wireAudioPanel(root, redraw){
+  root.querySelectorAll('[data-audio]').forEach(b => b.onclick = () => {
+    Audio_.unlocked = true;
+    if (b.dataset.audio === 'music') Music.setMusic(!Audio_.prefs.music);
+    else { Voice.setVoice(!Audio_.prefs.voice); if (Audio_.prefs.voice) Voice.say(t('voice.on')); }
+    redraw();
+  });
+  root.querySelectorAll('[data-track]').forEach(b => b.onclick = () => { Audio_.unlocked = true; if (!Audio_.prefs.music) Audio_.prefs.music = true; Music.setTrack(b.dataset.track); if (!Music.playing) Music.start(); redraw(); });
+  const vol = root.querySelector('#vol'); if (vol) vol.oninput = () => Music.setVolume(vol.value / 100);
+}
+
+/* ---------- Приветственный экран: первое касание включает звук ---------- */
+function showGate(onDone){
+  if (!Audio_.prefs.music && !Audio_.prefs.voice) { Audio_.unlocked = true; onDone(); return; }
+  const g = document.createElement('div');
+  g.className = 'gate'; g.id = 'gate'; g.setAttribute('role', 'dialog'); g.setAttribute('aria-modal', 'true'); g.setAttribute('aria-labelledby', 'gate-h');
+  g.innerHTML = `<div class="gate-card"><div class="gate-m">${mentorSvg('joy')}</div>
+    <span class="kicker">${t('title.kicker')}</span><h1 class="h2" id="gate-h">${t('title.h1a')} ${t('title.h1b')}</h1>
+    <p>${t(S.sparks > 0 ? 'voice.titleBack' : 'voice.title')}</p>
+    <button class="btn" id="gate-go">${icon('note')}<span>${t('gate.go')}</span></button>
+    <button class="btn ghost small" id="gate-quiet">${t('gate.quiet')}</button></div>`;
+  document.body.appendChild(g);
+  const close = () => { g.remove(); onDone(); };
+  g.querySelector('#gate-go').onclick = () => {
+    Audio_.unlocked = true;
+    if (!Audio_.prefs.music && !Audio_.prefs.voice) { Audio_.prefs.music = Audio_.prefs.voice = true; saveAudioPrefs(); }
+    if (typeof unlockAudio === 'function') unlockAudio();
+    Music.start().then(ok => { if (!ok) MUSIC_READY.then(() => Music.start()); });   // тут же, в обработчике нажатия
+    Voice.say(t(S.sparks > 0 ? 'voice.titleBack' : 'voice.title'));
+    Audio_.greeted = true;
+    close();
+  };
+  g.querySelector('#gate-quiet').onclick = () => { Audio_.unlocked = true; Audio_.prefs.music = false; Audio_.prefs.voice = false; saveAudioPrefs(); close(); };
+  g.querySelector('#gate-go').focus();
+}
