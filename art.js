@@ -68,7 +68,8 @@ const ICONS = {
   diamond:'<path class="f" d="M12 3l8 9-8 9-8-9z"/>',
   circle:'<circle class="f" cx="12" cy="12" r="8"/>',
   triangle:'<path class="f" d="M12 4l9 15.5H3z"/>',
-  square:'<rect class="f" x="4.5" y="4.5" width="15" height="15" rx="2"/>'
+  square:'<rect class="f" x="4.5" y="4.5" width="15" height="15" rx="2"/>',
+  scissors:'<circle class="f" cx="6.5" cy="6.5" r="3"/><circle class="f" cx="6.5" cy="17.5" r="3"/><path d="M9 8.5l11 9M9 15.5l11-9"/>'
 };
 function icon(name,cls){
   const d=ICONS[name];if(!d)return '';

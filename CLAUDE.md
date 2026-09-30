@@ -18,10 +18,11 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 
 | File | What it is |
 |---|---|
-| `index.html` | Page shell; loads scripts in order: `i18n.js` → `game-data.js` → `art.js` → `voice-key.js` → `music.js` → `game.js` |
+| `index.html` | Page shell; loads scripts in order: `i18n.js` → `game-data.js` → `art.js` → `voice-key.js` → `music.js` → `game.js` → `shabbat.js` |
 | `i18n.js` | Language module: `LANGS`, `t('key', {vars})`, `tl('key')`, language detection, `loadLang()`/`setLang()` |
 | `game-data.js` | Loads texts for the chosen language (falls back to Russian) |
 | `game.js` | Runtime: state `S` (localStorage `koelet-game-v1`), screens, step engine, mini-games, certificate |
+| `shabbat.js` | «К Шабату»: экран выбора листов A4 и их вёрстка (настольная игра «Тропа Коэлета» с правилами, фишками и бумажным кубиком, 12 карточек вопросов по возрасту, «Найди пару», «Моя деталь пазла», семейный пазл). Печать через `#print-area` (книжная A4, стиль `#pp-size`) |
 | `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Idle help after a minute of silence. Track and volume in localStorage `koelet-audio` |
 | `voice-key.js` | Shared by the game and `tools/tts.mjs`: splits text into sentences (paragraphs, `.!?…`), strips tags and Hebrew, `VoiceKey.key()` = hash of the normalized sentence |
 | `audio/<lang>/` | Ready-made Azure voice: one mp3 per sentence (`<key>.mp3`) + `index.json` (list of keys). Generated, never edit by hand |
@@ -70,6 +71,13 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - After every `render()` the voice guide speaks the main text of the screen plus what to do (`guideParts()` in `music.js`). Hints are locale keys `voice.*`: one per step type (`voice.talk`, `voice.choice`, …) and one per mini-game (`voice.mini.<game>`). **A new step type or mini-game needs a `voice.*` key in all four locales.** After a choice the outcome is spoken.
 - Music ducks to 30 % while the voice speaks and pauses in a hidden tab. Settings (music, track, volume, voice) live in the menu; the title screen has one settings button in the top corner that opens a popover (`quickMenu()` in `game.js`: language, music and voice switches, «О приложении»). They are separate from game progress.
 - New track: put the mp3 into `music/` (Latin file name) and add it to `music/tracks.json` with titles for every language. Only add music the project has the right to use.
+
+## «К Шабату» (печатные листы)
+
+- Screen `shabbat` (`renderShabbat()` in `shabbat.js`) opens from the title screen, the menu and the final screen; «Назад» returns to `S.shabFrom`. HUD is hidden there; on reload the game starts from the title as usual.
+- Texts are `shab.*` in the locales (all four languages); they are printed, not spoken (`shab` is in `SKIP_UI` of `tools/voice-phrases.mjs`), only `voice.shabbat` is spoken. Card questions use `__ag` with the age chosen on the screen (`S.shabAge`), not the hero's age.
+- Halacha: everything to cut, glue, colour or write is done **before** Shabbat — say so on every sheet that needs it; on Shabbat itself the family only plays and talks. The game is cooperative (everyone wins together), no scores. No Divine Names in Hebrew on the sheets (they may end up in the bin).
+- Sheets are HTML in mm (`.pp`, 210×297 mm); `test:play` checks that six sheets print and nothing spills over the page.
 
 ## About window
 

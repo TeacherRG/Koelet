@@ -64,6 +64,7 @@ function themeKey(){
   if(s==='world'||s==='done')return WORLD_THEME[S.w]||'base';
   if(s==='map')return 'map';
   if(s==='final')return 'sukkah';
+  if(s==='shabbat')return 'library';
   return 'base';
 }
 function applyTheme(){
@@ -135,7 +136,7 @@ function toast(ic,title,sub){
 }
 function hud(){
   const h=$('#hud');
-  const show=!['title','create','welcome'].includes(S.screen);
+  const show=!['title','create','welcome','shabbat'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
   h.innerHTML=`<button class="hero-chip" id="herobtn" aria-haspopup="dialog" title="${t('hud.profile')}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b><span class="sr-only">${t('hud.profile')}</span></button>
@@ -180,6 +181,7 @@ function showMenu(){
     <nav class="menu-list" aria-label="${t('hud.menu')}">
       ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
+      <button class="mitem" data-m="shab">${icon('candles')}<span>${t('shab.open')}</span></button>
     </nav>
     ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow})}
     ${langPicker()}
@@ -192,7 +194,7 @@ function showMenu(){
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout()});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='shab')openShabbat()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
@@ -249,7 +251,7 @@ function go(screen,skipPrologue){
 function render(){
   stopReading();stopCamera();applyTheme();hud();donateBtn();
   Voice.cancel();
-  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal}[S.screen]||renderTitle)();
+  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat}[S.screen]||renderTitle)();
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
 
@@ -265,11 +267,13 @@ function renderTitle(){
       ${S.sparks>0?`<button class="btn" id="cont">${t('btn.continue')}</button><button class="btn ghost" id="newg">${t('btn.restart')}</button>`:`<button class="btn" id="start">${t('btn.start')}</button>`}
     </div>
     <div id="conf"></div>
+    <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
   </section>`;
   $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
+  $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
   const n=$('#newg');if(n)n.onclick=()=>{
@@ -955,12 +959,14 @@ function renderFinal(){
     <div id="tabp" role="tabpanel" aria-labelledby="tab-${tab}" class="final-grid">${({cert:finalCert,path:finalPath,ach:finalAch})[tab]()}</div>
     <div class="actions"><button class="btn" id="map">${t('final.backMap')}</button><button class="btn ghost" id="again">${t('final.again')}</button></div>
     <div id="conf"></div>
+    <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
     <p class="foot">${t('final.foot')}</p>
   </section>`;
   stage.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S._tab=b.dataset.tab;save();sfx.tap();renderFinal();const t=$('#tab-'+S._tab);if(t)t.focus()});
   stage.querySelector('.tabs').onkeydown=e=>{const i=tabs.findIndex(t=>t[0]===tab);const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;S._tab=tabs[(i+d+tabs.length)%tabs.length][0];renderFinal();$('#tab-'+S._tab).focus()};
   ({cert:wireCert,path:wirePath,ach:()=>{}})[tab]();
   $('#map').onclick=()=>go('map');
+  $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
   $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>${t('final.confirm')}</p><div class="actions"><button class="btn small" id="yes">${t('btn.yes')}</button><button class="btn ghost small" id="no">${t('btn.cancel')}</button></div></div>`;
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
 }
@@ -981,7 +987,7 @@ function wireCert(){
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
   $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};
   $('#print').onclick=async()=>{const b=$('#print');b.disabled=true;
-    try{const url=await drawCertificate(2);const pr=$('#print-area');pr.innerHTML=`<img src="${url}" alt="">`;
+    try{shabPrintDone();const url=await drawCertificate(2);const pr=$('#print-area');pr.innerHTML=`<img src="${url}" alt="">`;
       await new Promise(r=>{const im=pr.querySelector('img');if(im.complete)r();else{im.onload=r;im.onerror=r}});
       window.print();
     }catch(e){$('#printnote').textContent=t('cert.noPrint')}
@@ -1039,6 +1045,7 @@ stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)
 function start(data){
   load();
   if(data&&data.state&&data.state.v===1)S=Object.assign(fresh(),data.state);
+  if(S.screen==='shabbat')S.screen='title';
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});
