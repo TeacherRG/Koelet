@@ -702,6 +702,14 @@ function gPuzzle(){
 let camStream=null;
 function stopCamera(){if(camStream){camStream.getTracks().forEach(tr=>tr.stop());camStream=null}}
 window.addEventListener('pagehide',stopCamera);
+// фото для сертификата — только по кнопке, квадрат 400 px в localStorage, никуда не отправляется
+function snapPhoto(v){
+  if(!v||!v.videoWidth)return null;
+  const z=Math.min(v.videoWidth,v.videoHeight),N=400,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');
+  x.translate(N,0);x.scale(-1,1);// как в зеркале
+  x.drawImage(v,(v.videoWidth-z)/2,(v.videoHeight-z)/2,z,z,0,0,N,N);
+  try{return c.toDataURL('image/jpeg',0.85)}catch(e){return null}
+}
 function gSelfMirror(){
   stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,tl('mirror.say'),'warm')}
     <div class="selfmirror"><div class="sm-frame"><div class="sm-glass" id="glass"><div class="sm-avatar">${avatar(S.hero)}</div></div></div>
@@ -714,8 +722,12 @@ function gSelfMirror(){
     $('#smcap').textContent=t('mirror.caption',{name:heroName()});
     $('#out').innerHTML=`<div class="resp"><span class="who">${t('mentor.name')}</span><p>${esc(msg||tl('mirror.after'))}</p></div>`;
     setMood('joy');addSparks(10,glass);sfx.good();
-    $('#act').innerHTML=`${camStream?`<button class="btn ghost" id="camoff">${t('mirror.off')}</button>`:''}<button class="btn" id="nx">${t('btn.continueShort')}</button>`;
-    const off=$('#camoff');if(off)off.onclick=()=>{stopCamera();glass.innerHTML=`<div class="sm-avatar">${avatar(S.hero)}</div>`;off.remove()};
+    $('#act').innerHTML=`${camStream?`<button class="btn ghost" id="snap">${icon('mirror')}<span>${t(S.photo?'mirror.retake':'mirror.snap')}</span></button><button class="btn ghost" id="camoff">${t('mirror.off')}</button>`:''}<button class="btn" id="nx">${t('btn.continueShort')}</button>`;
+    const off=$('#camoff');if(off)off.onclick=()=>{stopCamera();glass.innerHTML=`<div class="sm-avatar">${avatar(S.hero)}</div>`;glass.classList.remove('live');off.remove();const sn=$('#snap');if(sn)sn.remove()};
+    const snap=$('#snap');if(snap)snap.onclick=()=>{const url=snapPhoto(glass.querySelector('video'));if(!url)return;
+      S.photo=url;S.photoOff=false;save();sfx.tap();
+      glass.classList.remove('flash');void glass.offsetWidth;glass.classList.add('flash');
+      $('#smcap').textContent=t('mirror.saved');snap.querySelector('span').textContent=t('mirror.retake')};
     $('#nx').onclick=()=>{stopCamera();sfx.tap();next()};
   };
   $('#camskip').onclick=()=>{sfx.tap();after(tl('mirror.afterNoCam'))};
@@ -915,8 +927,11 @@ async function drawCertificate(sc){
     x.fillStyle='#17282e';x.font=`500 32px ${B}`;wrapLines(x,st.join(' · '),1200).slice(0,2).forEach((l,i)=>x.fillText(l,W/2,706+i*44))}
   x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(t('cert.stats',{lvl:lvl(),lname:T(LEVELS[lvl()-1]),sparks:S.sparks,ach:Object.keys(S.ach).length}),W/2,820);
   // seal
-  x.save();x.translate(W/2,922);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=i%2?74:84,a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
-  x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,62,0,Math.PI*2);x.fill();x.fillStyle='#c8445b';x.font=`700 50px ${HB}`;x.fillText('חֵלֶק',0,16);x.restore();
+  const photo=S.photo&&!S.photoOff?await new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=S.photo}):null;
+  x.save();x.translate(W/2,photo?918:922);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=photo?(i%2?82:90):(i%2?74:84),a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
+  if(photo){x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,76,0,Math.PI*2);x.fill();x.save();x.beginPath();x.arc(0,0,71,0,Math.PI*2);x.clip();x.drawImage(photo,-71,-71,142,142);x.restore()}
+  else{x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,62,0,Math.PI*2);x.fill();x.fillStyle='#c8445b';x.font=`700 50px ${HB}`;x.fillText('חֵלֶק',0,16)}
+  x.restore();
   x.textAlign='left';x.fillStyle='#17282e';x.font=`500 28px ${B}`;x.fillText(fmtDate(S.finished),190,930);
   x.strokeStyle='#b3c7bd';x.lineWidth=2;x.beginPath();x.moveTo(190,945);x.lineTo(560,945);x.stroke();
   x.fillStyle='#566d67';x.font=`400 22px ${B}`;x.fillText(t('cert.date'),190,975);
@@ -952,6 +967,7 @@ function renderFinal(){
 function finalCert(){
   return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted" style="font-size:0.875rem">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">${t('cert.nameLabel')}</label><input id="certname" maxlength="24" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(S.hero.name)}"></div>
+      ${S.photo?`<div class="cert-photo"><img src="${S.photo}" alt=""><label class="cert-pt"><input type="checkbox" id="photoon" ${S.photoOff?'':'checked'}> <span>${t('cert.photoOn')}</span></label><button class="btn ghost small" id="photodel">${t('cert.photoDel')}</button></div>`:`<p class="muted" style="font-size:0.875rem">${icon('mirror')} ${t('cert.photoHint')}</p>`}
       <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
       <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a></div>
       <p class="muted" style="font-size:0.875rem" id="printnote">${t('cert.note')}</p></article>`;
@@ -960,6 +976,8 @@ function wireCert(){
   let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;
     $('#cert').innerHTML=`<img src="${url}" alt="${t('cert.alt',{name:esc(heroName())})}">`;$('#dl').href=url};
   paint();
+  const pon=$('#photoon');if(pon)pon.onchange=()=>{S.photoOff=!pon.checked;save();paint()};
+  const pdel=$('#photodel');if(pdel)pdel.onclick=()=>{delete S.photo;delete S.photoOff;save();sfx.tap();renderFinal()};
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
   $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};
   $('#print').onclick=async()=>{const b=$('#print');b.disabled=true;
