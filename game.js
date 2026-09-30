@@ -111,6 +111,10 @@ function tone(f,d,type,vol){if(!S.sound)return;try{const c=getCtx();if(!c)return
   const play=()=>{const o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol||.05,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(c.destination);o.start(t);o.stop(t+d+.05)};
   if(c.state==='running')play();else c.resume().then(()=>{if(c.state==='running')play()}).catch(()=>{})}catch(e){}}
 const sfx={tap:()=>tone(520,.09),good:()=>{tone(660,.16);setTimeout(()=>tone(880,.22),110)},soft:()=>tone(330,.18,'triangle',.04),ach:()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.28),i*120))};
+function haptic(kind='tap'){
+  if(!navigator.vibrate)return;
+  try{navigator.vibrate(kind==='choice'?[18,24,34]:kind==='good'?22:10)}catch(e){}
+}
 
 /* ---------- progress ---------- */
 const lvl=()=>Math.min(LEVELS.length,Math.floor(S.sparks/130)+1);
@@ -331,6 +335,7 @@ function rChoice(st){
     <div class="actions" id="act">${hintBtn(hint)}</div></section>`;
   wireHint(hint);
   const pick=(o,b)=>{
+    haptic('choice');
     stage.querySelectorAll('.opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});
     const ow=stage.querySelector('.own');if(ow){ow.querySelectorAll('input,button').forEach(x=>x.disabled=true);if(!o.own)ow.remove()}
     if(st.key){S.ans[st.key]=o.v||o.t;if(st.key==='city')S.city=o.v}
@@ -370,7 +375,7 @@ function rMulti(st){
     wireHint(st.hint);
     stage.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const o=st.options[+c.dataset.i];
       if(sel.includes(o))sel=sel.filter(x=>x!==o);else if(sel.length<st.max)sel.push(o);else{sel.shift();sel.push(o)}
-      sfx.tap();draw()});
+      haptic();sfx.tap();draw()});
     const inp=$('#ownin');if(inp)inp.oninput=()=>{S.own[ok]=inp.value.slice(0,40);save();$('#nx').disabled=sel.length<need()};
     $('#nx').onclick=()=>{S[st.key]=sel;if(ok)S.own[ok]=ownVal();addSparks(15,$('#nx'));sfx.good();next()};
   };draw();
@@ -385,6 +390,7 @@ function rQuote(st){
     $('#qq').innerHTML=`${sayHTML(M,esc(st.q),'think')}<div class="opts" style="margin-top:12px">${st.options.map((o,i)=>optHTML({t:o},i)).join('')}</div><div id="out" style="margin-top:12px"></div>`;
     $('#act').innerHTML=hintBtn(DEF_HINT);wireHint(DEF_HINT);
     stage.querySelectorAll('#qq .opt').forEach(b=>b.onclick=()=>{
+      haptic('choice');
       stage.querySelectorAll('#qq .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});
       addSparks(10,b);sfx.good();
       $('#out').innerHTML=`<div class="resp"><span class="who">${t('mentor.name')}</span><p>${esc(st.r)}</p></div>`;setMood('warm');
@@ -458,7 +464,7 @@ function gTreasure(){
   const done=()=>{if(!document.body.contains(ar))return;addSparks(25,ar);
     $('#out').innerHTML=`${sayHTML(M,t('treasure.full'),'think')}<div class="opts" style="margin-top:12px">${tl('treasure.opts').map((x,i)=>optHTML({t:x},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
     const RR=tl('treasure.resp');
-    stage.querySelectorAll('#out .opt').forEach(b=>b.onclick=()=>{stage.querySelectorAll('#out .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});addSparks(10,b);sfx.good();
+    stage.querySelectorAll('#out .opt').forEach(b=>b.onclick=()=>{haptic('choice');stage.querySelectorAll('#out .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});addSparks(10,b);sfx.good();
       $('#o2').innerHTML=`<div class="resp"><span class="who">${t('choice.what')}</span><p>${esc(RR[+b.dataset.i])}</p></div>`;
       $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.continueShort')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}});
     $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
