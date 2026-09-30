@@ -275,6 +275,13 @@
       ]
     },
     {
+      "age": "a",
+      "type": "card",
+      "kicker": "Aus dem Leben von Raw Aschkenasi",
+      "title": "Hör nicht auf mit dem, was du gut kannst",
+      "body": "<p>Vor elf Jahren verbrachte Raw Schneor Aschkenasi drei Tage pro Woche mit der Vorbereitung von Tora-Lektionen. Keine Bezahlung, keine Rückmeldung: Die Aufnahmen hatten hundert bis zweihundert Aufrufe. An Pessach beschloss er, mit dem Unterrichten aufzuhören.</p><p>In den Feiertagen stieß er auf Worte, die zu seinem Leitspruch wurden: <b>„Hör niemals auf mit dem, was du gut kannst.“</b> Er kehrte zu seinen Lektionen zurück. Eine davon ist die Grundlage dieses Spiels.</p>"
+    },
+    {
       "type": "choice",
       "who": "mentor",
       "text": "Das letzte Rätsel der Werkstatt. Ein Löwe ist in ein Jägernetz geraten. Wer hat ihn gerettet?",

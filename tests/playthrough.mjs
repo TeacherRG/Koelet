@@ -30,7 +30,8 @@ const shotsDir = arg('shots') === undefined ? null : (arg('shots') === true ? RO
 const ALL = [
   {lang: 'ru', age: 't', g: 'm'}, {lang: 'ru', age: 'y', g: 'f'},
   {lang: 'uk', age: 'y', g: 'f'}, {lang: 'uk', age: 't', g: 'm'},
-  {lang: 'de', age: 't', g: 'm'}, {lang: 'de', age: 'y', g: 'f'}
+  {lang: 'de', age: 't', g: 'm'}, {lang: 'de', age: 'y', g: 'f'},
+  {lang: 'ru', age: 'a', g: 'f'}, {lang: 'uk', age: 'a', g: 'm'}, {lang: 'de', age: 'a', g: 'f'}
 ];
 let scenarios = ALL.filter(s => !onlyLang || s.lang === onlyLang);
 if (quick) scenarios = scenarios.filter((s, i, a) => a.findIndex(x => x.lang === s.lang) === i);
@@ -52,7 +53,7 @@ function textProblems(text, lang) {
 }
 
 async function run(browser, base, sc) {
-  const name = `${sc.lang}-${sc.age === 'y' ? '8-11' : '12-15'}-${sc.g === 'f' ? 'girl' : 'boy'}`;
+  const name = `${sc.lang}-${{y: '8-11', t: '12-15', a: '16plus'}[sc.age]}-${sc.g === 'f' ? 'girl' : 'boy'}`;
   const ctx = await browser.newContext({viewport: {width: 375, height: 800}});
   const page = await ctx.newPage();
   const problems = new Set(), seen = {jigsaw: false, mirror: false};

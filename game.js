@@ -14,14 +14,16 @@ const esc=s=>String(s).replace(/[&<>"{}]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 const heroName=()=>S.hero.name.trim()||t('hero.default');
 /* возраст и род */
 const young=()=>S.hero.age==='y';
+const adult=()=>S.hero.age==='a';
 const T=s=>typeof s==='string'?s.replace(/\{([^{}|]*)\|([^{}|]*)\}/g,(_,m,f)=>S.hero.g==='f'?f:m):s;
 function R(v){
   if(typeof v==='string')return T(v);
   if(Array.isArray(v))return v.map(R);
-  if(v&&typeof v==='object'){if(v.__ag)return R(young()?v.y:v.t);const o={};for(const k in v)o[k]=R(v[k]);return o}
+  if(v&&typeof v==='object'){if(v.__ag)return R(young()?v.y:adult()&&'a' in v?v.a:v.t);const o={};for(const k in v)o[k]=R(v[k]);return o}
   return v;
 }
-const byAge=a=>a.filter(s=>typeof s==='function'||!s.age||s.age===(young()?'y':'t'));
+/* age шага: "y" — только 8–11, "t" — с 12 лет (и для 16+), "a" — только 16+ */
+const byAge=a=>a.filter(s=>typeof s==='function'||!s.age||(s.age==='y'?young():s.age==='t'?!young():adult()));
 const PRO=()=>byAge(PROLOGUE);
 const myQualities=()=>[...(S.qualities||[]),...(S.own&&S.own.quality?[S.own.quality]:[])];
 
@@ -315,17 +317,17 @@ function renderCreate(){
   const h=S.hero;
   const seg=(attr,val,label,sub,ic)=>`<button class="segb big ${h[attr]===val?'on':''}" data-${attr}="${val}" aria-pressed="${h[attr]===val}">${icon(h[attr]===val?'check':ic)}<span><b>${label}</b>${sub?`<small>${sub}</small>`:''}</span></button>`;
   const ok=!!(h.age&&h.g);
-  const req=(id,n,title,miss,msg,body)=>{const bad=createTried&&miss;
+  const req=(id,n,title,miss,msg,body,cls)=>{const bad=createTried&&miss;
     return `<div class="req ${bad?'bad':''} ${miss?'':'ok'}" id="${id}"><h3 class="req-h" id="${id}-l"><span class="num" aria-hidden="true">${miss?n:icon('check')}</span>${title}</h3>
-      <div class="seg" role="group" aria-labelledby="${id}-l"${bad?` aria-describedby="${id}-e" aria-invalid="true"`:''}>${body}</div>
+      <div class="seg${cls?' '+cls:''}" role="group" aria-labelledby="${id}-l"${bad?` aria-describedby="${id}-e" aria-invalid="true"`:''}>${body}</div>
       ${bad?`<p class="req-err" id="${id}-e" role="alert">${icon('info')}<span>${msg}</span></p>`:''}</div>`};
   stage.innerHTML=`<section class="scene create">
     <span class="kicker">${t('create.kicker')}</span>
     <h2 class="h2">${t('create.title')}</h2>
     <div class="create-top"><div class="preview" id="pv">${avatar(h)}</div>
       <div class="field"><label for="hname">${t('create.name')}</label><input id="hname" maxlength="16" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(h.name)}"></div></div>
-    ${req('f-age',1,t('create.age'),!h.age,t('create.needAge'),seg('age','y',t('create.ageY'),t('create.ageYs'),'book')+seg('age','t',t('create.ageT'),t('create.ageTs'),'compass'))}
-    ${h.age?`<p class="agenote">${t(h.age==='y'?'create.noteY':'create.noteT')}</p>`:''}
+    ${req('f-age',1,t('create.age'),!h.age,t('create.needAge'),seg('age','y',t('create.ageY'),t('create.ageYs'),'book')+seg('age','t',t('create.ageT'),t('create.ageTs'),'compass')+seg('age','a',t('create.ageA'),t('create.ageAs'),'scroll'),'three')}
+    ${h.age?`<p class="agenote">${t({y:'create.noteY',t:'create.noteT',a:'create.noteA'}[h.age])}</p>`:''}
     ${req('f-g',2,t('create.address'),!h.g,t('create.needG'),seg('g','m',t('create.m'),t('create.mSub'),'smile')+seg('g','f',t('create.f'),t('create.fSub'),'smile'))}
     <div class="group"><h3>${t('create.role')}</h3><div class="archs">${ARCHS.map((a,i)=>`<button class="arch ${h.arch===i?'on':''}" data-arch="${i}">${avatar({look:h.look,outfit:h.outfit,arch:i})}<span>${esc(T(a.name))}</span></button>`).join('')}</div></div>
     <div class="group"><h3>${t('create.looks')}</h3><div class="swatches">${LOOKS.map((l,i)=>`<button class="sw ${h.look===i?'on':''}" data-look="${i}" aria-label="${t('create.lookN',{n:i+1})}"><span style="background:linear-gradient(135deg,${l.hair} 50%,${l.skin} 50%)"></span></button>`).join('')}</div></div>

@@ -122,8 +122,32 @@
       "body": {
         "__ag": 1,
         "y": "<p>Sukkot ist das Erntefest. Die Scheunen sind voll, alle zählen, wie viel sie geerntet haben. Und genau dann liest man ein Buch, das fragt: <b>Reicht das?</b></p><p>Außerdem bindet man an Sukkot vier Pflanzenarten zusammen. Bald erfährst du, warum.</p>",
-        "t": "<p>Sukkot ist das Erntefest im Herbst. Die Menschen bringen die Früchte ein und zählen, wie viel sie im Jahr verdient haben. Genau dann, wenn die Scheunen voll sind, liest man ein Buch, das fragt: <b>Reicht das?</b></p><p>An Sukkot kamen Menschen aus vielen Völkern nach Jerusalem. Schlomo sprach mit allen, denn diese Frage betrifft jeden Menschen auf der Welt.</p><p>Außerdem bindet man an Sukkot vier Pflanzenarten zusammen. Warum – das erfährst du in der Welt „Puzzle“.</p>"
+        "t": "<p>Sukkot ist das Erntefest im Herbst. Die Menschen bringen die Früchte ein und zählen, wie viel sie im Jahr verdient haben. Genau dann, wenn die Scheunen voll sind, liest man ein Buch, das fragt: <b>Reicht das?</b></p><p>An Sukkot kamen Menschen aus vielen Völkern nach Jerusalem. Schlomo sprach mit allen, denn diese Frage betrifft jeden Menschen auf der Welt.</p><p>Außerdem bindet man an Sukkot vier Pflanzenarten zusammen. Warum – das erfährst du in der Welt „Puzzle“.</p>",
+        "a": "<p>Sukkot ist das Erntefest: Man zieht Bilanz über das Jahr und rechnet die Einnahmen zusammen. Genau im Moment des größten materiellen Erfolgs liest man ein Buch, das fragt: <b>Macht Reichtum allein ein Leben erfüllt?</b></p><p>Raw Aschkenasi nennt zwei weitere Erklärungen. Nach dem Midrasch sprach Schlomo diese Worte vor dem ganzen Volk im Tempel, bei der Versammlung des Volkes an Sukkot nach dem Schmitta-Jahr. Und der Netziw aus Woloschin weist darauf hin: An Sukkot brachte man im Tempel 70 Stiere für die 70 Völker der Welt dar, und ihre Vertreter kamen nach Jerusalem. Schlomo sprach über etwas, das jeden Menschen auf der Welt betrifft.</p><p>Außerdem bindet man an Sukkot vier Pflanzenarten zusammen. Warum – das erfährst du in der Welt „Puzzle“.</p>"
       }
+    },
+    {
+      "age": "a",
+      "type": "card",
+      "kicker": "Raw Aschkenasi erklärt",
+      "title": "Warum gerade Schlomo?",
+      "body": "<p>Schlomo ist der einzige König Israels, der vierzig Jahre in vollem Frieden und Wohlstand regierte. Wer ums Überleben kämpft, hat keinen Kopf für Fragen nach dem Sinn. Über die Generation der Sklaverei in Ägypten sagt die Tora: Sie hörten nicht auf Mosche „aus Kleinmut und wegen der harten Arbeit“ (Schemot 6:9).</p><p>Der Psychologe Abraham Maslow beschrieb das als Bedürfnispyramide: zuerst Essen, Schlaf und ein Dach über dem Kopf, dann Sicherheit, und erst danach Zugehörigkeit, Selbstverwirklichung und die Suche nach Sinn. Fast seine ganze Geschichte lang kämpfte das jüdische Volk ums Überleben. Schlomo hatte als Erster volle Sicherheit und konnte ehrlich fragen: <b>Und was jetzt?</b></p>"
+    },
+    {
+      "age": "a",
+      "type": "quote",
+      "he": "וְיוֹסִיף דַּעַת יוֹסִיף מַכְאוֹב",
+      "src": "Kohelet 1:18",
+      "tr": "„Wer das Wissen mehrt, der mehrt den Schmerz.“",
+      "plain": "Schlomo, der weiseste aller Menschen, erprobte nacheinander Weisheit, Reichtum und Schönheit: Er baute Paläste, pflanzte Gärten, sammelte Schätze (Kohelet 2:4–11). Das Ergebnis war jedes Mal gleich: Das allein erfüllt nicht. Je tiefer man die Welt sieht, desto klarer sieht man die eigene Unvollkommenheit. Und alles Gebaute kann an jemanden fallen, der es nicht schätzt.",
+      "q": "Welche dieser Erfahrungen Schlomos kennst du am ehesten?",
+      "options": [
+        "Wissen, das nicht glücklicher macht",
+        "Erfolg, nach dem es leer ist",
+        "Angst, das Aufgebaute zu verlieren",
+        "Noch keine davon"
+      ],
+      "r": "Schlomo verwirft weder Weisheit noch Reichtum. Er sucht, was ihnen Sinn gibt. Die Antwort ist ein Wort, das im Buch achtmal vorkommt: „Chelek“, Anteil."
     },
     {
       "type": "reveal",
