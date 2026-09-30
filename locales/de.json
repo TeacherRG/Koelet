@@ -48,6 +48,7 @@
   "create.needG": "Wähle: Junge oder Mädchen",
 
   "welcome.text": "<b>{{name}}</b>, willkommen auf der Reise! Vor dir liegt ein großes Rätsel. Bist du bereit, es zu lösen?",
+  "welcome.me": "Ich bin bereit! Los geht’s.",
   "welcome.go": "Abenteuer beginnen",
   "welcome.back": "Figur ändern",
 
