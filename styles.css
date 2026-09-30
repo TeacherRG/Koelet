@@ -51,6 +51,9 @@ p{margin:0}
 
 /* Scene */
 .scene{display:flex;flex-direction:column;gap:18px;animation:rise .45s ease both}
+.screen-enter{animation:screenEnter .5s cubic-bezier(.2,.8,.2,1) both}
+::view-transition-old(root){animation:screenOut .22s ease both}
+::view-transition-new(root){animation:screenIn .38s cubic-bezier(.2,.8,.2,1) both}
 .scene-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .dots{display:flex;gap:5px}
 .dots i{width:8px;height:8px;border-radius:3px;background:var(--line)}
@@ -290,6 +293,9 @@ p{margin:0}
 @media (max-width:480px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes screenEnter{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes screenOut{to{opacity:0;transform:translateY(-8px) scale(.99)}}
+@keyframes screenIn{from{opacity:0;transform:translateY(8px) scale(1.01)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
 @keyframes collect{to{opacity:0;transform:translateY(-60px) scale(1.4)}}
 @keyframes grow{to{width:120px}}

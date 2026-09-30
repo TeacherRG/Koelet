@@ -187,9 +187,17 @@ function go(screen,skipPrologue){
   S.screen=screen;save();render();window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
+  if(document.startViewTransition){
+    document.startViewTransition(()=>renderNow());
+    return;
+  }
+  renderNow();
+}
+function renderNow(){
   stopReading();stopCamera();applyTheme();hud();
   Voice.cancel();
   ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal}[S.screen]||renderTitle)();
+  stage.classList.remove('screen-enter');void stage.offsetWidth;stage.classList.add('screen-enter');
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
 
@@ -817,12 +825,27 @@ function finalPath(){
     </section>
     <div class="card"><span class="kicker">${t('path.solve')}</span><p>${t('path.solveText')}</p></div>
     <div class="card talk-card"><span class="kicker">${t('path.talk')}</span>
-      <ol>${(tl('path.questions')||[]).map(q=>`<li>${q}</li>`).join('')}</ol></div>`;
+      <ol>${(tl('path.questions')||[]).map(q=>`<li>${q}</li>`).join('')}</ol>
+      <div class="actions"><button class="btn small" id="diary">${icon('scroll')}<span>${t('path.download')}</span></button><button class="btn ghost small" id="diaryshare">${t('path.share')}</button></div>
+    </div>`;
+}
+function diaryText(){
+  const rep=worldReport();
+  const lines=[t('path.diaryTitle'),`${heroName()} · ${fmtDate(S.finished)}`,'',t('path.gifts')+': '+(strengthsList().join(', ')||t('path.none')),t('path.step')+': '+(S.ans.weekly||t('path.stepDefault')),t('path.phrase')+': '+T(PHRASES[S.phrase]),'',t('path.reportTitle')];
+  rep.forEach((r,i)=>lines.push(`${i+1}. ${r[0]}\n${r[1]}\n${r[2]}`));
+  lines.push('',t('path.talk'),...(tl('path.questions')||[]).map((q,i)=>`${i+1}. ${T(q)}`));
+  return lines.join('\n');
+}
+function downloadDiary(){
+  const blob=new Blob([diaryText()],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=t('path.diaryFile');document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function wirePath(){
   $('#nph').onclick=()=>{S.phrase=(S.phrase+1)%PHRASES.length;save();$('#ph').textContent=T(PHRASES[S.phrase]);sfx.tap()};
   $('#cp').onclick=()=>{const phrase=T(PHRASES[S.phrase]);const ok=()=>{$('#cp').textContent=t('path.copied')};
     try{navigator.clipboard.writeText(phrase).then(ok,()=>{selectText($('#ph'))})}catch(e){selectText($('#ph'))}};
+  $('#diary').onclick=()=>{downloadDiary();sfx.good();addSparks(5,$('#diary'))};
+  $('#diaryshare').onclick=async()=>{const text=diaryText();if(navigator.share){try{await navigator.share({title:t('path.diaryTitle'),text})}catch(e){if(e.name!=='AbortError')downloadDiary()}}else downloadDiary();};
 }
 function finalAch(){
   return `<div class="stats">
