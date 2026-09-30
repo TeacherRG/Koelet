@@ -23,7 +23,7 @@ To add a language:
 2. Copy `locales/ru.json` to `locales/<lang>.json` and translate the values. Keys that are missing fall back to Russian.
 3. Add the language to `LANGS` in `i18n.js`.
 
-Placeholders in interface strings look like `{{name}}`. Forms that depend on the player's gender look like `{boy form|girl form}`, e.g. `{Wanderer|Wanderin}`. Texts for the two age groups are written as `{"__ag": 1, "y": "8–11", "t": "12–15"}`.
+Placeholders in interface strings look like `{{name}}`. Forms that depend on the player's gender look like `{boy form|girl form}`, e.g. `{Wanderer|Wanderin}`. Texts for the age groups are written as `{"__ag": 1, "y": "8–11", "t": "12–15", "a": "16+"}` (`a` is optional and falls back to `t`).
 
 ## Third-party code
 

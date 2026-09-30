@@ -151,6 +151,8 @@ p{margin:0}
 .idcol{display:flex;flex-direction:column;gap:12px;min-width:0}
 .lbl{display:block;font-size:0.8125rem;color:var(--muted);margin-bottom:6px}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.seg.three>:last-child{grid-column:1/-1;min-height:72px}
+@media (min-width:560px){.seg.three{grid-template-columns:repeat(3,minmax(0,1fr))}.seg.three>:last-child{grid-column:auto;min-height:92px}}
 .segb{min-height:48px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);font-size:0.9375rem;font-weight:500;padding:8px 6px}
 .segb.on{border-color:var(--etrog);background:var(--etrog-soft);font-weight:700}
 .req{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:20px;background:var(--panel);border:1.5px solid var(--line);transition:border-color .2s,background .2s}
@@ -602,3 +604,40 @@ a.btn{text-decoration:none}
 .prof-name b{font-family:var(--display);font-size:1.375rem;overflow-wrap:anywhere}
 .prof-name span{color:var(--muted);font-size:0.875rem;font-weight:600}
 .modal .sheet.still{animation:none}
+
+/* ---------- 16+: опыты Шломо на пирамиде Маслоу ---------- */
+.mz-pyr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.mz-row{position:relative;width:100%;border-radius:14px;background:var(--panel);border:1.5px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:6px;transition:all .25s}
+.mz-row.l3{width:58%}.mz-row.l2{width:72%}.mz-row.l1{width:86%}
+.mz-drop{min-height:44px;border-radius:10px;border:1.5px dashed var(--line);background:transparent;font-weight:700;font-size:0.875rem;padding:6px 8px;line-height:1.25}
+.mz-drop:not(:disabled){border-color:var(--etrog);background:var(--etrog-soft);cursor:pointer}
+.mz-drop:disabled{cursor:default;opacity:1;color:inherit}
+.mz-in{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.mz-chip{font-size:0.75rem;line-height:1.25;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:var(--etrog-soft);min-height:28px}
+.mz-chip.vapor{animation:vapor 1.6s ease forwards}
+.mz-row.empty{border-color:var(--etrog);box-shadow:0 0 0 3px var(--etrog-soft)}
+.mz-row.empty .mz-in{display:none}
+.mz-q{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:1.5rem;font-weight:800;color:var(--etrog-ink)}
+.mz-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px}
+.mz-card{min-height:62px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);padding:8px;display:flex;flex-direction:column;gap:2px;text-align:left;font-size:0.875rem;font-weight:600;line-height:1.3}
+.mz-card small{font-weight:400;color:var(--muted);font-size:0.75rem}
+.mz-card.on{border-color:var(--etrog);background:var(--etrog-soft);box-shadow:0 0 0 3px var(--etrog-soft)}
+.mz-st{min-height:1.4em;text-align:center;font-size:0.875rem}
+@keyframes vapor{to{opacity:0;transform:translateY(-14px);filter:blur(3px)}}
+
+/* ---------- 16+: лента истории ---------- */
+.tl-pool{display:flex;flex-direction:column;gap:6px}
+.tl-ev{min-height:48px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);padding:8px 12px;text-align:left;font-size:0.9375rem;font-weight:500;line-height:1.3}
+.tl-ev.no{animation:shake .35s}
+#tlm{min-height:1.4em;text-align:center;font-size:0.875rem;margin:4px 0}
+.tl-line{list-style:none;margin:0;padding:0 0 0 14px;border-left:3px solid var(--etrog);display:flex;flex-direction:column;gap:6px}
+.tl-slot{display:flex;align-items:center;gap:10px;min-height:44px;animation:rise .35s ease both}
+.tl-slot div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tl-slot small{color:var(--muted);font-size:0.75rem}
+.tl-slot b{font-size:0.9375rem;line-height:1.3}
+.tl-n{flex:none;width:28px;height:28px;margin-left:-29px;border-radius:50%;display:grid;place-items:center;font-size:0.8125rem;font-weight:700;background:var(--panel);border:2px solid var(--etrog)}
+.tl-slot.next .tl-n{border-style:dashed;color:var(--muted)}
+.tl-slot.in .tl-n{background:var(--etrog);color:var(--etrog-ink)}
+.tl-slot.me{background:var(--leaf-soft);border-radius:14px;padding:6px 10px 6px 0}
+.tl-av{flex:none;width:40px;height:40px;margin-left:-35px;border-radius:50%;overflow:hidden;border:2px solid var(--leaf)}
+.tl-av svg{width:100%;height:100%;display:block}
