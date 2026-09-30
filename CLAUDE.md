@@ -22,7 +22,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 | `i18n.js` | Language module: `LANGS`, `t('key', {vars})`, `tl('key')`, language detection, `loadLang()`/`setLang()` |
 | `game-data.js` | Loads texts for the chosen language (falls back to Russian) |
 | `game.js` | Runtime: state `S` (localStorage `koelet-game-v1`), screens, step engine, mini-games, certificate |
-| `shabbat.js` | «К Шабату»: экран выбора листов A4 и их вёрстка (настольная игра «Тропа Коэлета» с правилами, фишками и бумажным кубиком, 12 карточек вопросов по возрасту, «Найди пару», «Моя деталь пазла», семейный пазл). Печать через `#print-area` (книжная A4, стиль `#pp-size`) |
+| `shabbat.js` | «К Шабату»: экран выбора листов A4 и их вёрстка (настольная игра «Тропа Коэлета» с правилами, фишками и бумажным кубиком, 12 карточек вопросов по возрасту, «Найди пару», «Моя деталь пазла», семейный пазл). Печать через `#print-area`: лист 188×270 мм на именованной странице `@page shab` (A4 книжная), у сертификата своя `@page cert` (альбомная) |
 | `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Idle help after a minute of silence. Track and volume in localStorage `koelet-audio` |
 | `voice-key.js` | Shared by the game and `tools/tts.mjs`: splits text into sentences (paragraphs, `.!?…`), strips tags and Hebrew, `VoiceKey.key()` = hash of the normalized sentence |
 | `audio/<lang>/` | Ready-made Azure voice: one mp3 per sentence (`<key>.mp3`) + `index.json` (list of keys). Generated, never edit by hand |
@@ -77,7 +77,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Screen `shabbat` (`renderShabbat()` in `shabbat.js`) opens from the title screen, the menu and the final screen; «Назад» returns to `S.shabFrom`. HUD is hidden there; on reload the game starts from the title as usual.
 - Texts are `shab.*` in the locales (all four languages); they are printed, not spoken (`shab` is in `SKIP_UI` of `tools/voice-phrases.mjs`), only `voice.shabbat` is spoken. Card questions use `__ag` with the age chosen on the screen (`S.shabAge`), not the hero's age.
 - Halacha: everything to cut, glue, colour or write is done **before** Shabbat — say so on every sheet that needs it; on Shabbat itself the family only plays and talks. The game is cooperative (everyone wins together), no scores. No Divine Names in Hebrew on the sheets (they may end up in the bin).
-- Sheets are HTML in mm (`.pp`, 210×297 mm); `test:play` checks that six sheets print and nothing spills over the page.
+- Sheets are HTML in mm (`.pp`, 188×270 mm = A4 minus 10 mm margins, with slack; never put orientation in a plain `@page`, use the named pages); `test:play` checks that six sheets print and nothing spills over the page.
 
 ## About window
 

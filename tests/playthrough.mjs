@@ -213,6 +213,13 @@ async function run(browser, base, sc) {
     if (pr.n !== 6) add(`«К Шабату»: ${pr.n} sheets sent to print instead of 6`);
     if (pr.over.length) add('«К Шабату»: content does not fit the A4 sheet: ' + pr.over.join(', '));
     for (const p of textProblems(pr.text, sc.lang)) add(`[shabbat/print] ${p}`);
+    // real print layout: the sheets' own page size (portrait A4) wins over the certificate's landscape one
+    await page.emulateMedia({media: 'print'});
+    const pdf = (await page.pdf({preferCSSPageSize: true, printBackground: true})).toString('latin1');
+    await page.emulateMedia({media: null});
+    const boxes = [...pdf.matchAll(/\/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)\s*\]/g)].map(m => [Math.round(+m[1]), Math.round(+m[2])]);
+    if (boxes.length !== 6 || boxes.some(([w, h]) => w !== 595 || h !== 842)) add(`«К Шабату»: printed ${boxes.length} pages (${boxes.map(b => b.join('×')).join(', ')}) instead of 6 portrait A4`);
+    await page.evaluate(() => shabPrintDone());
     await page.click('#shback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«К Шабату»: «Назад» did not return to the final screen');
   }

@@ -177,20 +177,17 @@ function renderShabbat(){
 /* крупный просмотр одного листа */
 function viewPage(k){
   openSheet('shab-view',esc(tl('shab.items')[k].t),()=>`<div class="pp-fit"><span class="pp-scale">${SHAB_PAGES[k]()}</span></div>`,
-    m=>{const fit=m.querySelector('.pp-fit');const sc=()=>fit.style.setProperty('--s',fit.clientWidth/793.7);sc();requestAnimationFrame(sc)});
+    m=>{const fit=m.querySelector('.pp-fit');const sc=()=>fit.style.setProperty('--s',fit.clientWidth/710.6);sc();requestAnimationFrame(sc)});
 }
 async function printShabbat(keys){
   if(!keys.length)return;
-  const b=$('#shprint');b.disabled=true;
+  const b=$('#shprint');if(b)b.disabled=true;
   try{
     const pr=$('#print-area');pr.innerHTML=keys.map(k=>SHAB_PAGES[k]()).join('');pr.classList.add('pp-print');
-    let st=document.getElementById('pp-size');
-    if(!st){st=document.createElement('style');st.id='pp-size';st.textContent='@media print{@page{size:A4 portrait;margin:0}}';document.head.appendChild(st)}
     if(document.fonts&&document.fonts.ready)await document.fonts.ready;
     window.addEventListener('afterprint',shabPrintDone,{once:true});
     window.print();
   }catch(e){const n=$('#shnote');if(n)n.textContent=t('shab.noPrint')}
   if(b)b.disabled=false;
 }
-/* после печати листов сертификат снова печатается альбомным */
-function shabPrintDone(){const st=document.getElementById('pp-size');if(st)st.remove();const pr=$('#print-area');if(pr)pr.classList.remove('pp-print')}
+function shabPrintDone(){const pr=$('#print-area');if(pr)pr.classList.remove('pp-print')}
