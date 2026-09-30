@@ -187,6 +187,13 @@ function wireLangPicker(root,after){
 
 /* ---------- О приложении ---------- */
 const PROJECT_URL='https://mychitas.app';
+const DONATE_URL='https://donate.mychitas.app';
+function donateBtn(){
+  let a=document.getElementById('donate');
+  if(!a){a=document.createElement('a');a.id='donate';a.className='donate';a.target='_blank';a.rel='noopener';a.href=DONATE_URL;document.body.appendChild(a)}
+  a.innerHTML=icon('heart');a.title=t('donate.label');a.setAttribute('aria-label',t('donate.label'));
+  a.hidden=S.screen==='title';
+}
 function showAbout(){
   const m=document.createElement('div');m.className='modal';
   const link=`<a href="${PROJECT_URL}" target="_blank" rel="noopener">mychitas.app</a>`;
@@ -211,7 +218,7 @@ function go(screen,skipPrologue){
   S.screen=screen;save();render();window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
-  stopReading();stopCamera();applyTheme();hud();
+  stopReading();stopCamera();applyTheme();hud();donateBtn();
   Voice.cancel();
   ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal}[S.screen]||renderTitle)();
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
@@ -230,6 +237,7 @@ function renderTitle(){
     </div>
     <div id="conf"></div>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
+    <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
   </section>`;
   $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
