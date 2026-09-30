@@ -134,6 +134,18 @@ async function run(browser, base, sc) {
       await snap('final-' + tab);
     }
     if (!(await page.waitForSelector('#cert img', {timeout: 8000}).catch(() => null))) add('certificate image was not drawn');
+    // «About» from the menu: project link, four sections, closes with Escape
+    await page.click('#menubtn'); await page.click('[data-m="about"]');
+    const about = await page.evaluate(() => { const d = document.querySelector('.sheet.about'); return d && {text: d.innerText, href: (d.querySelector('a') || {}).href, secs: d.querySelectorAll('.about-sec').length}; });
+    if (!about) add('«About» window did not open');
+    else {
+      if (!/^https:\/\/mychitas\.app\/?$/.test(about.href || '')) add('«About»: no link to mychitas.app');
+      if (about.secs !== 4) add(`«About»: ${about.secs} sections instead of 4`);
+      for (const p of textProblems(about.text, sc.lang)) add(`[about] ${p}`);
+      await snap('about');
+      await page.keyboard.press('Escape');
+      if (await has('.sheet.about')) add('«About» did not close with Escape');
+    }
   }
   await ctx.close();
   return {name, steps, problems: [...problems]};

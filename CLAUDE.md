@@ -61,6 +61,10 @@ Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's
 - Music ducks to 30 % while the voice speaks and pauses in a hidden tab. Settings (music, track, volume, voice) live in the menu and as quick toggles on the title screen; they are separate from game progress.
 - New track: put the mp3 into `music/` (Latin file name) and add it to `music/tracks.json` with titles for every language. Only add music the project has the right to use.
 
+## About window
+
+- «О приложении» (`showAbout()` in `game.js`) opens from the menu and from the title footer: project link `PROJECT_URL` (https://mychitas.app), short description, rights to the lesson and the music, open-source libraries, privacy. Texts are `about.*` in the locales — update them when the lesson source, music or libraries change.
+
 ## Design
 
 - Icons only from `ICONS` in `art.js` (`icon('name')`), no emoji. The Keeper's moods: `smile`, `joy`, `think`, `wow`, `warm`, `point`.
