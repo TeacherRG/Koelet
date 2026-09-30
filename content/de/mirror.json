@@ -137,40 +137,40 @@
     {
       "type": "choice",
       "who": {
-        "name": "Jana",
+        "name": "Chana",
         "av": {
           "look": 2,
           "outfit": 0
         }
       },
       "text": "„Tali malt wie eine echte Künstlerin. Und bei mir klappt gar nichts.“",
-      "q": "Was kann Jana tun?",
+      "q": "Was kann Chana tun?",
       "key": "mirror3",
       "neutral": true,
       "options": [
         {
           "t": "Dieselben Bilder wie Tali malen",
-          "r": "Beim Abmalen hat Jana viel gelernt: Ihre Linien wurden sicherer. Aber bei der Ausstellung weiß man nicht, welches Bild von wem ist. Jana selbst ist dort noch nicht zu sehen.",
+          "r": "Beim Abmalen hat Chana viel gelernt: Ihre Linien wurden sicherer. Aber bei der Ausstellung weiß man nicht, welches Bild von wem ist. Chana selbst ist dort noch nicht zu sehen.",
           "insight": false
         },
         {
           "t": "Die Farben wegwerfen",
-          "r": "Die Farben sind im Müll. Erst war es leichter. Doch am Abend fiel Jana ein, wie gern sie Geschichten zu ihren Bildern erfunden hat.",
+          "r": "Die Farben sind im Müll. Erst war es leichter. Doch am Abend fiel Chana ein, wie gern sie Geschichten zu ihren Bildern erfunden hat.",
           "insight": false
         },
         {
           "t": "Merken, was sie Eigenes hat",
-          "r": "Jana hat verstanden: Ihre Stärke ist es, Geschichten zu erfinden. Zusammen mit Tali machte sie einen Comic: Tali zeichnet, Jana schreibt. Die ganze Schule liest ihn.",
+          "r": "Chana hat verstanden: Ihre Stärke ist es, Geschichten zu erfinden. Zusammen mit Tali machte sie einen Comic: Tali zeichnet, Chana schreibt. Die ganze Schule liest ihn.",
           "insight": true
         },
         {
           "t": "Sagen, dass Malen Quatsch ist",
-          "r": "Jemand gab Jana recht. Aber leichter wurde es nicht: Innen tut es trotzdem weh.",
+          "r": "Jemand gab Chana recht. Aber leichter wurde es nicht: Innen tut es trotzdem weh.",
           "insight": false
         },
         {
-          "t": "Tali fragen, was ihr an Jana gefällt",
-          "r": "Tali war überrascht: „Du erfindest doch die besten Geschichten!“ Darüber hatte Jana noch nie nachgedacht.",
+          "t": "Tali fragen, was ihr an Chana gefällt",
+          "r": "Tali war überrascht: „Du erfindest doch die besten Geschichten!“ Darüber hatte Chana noch nie nachgedacht.",
           "insight": true
         }
       ]
