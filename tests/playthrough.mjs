@@ -127,6 +127,8 @@ async function run(browser, base, sc) {
     let clicked = false;
     for (const id of ['#night', '#see', '#put']) if (await has(id)) { await page.click(id); clicked = true; break; }
     if (clicked) continue;
+    if (await has('.mz-card')) { seen.maslow = true; await page.click('.mz-card'); await page.click(`.mz-drop >> nth=${(await has('.mz-chip')) ? 3 : 0}`); continue; }
+    if (await has('.tl-ev')) { seen.timeline = true; const n = (await page.$$('.tl-slot.in')).length; if (!n) await page.click('.tl-ev[data-n="1"]'); await page.click(`.tl-ev[data-n="${n}"]`); continue; }
     if (await has('.item')) { await page.click('.item:not(.got)', {force: true}).catch(() => {}); await page.waitForTimeout(250); continue; }
     if (await has('.tile')) { for (const t of await page.$$('.tile[data-t="1"]:not(.hit)')) await t.click(); continue; }
     if (await has('.sp:not(.on)')) { await page.click('.sp:not(.on)'); continue; }
@@ -146,6 +148,9 @@ async function run(browser, base, sc) {
   if (state.done !== 7) add(`only ${state.done} of 7 worlds done`);
   if (!seen.jigsaw) add('jigsaw step was not reached');
   if (!seen.mirror) add('mirror step was not reached');
+  if (sc.age === 'a' && !seen.maslow) add('16+: Maslow pyramid (Solomon\'s experiments) was not reached');
+  if (sc.age === 'a' && !seen.timeline) add('16+: history timeline was not reached');
+  if (sc.age !== 'a' && (seen.maslow || seen.timeline)) add('16+ mini-games shown to a child');
   if (state.screen === 'final') {
     for (const tab of ['path', 'ach', 'cert']) {
       await page.click(`[data-tab="${tab}"]`);

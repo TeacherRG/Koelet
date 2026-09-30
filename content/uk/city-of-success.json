@@ -75,7 +75,12 @@
     },
     {
       "type": "mini",
-      "game": "treasure"
+      "game": {
+        "__ag": 1,
+        "y": "treasure",
+        "t": "treasure",
+        "a": "maslow"
+      }
     },
     {
       "__dynamic": "city-evening"

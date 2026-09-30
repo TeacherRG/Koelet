@@ -55,7 +55,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 ## Steps and mini-games
 
 - A world is `{name, desc, steps:[…]}`; step types: `talk`, `choice`, `multi`, `quote`, `card`, `reveal`, `mini` (see `renderStep()` in `game.js`). Dynamic steps use `__dynamic` (`city-year`, `city-evening`, or `body: {"__dynamic": "strength-map"}`) and are built in `resolveDynamic()`.
-- Mini-games are registered in `rMini()`: `book`, `treasure`, `find`, `puzzle` (real jigsaw), `selfmirror` (camera), `species`, `sky`, `hands`, `circles`, `final`.
+- Mini-games are registered in `rMini()`: `book`, `treasure`, `find`, `puzzle` (real jigsaw; 3×3 pieces, 5×5 for 16+), `selfmirror` (camera), `species`, `sky`, `hands`, `circles`, `final`; 16+ only: `maslow` (Solomon's experiments from Kohelet 2 on Maslow's pyramid, replaces `treasure` via `"game": {"__ag":1,…,"a":"maslow"}`) and `timeline` (history as a puzzle: events in order, the player's piece last).
 - Adding a step shifts step indices of saved games — that is acceptable, but add it in all three languages at the same position.
 - Camera (`selfmirror`): starts only after the button, stops in `render()` / on `pagehide` via `stopCamera()`; always keep the no-camera path.
 

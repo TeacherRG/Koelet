@@ -498,7 +498,7 @@ function rReveal(st){
 }
 
 /* ---------- mini-games ---------- */
-function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,selfmirror:gSelfMirror,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
+function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,maslow:gMaslow,timeline:gTimeline,selfmirror:gSelfMirror,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
 
 function gBook(){
   const cols=['#6e2433','#2c5564','#5a4a78','#3f6b4a','#8a6a3f','#1d2b44','#7a5a2a'];
@@ -551,6 +551,58 @@ function gTreasure(){
   spawn();
 }
 
+/* ---------- 16+: опыты Шломо (Коэлет 2) на пирамиде Маслоу; верного ответа нет, верхняя ступень остаётся пустой ---------- */
+function gMaslow(){
+  const L=tl('maslow.levels'),C=tl('maslow.cards'),at=C.map(()=>null),hint=t('maslow.hint');let sel=null,shown=false;
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('maslow.say'),'think')}
+    <div class="mz" id="mz" aria-label="${esc(t('maslow.label'))}"></div><p class="muted mz-st" id="mzs" aria-live="polite"></p>
+    <div id="out"></div><div class="actions" id="act">${hintBtn(hint)}</div></section>`;
+  wireHint(hint);
+  const draw=()=>{
+    const top=L.length-1;
+    $('#mz').innerHTML=`<div class="mz-pyr">${L.map((_,k)=>top-k).map(l=>{const ins=C.map((c,i)=>at[i]===l?`<button class="mz-chip${shown&&l===top?' vapor':''}" data-back="${i}" ${shown?'disabled':''}>${esc(c[0])}</button>`:'').join('');
+      return `<div class="mz-row l${l}${shown&&l===top?' empty':''}"><button class="mz-drop" data-l="${l}" ${sel==null||shown?'disabled':''}>${esc(L[l])}</button>${ins?`<div class="mz-in">${ins}</div>`:''}${shown&&l===top?'<span class="mz-q" aria-hidden="true">?</span>':''}</div>`}).join('')}</div>
+      ${shown?'':`<div class="mz-cards">${C.map((c,i)=>at[i]==null?`<button class="mz-card${sel===i?' on':''}" data-i="${i}" aria-pressed="${sel===i}"><span>${esc(c[0])}</span><small>${esc(c[1])}</small></button>`:'').join('')}</div>`}`;
+    $('#mzs').textContent=shown?'':t(sel==null?'maslow.pick':'maslow.level');
+    stage.querySelectorAll('.mz-card').forEach(b=>b.onclick=()=>{sel=sel===+b.dataset.i?null:+b.dataset.i;sfx.tap();draw()});
+    stage.querySelectorAll('.mz-drop').forEach(b=>b.onclick=()=>{if(sel==null)return;at[sel]=+b.dataset.l;sel=null;tone(480+at.filter(x=>x!=null).length*40,.1);draw()});
+    stage.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{at[+b.dataset.back]=null;sfx.soft();draw()});
+    if(!shown&&at.every(x=>x!=null)&&!$('#see')){$('#act').innerHTML=`<button class="btn" id="see">${t('maslow.see')}</button>`;$('#see').onclick=verdict}
+    if(!shown&&at.some(x=>x==null)&&$('#see')){$('#act').innerHTML=hintBtn(hint);wireHint(hint)}
+  };
+  const verdict=()=>{
+    const topUsed=at.includes(L.length-1);shown=true;draw();setMood('wow');sfx.good();addSparks(25,$('#mz'));
+    $('#out').innerHTML=`<div class="resp"><span class="who">${t('maslow.kicker')}</span><p class="quote-he" lang="he">וְהִנֵּה הַכֹּל הֶבֶל וּרְעוּת רוּחַ</p><p>${t(topUsed?'maslow.verdictTop':'maslow.verdict')}</p><p>${t('maslow.after')}</p></div>`;
+    $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.continueShort')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()};
+    $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+  draw();
+}
+
+/* ---------- 16+: лента истории — события по порядку, в конце своя деталь игрока ---------- */
+function gTimeline(){
+  const E=tl('timeline.events'),hint=t('timeline.hint'),order=E.map((_,i)=>i).sort(()=>Math.random()-.5);let k=0;
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('timeline.say'),'point')}
+    <div class="tl-pool" id="tlp" role="group" aria-label="${esc(t('timeline.pool'))}">${order.map(i=>`<button class="tl-ev" data-n="${i}">${esc(E[i][0])}</button>`).join('')}</div>
+    <p class="muted" id="tlm" aria-live="polite"></p>
+    <ol class="tl-line" id="tll" aria-label="${esc(t('timeline.label'))}"><li class="tl-slot next"><span class="tl-n">1</span></li></ol>
+    <div id="out"></div><div class="actions" id="act">${hintBtn(hint)}</div></section>`;
+  wireHint(hint);
+  const line=$('#tll');
+  stage.querySelectorAll('.tl-ev').forEach(b=>b.onclick=()=>{
+    if(+b.dataset.n!==k){b.classList.remove('no');void b.offsetWidth;b.classList.add('no');sfx.soft();$('#tlm').textContent=t('timeline.later');return}
+    const [title,era]=E[k];b.remove();tone(520+k*45,.12);$('#tlm').textContent='';
+    line.querySelector('.next').outerHTML=`<li class="tl-slot in"><span class="tl-n">${k+1}</span><div><small>${esc(era)}</small><b>${esc(title)}</b></div></li>`;
+    k++;
+    if(k<E.length){line.insertAdjacentHTML('beforeend',`<li class="tl-slot next"><span class="tl-n">${k+1}</span></li>`);return}
+    line.insertAdjacentHTML('beforeend',`<li class="tl-slot me in"><span class="tl-av">${avatar(S.hero)}</span><div><small>${t('timeline.now')}</small><b>${t('timeline.me',{name:esc(heroName())})}</b></div></li>`);
+    addSparks(25,line);sfx.ach();setMood('joy');
+    $('#out').innerHTML=`<div class="resp"><span class="who">${t('timeline.doneKicker')}</span><p>${t('timeline.done')}</p></div>`;
+    $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()};
+    $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+}
+
 function gFind(){
   const W='חֵלֶק',D=['הֶבֶל','שֶׁמֶשׁ','רוּחַ','עָמָל','לֵב','דּוֹר','זְמַן','חָכְמָה'];
   const tiles=[];for(let i=0;i<8;i++)tiles.push(W);for(let i=0;i<12;i++)tiles.push(D[i%D.length]);
@@ -580,6 +632,9 @@ function loadHeadbreaker(){
 }
 /* Картина 3×3 для пазла: шесть частей доли, две «чужие» детали и «?» в центре. */
 const JIG_LAYOUT=[0,'d',1,2,'h',3,4,'d',5];
+/* Сколько деталей по стороне: 3×3, для 16+ — 5×5 (смысл детали — клетка картины под её центром). */
+const jigN=()=>adult()?5:3;
+const jigMeaning=(i,n)=>{const c=JIG_LAYOUT[Math.floor((Math.floor(i/n)+.5)*3/n)*3+Math.floor((i%n+.5)*3/n)];return typeof c==='number'?c:null};
 function jigsawImage(P,cell){
   const S=cell*3,cols=['#f6d98a','#bcd6ea','#cfe3d6','#f2c4cc','#f2b8c2','#d9cdea'],ink=['#8a5d00','#3a669c','#276b3f','#a8324b','#a8324b','#56469c'];
   const wrap=s=>{const w=String(s).split(' ');if(s.length<12||w.length<2)return [s];let best=1,d=1e9;for(let i=1;i<w.length;i++){const a=w.slice(0,i).join(' ').length,b=w.slice(i).join(' ').length;if(Math.abs(a-b)<d){d=Math.abs(a-b);best=i}}return [w.slice(0,best).join(' '),w.slice(best).join(' ')]};
@@ -598,7 +653,7 @@ function jigsawImage(P,cell){
 }
 function gPuzzle(){
   const P=tl('puzzle.pieces');const shown=new Set();let done=false;
-  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('puzzle.say'),'point')}
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t(adult()?'puzzle.sayA':'puzzle.say'),'point')}
     <div class="jig" id="jig" aria-label="${esc(t('puzzle.label'))}"><p class="muted jig-wait">${t('puzzle.loading')}</p></div>
     <p class="muted" id="jigcnt" style="font-size:0.875rem">${t('puzzle.count',{n:0})}</p>
     <div id="out"></div><div class="actions" id="act">${hintBtn(t('puzzle.hint'))}<button class="btn ghost small" id="autosolve">${t('puzzle.solve')}</button></div></section>`;
@@ -614,20 +669,21 @@ function gPuzzle(){
     $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
   const fail=()=>{box.innerHTML=`<p class="muted">${t('puzzle.fail')}</p>`;
     $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
+  const n=jigN();
   Promise.all([loadHeadbreaker(),jigsawImage(P,200)]).then(([,img])=>{
     if(!document.body.contains(box))return;
-    const W=Math.max(260,Math.floor(box.clientWidth)),H=Math.round(Math.min(W*1.05,560));
-    const size=Math.floor(Math.min(W/4.8,H/4.8,104));
+    const W=Math.max(260,Math.floor(box.clientWidth)),H=Math.round(n>3?Math.min(W*1.3,640):Math.min(W*1.05,560));
+    const size=Math.floor(n>3?Math.min(W/7.2,H/7.2,80):Math.min(W/4.8,H/4.8,104));
     box.innerHTML='';box.style.height=H+'px';
     const cv=new headbreaker.Canvas('jig',{width:W,height:H,pieceSize:size,proximity:Math.round(size/5),borderFill:Math.round(size/10),
-      strokeWidth:2,strokeColor:'#6d5a3a',lineSoftness:.18,image:img,maxPiecesCount:{x:3,y:3},preventOffstageDrag:true,fixed:true});
+      strokeWidth:2,strokeColor:'#6d5a3a',lineSoftness:.18,image:img,maxPiecesCount:{x:n,y:n},preventOffstageDrag:true,fixed:true});
     cv.adjustImagesToPuzzleWidth();
-    cv.autogenerate({horizontalPiecesCount:3,verticalPiecesCount:3,metadata:JIG_LAYOUT.map((c,i)=>({id:'p'+i,meaning:typeof c==='number'?c:null}))});
+    cv.autogenerate({horizontalPiecesCount:n,verticalPiecesCount:n,metadata:[...Array(n*n).keys()].map(i=>({id:'p'+i,meaning:jigMeaning(i,n)}))});
     cv.shuffle(.85);
-    /* раскладываем детали по сетке 3×3 со случайным сдвигом, чтобы они не лежали стопкой */
-    const cells=[...Array(9).keys()].sort(()=>Math.random()-.5),cw=W/3,ch=H/3,rad=size*.72,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+    /* раскладываем детали по сетке n×n со случайным сдвигом, чтобы они не лежали стопкой */
+    const cells=[...Array(n*n).keys()].sort(()=>Math.random()-.5),cw=W/n,ch=H/n,rad=size*.72,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
     cv.puzzle.pieces.forEach((pc,i)=>{const c=cells[i];
-      pc.relocateTo(cl((c%3+.5)*cw+(Math.random()-.5)*Math.max(0,cw-2*rad),rad,W-rad),cl((Math.floor(c/3)+.5)*ch+(Math.random()-.5)*Math.max(0,ch-2*rad),rad,H-rad))});
+      pc.relocateTo(cl((c%n+.5)*cw+(Math.random()-.5)*Math.max(0,cw-2*rad),rad,W-rad),cl((Math.floor(c/n)+.5)*ch+(Math.random()-.5)*Math.max(0,ch-2*rad),rad,H-rad))});
     cv.attachSolvedValidator();
     cv.onConnect((a,_fa,b)=>{tone(560,.08);reveal(a.metadata.meaning);reveal(b.metadata.meaning)});
     cv.onValid(()=>{if(cv.valid)finish()});
