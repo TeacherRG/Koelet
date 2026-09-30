@@ -937,34 +937,19 @@ function finalAch(){
 function selectText(el){try{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(e){}}
 
 /* ---------- озвучка (для младших) ---------- */
-function canSpeak(){try{return 'speechSynthesis' in window&&typeof SpeechSynthesisUtterance!=='undefined'}catch(e){return false}}
-function stopReading(){try{if(canSpeak())speechSynthesis.cancel()}catch(e){}const b=stage.querySelector('[data-read]');if(b)b.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`}
+function canSpeak(){return Voice.can()}
+function stopReading(){if(Voice.reading)Voice.cancel();const b=stage.querySelector('[data-read]');if(b)b.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`}
 function readAloud(btn){
   if(!canSpeak())return;
-  if(speechSynthesis.speaking){stopReading();return}
+  if(Voice.reading){stopReading();return}
   const sel='.bubble .txt, .card .h2, .card p, .reveal .h1, .resp p, .wi b, .wi p, .lead, p.h2, .opt:not(.dim) .ot > span';
-  const txt=[...stage.querySelectorAll(sel)].filter(el=>!el.closest('[lang="he"]')).map(el=>el.textContent.trim()).filter(Boolean).join('. ');
-  if(!txt)return;
-  const u=new SpeechSynthesisUtterance(txt.replace(/[«»„“]/g,''));u.lang=langLocale();u.rate=.95;
-  const v=speechSynthesis.getVoices().find(x=>x.lang&&x.lang.toLowerCase().startsWith(LANG));if(v)u.voice=v;
-  let started=false;
-  u.onstart=()=>{started=true};
-  u.onend=()=>{started=true;if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`};
-  u.onerror=e=>{
-    started=true;
-    if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`;
-    if(e.error==='not-allowed')toast('mute',t('toast.soundBlocked'),t('toast.soundBlockedSub'));
-  };
+  const parts=[...stage.querySelectorAll(sel)].filter(el=>!el.closest('[lang="he"]')).map(el=>el.innerHTML.trim()).filter(Boolean);
+  if(!parts.length)return;
+  const idle=()=>{if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`};
   btn.innerHTML=icon('stop')+`<span>${t('read.stop')}</span>`;
-  /* Chrome на Android иногда «зависает» с паузой в очереди — сбрасываем и будим */
-  try{speechSynthesis.cancel();speechSynthesis.resume()}catch(e){}
-  unlockAudio();
-  /* если речь так и не началась — браузер молча её заблокировал */
-  setTimeout(()=>{if(!started){try{speechSynthesis.cancel()}catch(e){}if(btn&&btn.isConnected)btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`;toast('mute',t('toast.soundBlocked'),t('toast.soundBlockedSub'))}},3000);
-  try{speechSynthesis.speak(u)}catch(e){
-    btn.innerHTML=icon('sound')+`<span>${t('read.listen')}</span>`;
-    toast('mute',t('toast.soundFail'),t('toast.soundFailSub'));
-  }
+  Audio_.unlocked=true;unlockAudio();
+  /* false — браузер не дал звуку начаться */
+  Voice.say(parts,{force:true,reading:true}).then(ok=>{idle();if(ok===false)toast('mute',t('toast.soundBlocked'),t('toast.soundBlockedSub'))});
 }
 stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)readAloud(b)});
 

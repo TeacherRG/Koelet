@@ -343,7 +343,7 @@
   "about.musicH": "Musik",
   "about.music": "Chabad-Nigunim „Ufaratzta“, „Tzama“, „Schamil“ und „Njet, njet, nikawo“ aus der Sammlung „Nitzotzot schel Kduscha“ („Nigunej Chabad“, Bände 5–6). Alle Rechte an den Aufnahmen liegen bei den jeweiligen Rechteinhabern. Die Musik lässt sich im Menü ausschalten.",
   "about.codeH": "Software",
-  "about.code": "Das Puzzle nutzt die freien Bibliotheken headbreaker (ISC-Lizenz) und Konva (MIT-Lizenz).",
+  "about.code": "Das Puzzle nutzt die freien Bibliotheken headbreaker (ISC-Lizenz) und Konva (MIT-Lizenz). Die Stimme des Hüters wurde vorab mit der Sprachsynthese von Microsoft Azure AI Speech aufgenommen; was nicht aufgenommen ist (etwa der Name des Helden), liest die Stimme des Browsers.",
   "about.privacyH": "Datenschutz",
   "about.privacy": "Das Spiel sendet nichts ins Internet: Fortschritt, Antworten und Einstellungen bleiben nur auf diesem Gerät. Die Kamera in der Welt „Spiegel“ geht nur per Knopfdruck an, das Bild wird nicht aufgezeichnet.",
   "donate.label": "Projekt unterstützen"

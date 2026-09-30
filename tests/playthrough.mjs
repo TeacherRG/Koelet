@@ -20,6 +20,7 @@ import {mkdir, readFile} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {startServer} from '../tools/serve.mjs';
+import {collect} from '../tools/voice-phrases.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const arg = (name) => { const a = process.argv.find(x => x === `--${name}` || x.startsWith(`--${name}=`)); return a === undefined ? undefined : (a.split('=')[1] ?? true); };
@@ -57,7 +58,7 @@ async function run(browser, base, sc) {
   const problems = new Set(), seen = {jigsaw: false, mirror: false};
   const add = m => problems.add(m);
   page.on('pageerror', e => add('JS error: ' + e.message));
-  page.on('requestfailed', r => { if (r.url().startsWith(base)) add('failed to load ' + r.url().slice(base.length)); });
+  page.on('requestfailed', r => { if (r.url().startsWith(base) && !/\/audio\/.*\.mp3$/.test(r.url())) add('failed to load ' + r.url().slice(base.length)); });
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) add('console error: ' + m.text()); });
   await page.addInitScript(l => {
     try { localStorage.setItem('koelet-lang', l); localStorage.setItem('koelet-audio', JSON.stringify({music: false, voice: false})); } catch (e) {}   // an old «Без звука» must not stick
@@ -65,8 +66,15 @@ async function run(browser, base, sc) {
     window.__spoken = [];
     if (window.speechSynthesis) { const orig = speechSynthesis.speak.bind(speechSynthesis); speechSynthesis.speak = u => { window.__spoken.push(u.text); try { orig(u); } catch (e) {} }; }
   }, sc.lang);
+  // ready-made voice (audio/<lang>/): the list of every phrase from the texts, the mp3 files
+  // themselves are «missing» so the browser voice speaks and gets recorded
+  const phrases = [...collect(sc.lang).keys()];
+  await page.route(`${base}audio/${sc.lang}/index.json`, r => r.fulfill({json: {keys: phrases}}));
+  await page.route(`${base}audio/**/*.mp3`, r => r.fulfill({status: 404, body: ''}));
   await page.goto(base + 'index.html');
   await page.waitForSelector('#start', {timeout: 15000});
+  await page.waitForFunction(() => Voice.keys, null, {timeout: 5000}).catch(() => add('voice: audio/index.json was not loaded'));
+  await page.evaluate(() => { window.__miss = []; const clip = Voice.clip; Voice.clip = function (s) { const r = clip.call(this, s); if (!r) window.__miss.push(s); return r; }; });
   let shot = 0;
   // start screen: the tap turns on music and the greeting
   if (!(await page.waitForSelector('#gate-go', {timeout: 5000}).catch(() => null))) add('start screen (music gate) did not appear');
@@ -128,6 +136,8 @@ async function run(browser, base, sc) {
   if (i >= 700) add('did not reach the final screen');
 
   const spoken = await page.evaluate(() => window.__spoken);
+  // every sentence the Keeper says must have a ready-made recording (tools/tts.mjs)
+  for (const m of new Set(await page.evaluate(() => window.__miss))) add(`[voice] no recording for: ${m}`);
   for (const text of spoken) for (const p of textProblems(text, sc.lang)) add(`[voice] ${p}`);
   if (spoken.length < steps) add(`voice hints: only ${spoken.length} phrases for ${steps} screens`);
   const state = await page.evaluate(() => ({screen: S.screen, done: S.done.filter(Boolean).length}));

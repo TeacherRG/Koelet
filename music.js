@@ -2,8 +2,8 @@
    Музыка и голос-гид («музыкальный текстовый квест»)
    - Music: фоновая музыка из music/tracks.json (одна мелодия по кругу или все по очереди),
      громкость, приглушение во время речи, пауза в скрытой вкладке.
-   - Voice: голос Хранителя (синтез речи браузера): приветствие, подсказка «что делать»
-     на каждом экране и рассказ о последствиях выбора.
+   - Voice: голос Хранителя (готовая озвучка Azure из audio/, иначе синтез речи браузера):
+     приветствие, подсказка «что делать» на каждом экране и рассказ о последствиях выбора.
    - Музыка и голос включены при каждом открытии игры: «Без звука» и
      выключатели в меню действуют до перезагрузки страницы. Мелодия и
      громкость запоминаются (localStorage «koelet-audio», отдельно от прогресса).
@@ -82,27 +82,93 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ---------- Голос-гид ---------- */
+/* Сначала — готовая озвучка Azure (audio/<язык>/<ключ>.mp3, по предложению на файл,
+   см. voice-key.js и tools/tts.mjs). Предложения, которых нет в audio/<язык>/index.json
+   (имя героя, числа, новые тексты), говорит синтез речи браузера. */
 const Voice = {
-  seq: 0, idleMs: 60000, idleT: null,
-  can(){ try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'; } catch (e) { return false; } },
-  cancel(){ this.seq++; this.idle(); try { if (this.can()) speechSynthesis.cancel(); } catch (e) {} Music.duck(false); },
-  /* Произносит текст (или несколько фраз подряд). Возвращает Promise, который
-     завершается, когда речь закончилась или не смогла начаться. */
-  say(parts, {force = false} = {}){
-    if ((!Audio_.prefs.voice && !force) || !this.can() || !Audio_.unlocked) return Promise.resolve(false);
-    const text = [].concat(parts).filter(Boolean).map(s => String(s).replace(/<[^>]+>/g, ' ').replace(/[«»„“"]/g, '').replace(/\s+/g, ' ').trim()).filter(Boolean).join(' … ');
-    if (!text) return Promise.resolve(false);
-    this.cancel(); const my = this.seq;
+  seq: 0, idleMs: 60000, idleT: null, el: null, keys: null, keysLang: null, speaking: false, reading: false,
+  synthOk(){ try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'; } catch (e) { return false; } },
+  can(){ return !!this.keys || this.synthOk(); },
+  /* Список готовых фраз для текущего языка (один раз на язык). */
+  load(){
+    if (this.keysLang === LANG) return;
+    const lang = this.keysLang = LANG; this.keys = null;
+    fetch(`audio/${lang}/index.json`).then(r => r.ok ? r.json() : null).then(j => { if (j && lang === LANG) this.keys = new Set(j.keys || []); }).catch(() => {});
+  },
+  /* Файл для предложения; если в нём имя героя — ищем то же предложение без имени. */
+  clip(s){
+    if (!this.keys) return null;
+    let k = VoiceKey.key(s);
+    if (!this.keys.has(k)) {
+      const name = typeof S !== 'undefined' && S.hero && S.hero.name.trim();
+      if (!name) return null;
+      k = VoiceKey.key(VoiceKey.plain(s).split(name).join(' '));
+      if (!this.keys.has(k)) return null;
+    }
+    return `audio/${this.keysLang}/${k}.mp3`;
+  },
+  cancel(){
+    this.seq++; this.speaking = this.reading = false; this.idle();
+    if (this.el) { try { this.el.pause(); } catch (e) {} }
+    if (this._stop) this._stop();
+    try { if (this.synthOk()) speechSynthesis.cancel(); } catch (e) {}
+    Music.duck(false);
+  },
+  _audio(){
+    if (!this.el) { this.el = new Audio(); this.el.preload = 'auto'; this.el.setAttribute('playsinline', ''); }
+    return this.el;
+  },
+  /* Один кусок: готовый файл или синтез браузера. true — прозвучал, false — не смог. */
+  _clip(url, my){
+    const a = this._audio();
     return new Promise(res => {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = langLocale(); u.rate = young() ? .92 : 1; u.pitch = .95;
-      const v = speechSynthesis.getVoices().find(x => x.lang && x.lang.toLowerCase().startsWith(LANG)); if (v) u.voice = v;
-      const done = ok => { if (my === this.seq) { Music.duck(false); this.idle(); } res(ok); };
-      u.onstart = () => { if (my === this.seq) { Music.duck(true); clearTimeout(this.idleT); } };
-      u.onend = () => done(true); u.onerror = () => done(false);
-      try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { done(false); }
-      setTimeout(() => { if (!speechSynthesis.speaking && my === this.seq) done(false); }, 4000);
+      const end = ok => { a.onended = a.onerror = null; this._stop = null; res(ok); };
+      this._stop = () => end(false);
+      a.onended = () => end(true); a.onerror = () => end(false);
+      a.src = url; a.playbackRate = typeof young === 'function' && young() ? .95 : 1;
+      a.play().then(() => { if (my !== this.seq) a.pause(); }, () => end(false));
     });
+  },
+  _synth(text, my){
+    if (!this.synthOk()) return Promise.resolve(false);
+    return new Promise(res => {
+      let fin = false; const end = ok => { if (!fin) { fin = true; res(ok); } };
+      const u = new SpeechSynthesisUtterance(text.replace(/[«»„“"]/g, ''));
+      u.lang = langLocale(); u.rate = typeof young === 'function' && young() ? .92 : 1; u.pitch = .95;
+      const v = speechSynthesis.getVoices().find(x => x.lang && x.lang.toLowerCase().startsWith(LANG)); if (v) u.voice = v;
+      u.onend = () => end(true); u.onerror = () => end(false);
+      try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { end(false); }
+      setTimeout(() => { if (my === this.seq && !speechSynthesis.speaking) end(false); }, 4000);
+    });
+  },
+  /* Произносит текст (или несколько фраз подряд). Promise: true — договорил,
+     false — звук не смог начаться, null — речь прервана. */
+  say(parts, {force = false, reading = false} = {}){
+    this.load();
+    if ((!Audio_.prefs.voice && !force) || !this.can() || !Audio_.unlocked) return Promise.resolve(false);
+    const sents = [].concat(parts).filter(Boolean).flatMap(p => VoiceKey.sentences(p));
+    if (!sents.length) return Promise.resolve(false);
+    /* подряд идущие предложения без файла — одной фразой, чтобы синтез звучал связно */
+    const items = [];
+    for (const s of sents) {
+      const url = this.clip(s), last = items[items.length - 1];
+      if (!url && last && !last.url) last.text += ' ' + s; else items.push({url, text: s});
+    }
+    this.cancel(); const my = this.seq;
+    this.speaking = true; this.reading = reading; clearTimeout(this.idleT); Music.duck(true);
+    /* первый play() — синхронно, внутри нажатия: так iOS разрешит звук */
+    return (async () => {
+      let any = false;
+      for (const it of items) {
+        if (my !== this.seq) return null;
+        let ok = it.url ? await this._clip(it.url, my) : false;
+        if (!ok && my === this.seq) ok = await this._synth(it.text, my);
+        any = any || ok;
+      }
+      if (my !== this.seq) return null;
+      this.speaking = this.reading = false; Music.duck(false); this.idle();
+      return any;
+    })();
   },
   setVoice(on){ Audio_.prefs.voice = on; saveAudioPrefs(); if (!on) this.cancel(); },
   /* Минута тишины (Хранитель молчит, игрок ничего не нажимает) → «Тебе чем-то помочь?»
@@ -111,19 +177,20 @@ const Voice = {
     clearTimeout(this.idleT);
     if (!Audio_.prefs.voice || !Audio_.unlocked) return;
     this.idleT = setTimeout(() => {
-      if (document.hidden || document.querySelector('#gate, .sheet') || (this.can() && speechSynthesis.speaking)) return this.idle();
+      if (document.hidden || document.querySelector('#gate, .sheet') || this.speaking) return this.idle();
       const hint = guideParts().filter(Boolean).pop();
       this.say([t('voice.idle'), hint]);
     }, this.idleMs);
   }
 };
+Voice.load();
 ['pointerdown', 'keydown'].forEach(e => document.addEventListener(e, () => Voice.idle(), {passive: true, capture: true}));
 
 /* ---------- Подсказка «что делать» для текущего экрана ---------- */
 /* Первая фраза — главный текст экрана (слова Хранителя), вторая — что нажать. */
 function guideParts(){
   const $s = sel => document.querySelector('#stage ' + sel);
-  const txt = el => el ? el.textContent.trim() : '';
+  const txt = el => el ? el.innerHTML.trim() : '';   // HTML: теги станут пробелами, как в tools/tts.mjs
   const scr = S.screen;
   if (scr === 'title') return [t(S.sparks > 0 ? 'voice.titleBack' : 'voice.title')];
   if (scr === 'create') return [t('voice.create')];
