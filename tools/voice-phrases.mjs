@@ -22,8 +22,11 @@ export function collect(lang) {
   const texts = [], values = {};                    // values: поле → все его значения в content
   const walk = (v, field, own) => {
     if (typeof v === 'string') {
-      if (SKIP_FIELDS.has(field) || !/\p{L}/u.test(v) || /^[a-z0-9_.-]+$/.test(v)) return;
-      texts.push(v); if (own) (values[field] = values[field] || new Set()).add(v);
+      if (SKIP_FIELDS.has(field) || !/\p{L}/u.test(v)) return;
+      if (own) (values[field] = values[field] || new Set()).add(v);
+      // одно латинское слово строчными — технический код (pic, item…) или английское значение
+      // подстановки («ideas» для {{what}}): само по себе не произносится, но в подстановки идёт
+      if (!/^[a-z0-9_.-]+$/.test(v)) texts.push(v);
     }
     else if (Array.isArray(v)) v.forEach(x => walk(x, field, own));
     else if (v && typeof v === 'object') for (const k in v) if (!SKIP_FIELDS.has(k) && k !== '__ag') walk(v[k], k === 'y' || k === 't' || k === 'a' ? field : k, own);

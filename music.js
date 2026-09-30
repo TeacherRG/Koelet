@@ -131,7 +131,7 @@ const Voice = {
   },
   /* Хранитель — мужчина: из голосов браузера берём мужской (по имени голоса),
      иначе — любой голос этого языка. */
-  MALE: /\b(male|mann|dmitr|dmitry|pavel|yuri|maxim|mikhail|ostap|conrad|killian|stefan|markus|florian|hans|jonas|bernd|christoph|ralf|kasper)\b|муж|чолов/i,
+  MALE: /\b(male|mann|dmitr|dmitry|pavel|yuri|maxim|mikhail|ostap|conrad|killian|stefan|markus|florian|hans|jonas|bernd|christoph|ralf|kasper|andrew|guy|davis|brian|christopher|eric|roger|steffan|daniel|arthur|oliver|george|ryan|thomas|alex|fred|tom)\b|муж|чолов/i,
   maleVoice(){
     const all = speechSynthesis.getVoices().filter(x => x.lang && x.lang.toLowerCase().startsWith(LANG));
     return all.find(x => this.MALE.test(x.name) && !/female|frau|жен/i.test(x.name)) || all[0] || null;
@@ -140,7 +140,7 @@ const Voice = {
     if (!this.synthOk()) return Promise.resolve(false);
     return new Promise(res => {
       let fin = false; const end = ok => { if (!fin) { fin = true; res(ok); } };
-      const u = new SpeechSynthesisUtterance(text.replace(/[«»„“"]/g, ''));
+      const u = new SpeechSynthesisUtterance(text.replace(/[«»„“”"]/g, ''));
       u.lang = langLocale(); u.rate = typeof young === 'function' && young() ? .92 : 1; u.pitch = .95;
       const v = this.maleVoice(); if (v) u.voice = v;
       u.onend = () => end(true); u.onerror = () => end(false);

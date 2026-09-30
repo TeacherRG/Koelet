@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       lang:
-        description: 'Язык (ru, uk, de) — пусто = все'
+        description: 'Язык (ru, uk, de, en) — пусто = все'
         required: false
       rpm:
         description: 'Запросов в минуту: 18 для бесплатного тарифа F0, 600 для S0'
