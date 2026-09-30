@@ -185,7 +185,7 @@ function go(screen,skipPrologue){
   S.screen=screen;save();render();window.scrollTo({top:0,behavior:'smooth'});
 }
 function render(){
-  stopReading();applyTheme();hud();
+  stopReading();stopCamera();applyTheme();hud();
   ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal}[S.screen]||renderTitle)();
 }
 
@@ -386,7 +386,7 @@ function rReveal(st){
 }
 
 /* ---------- mini-games ---------- */
-function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
+function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,selfmirror:gSelfMirror,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
 
 function gBook(){
   const cols=['#6e2433','#2c5564','#5a4a78','#3f6b4a','#8a6a3f','#1d2b44','#7a5a2a'];
@@ -458,26 +458,113 @@ function gFind(){
   });
 }
 
+/* ---------- настоящий пазл: библиотека headbreaker (vendor/), грузится только на этом шаге ---------- */
+let hbLoading=null;
+function loadHeadbreaker(){
+  if(window.headbreaker)return Promise.resolve();
+  if(!hbLoading)hbLoading=new Promise((res,rej)=>{const s=document.createElement('script');s.src='vendor/headbreaker.js';
+    s.onload=res;s.onerror=()=>{hbLoading=null;s.remove();rej(new Error('headbreaker'))};document.head.appendChild(s)});
+  return hbLoading;
+}
+/* Картина 3×3 для пазла: шесть частей доли, две «чужие» детали и «?» в центре. */
+const JIG_LAYOUT=[0,'d',1,2,'h',3,4,'d',5];
+function jigsawImage(P,cell){
+  const S=cell*3,cols=['#f6d98a','#bcd6ea','#cfe3d6','#f2c4cc','#f2b8c2','#d9cdea'],ink=['#8a5d00','#3a669c','#276b3f','#a8324b','#a8324b','#56469c'];
+  const wrap=s=>{const w=String(s).split(' ');if(s.length<12||w.length<2)return [s];let best=1,d=1e9;for(let i=1;i<w.length;i++){const a=w.slice(0,i).join(' ').length,b=w.slice(i).join(' ').length;if(Math.abs(a-b)<d){d=Math.abs(a-b);best=i}}return [w.slice(0,best).join(' '),w.slice(best).join(' ')]};
+  let g='';
+  JIG_LAYOUT.forEach((c,i)=>{
+    const x=(i%3)*cell,y=Math.floor(i/3)*cell,cx=x+cell/2;
+    const label=(lines,col,y0)=>{const fs=Math.min(cell*.125,cell*.9/(Math.max(...lines.map(l=>l.length))*.58));
+      return lines.map((l,k)=>`<text x="${cx}" y="${y0+k*fs*1.2}" text-anchor="middle" font-size="${fs.toFixed(1)}" font-weight="700" fill="${col}">${esc(l)}</text>`).join('')};
+    const ic=(name,col,s)=>`<g class="ic" color="${col}" transform="translate(${cx-s/2} ${y+cell*.16}) scale(${s/24})">${ICONS[name]||''}</g>`;
+    if(c==='d'){g+=`<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="#e6ece8"/>${ic('friends','#6e817c',cell*.4)}${label(wrap(t('puzzle.deco')),'#4a5d58',y+cell*.75)}`}
+    else if(c==='h'){g+=`<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="#fbf6e6"/><rect x="${x+cell*.14}" y="${y+cell*.14}" width="${cell*.72}" height="${cell*.72}" rx="${cell*.1}" fill="none" stroke="#c9951f" stroke-width="${cell*.025}" stroke-dasharray="${cell*.06} ${cell*.05}"/><text x="${cx}" y="${y+cell*.64}" text-anchor="middle" font-size="${cell*.4}" font-weight="800" fill="#8a5d00">?</text>`}
+    else {const [name,title]=P[c];g+=`<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="${cols[c]}"/>${ic(name,ink[c],cell*.42)}${label(wrap(title),'#17282e',y+cell*.76)}`}
+  });
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}"><style>text{font-family:Onest,'Segoe UI',Arial,sans-serif}.ic *{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.ic .f{fill:currentColor;fill-opacity:.25}</style>${g}</svg>`;
+  return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+}
 function gPuzzle(){
-  const P=tl('puzzle.pieces');
-  const layout=[0,'d',1,2,'h',3,4,'d',5];
-  const placed={};let sel=null;
-  const hint=t('puzzle.hint');
-  const draw=()=>{
-    stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('puzzle.say'),'point')}
-      <div class="board">${layout.map((c,i)=>c==='d'?`<div class="slot deco">${t('puzzle.deco')}</div>`:c==='h'?`<div class="slot hole">?</div>`:placed[c]?`<div class="slot filled"><span><em>${icon(P[c][0])}</em>${P[c][1]}</span></div>`:`<button class="slot" data-slot="${c}" aria-label="${t('puzzle.slot',{name:P[c][1]})}" data-sym="${P[c][0]}">${icon(P[c][0])}</button>`).join('')}</div>
-      <div class="tray">${P.map((p,i)=>placed[i]?'':`<button class="piece ${sel===i?'sel':''}" data-p="${i}" data-sym="${p[0]}"><em>${icon(p[0])}</em>${p[1]}</button>`).join('')}</div>
-      <div id="out"></div><div class="actions" id="act">${hintBtn(hint)}</div></section>`;
-    wireHint(hint);
-    stage.querySelectorAll('.piece').forEach(b=>b.onclick=()=>{sel=+b.dataset.p;sfx.tap();draw()});
-    stage.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{
-      if(sel===null){b.classList.remove('no');void b.offsetWidth;b.classList.add('no');return}
-      if(+b.dataset.slot===sel){placed[sel]=1;const p=P[sel];sel=null;sfx.good();draw();
-        $('#out').innerHTML=`<div class="resp"><span class="who">${p[1]}</span><p>${p[2]}</p></div>`;
-        if(Object.keys(placed).length===6){addSparks(25);$('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}
-      }else{b.classList.remove('no');void b.offsetWidth;b.classList.add('no');sfx.soft()}
-    });
-  };draw();
+  const P=tl('puzzle.pieces');const shown=new Set();let done=false;
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('puzzle.say'),'point')}
+    <div class="jig" id="jig" aria-label="${esc(t('puzzle.label'))}"><p class="muted jig-wait">${t('puzzle.loading')}</p></div>
+    <p class="muted" id="jigcnt" style="font-size:14px">${t('puzzle.count',{n:0})}</p>
+    <div id="out"></div><div class="actions" id="act">${hintBtn(t('puzzle.hint'))}<button class="btn ghost small" id="autosolve">${t('puzzle.solve')}</button></div></section>`;
+  wireHint(t('puzzle.hint'));
+  const box=$('#jig');
+  const reveal=idx=>{if(idx==null||shown.has(idx))return;shown.add(idx);const p=P[idx];sfx.good();
+    $('#out').innerHTML=`<div class="resp"><span class="who">${esc(p[1])}</span><p>${esc(p[2])}</p></div>`;
+    $('#jigcnt').textContent=t('puzzle.count',{n:shown.size})};
+  const finish=()=>{if(done||!document.body.contains(box))return;done=true;
+    P.forEach((_,i)=>shown.add(i));$('#jigcnt').textContent=t('puzzle.count',{n:6});
+    addSparks(25,box);sfx.ach();box.classList.add('solved');
+    $('#out').insertAdjacentHTML('beforeend',`<div class="resp"><span class="who">${t('puzzle.doneKicker')}</span><p>${t('puzzle.done')}</p></div>`);
+    $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
+  const fail=()=>{box.innerHTML=`<p class="muted">${t('puzzle.fail')}</p>`;
+    $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}};
+  Promise.all([loadHeadbreaker(),jigsawImage(P,200)]).then(([,img])=>{
+    if(!document.body.contains(box))return;
+    const W=Math.max(260,Math.floor(box.clientWidth)),H=Math.round(Math.min(W*1.05,560));
+    const size=Math.floor(Math.min(W/4.8,H/4.8,104));
+    box.innerHTML='';box.style.height=H+'px';
+    const cv=new headbreaker.Canvas('jig',{width:W,height:H,pieceSize:size,proximity:Math.round(size/5),borderFill:Math.round(size/10),
+      strokeWidth:2,strokeColor:'#6d5a3a',lineSoftness:.18,image:img,maxPiecesCount:{x:3,y:3},preventOffstageDrag:true,fixed:true});
+    cv.adjustImagesToPuzzleWidth();
+    cv.autogenerate({horizontalPiecesCount:3,verticalPiecesCount:3,metadata:JIG_LAYOUT.map((c,i)=>({id:'p'+i,meaning:typeof c==='number'?c:null}))});
+    cv.shuffle(.85);
+    /* раскладываем детали по сетке 3×3 со случайным сдвигом, чтобы они не лежали стопкой */
+    const cells=[...Array(9).keys()].sort(()=>Math.random()-.5),cw=W/3,ch=H/3,rad=size*.72,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+    cv.puzzle.pieces.forEach((pc,i)=>{const c=cells[i];
+      pc.relocateTo(cl((c%3+.5)*cw+(Math.random()-.5)*Math.max(0,cw-2*rad),rad,W-rad),cl((Math.floor(c/3)+.5)*ch+(Math.random()-.5)*Math.max(0,ch-2*rad),rad,H-rad))});
+    cv.attachSolvedValidator();
+    cv.onConnect((a,_fa,b)=>{tone(560,.08);reveal(a.metadata.meaning);reveal(b.metadata.meaning)});
+    cv.onValid(()=>{if(cv.valid)finish()});
+    cv.draw();
+    $('#autosolve').onclick=()=>{cv.solve();
+      const xs=cv.puzzle.pieces.map(pc=>pc.centralAnchor.x),ys=cv.puzzle.pieces.map(pc=>pc.centralAnchor.y);
+      cv.puzzle.translate(Math.round(W/2-(Math.min(...xs)+Math.max(...xs))/2),Math.round(H/2-(Math.min(...ys)+Math.max(...ys))/2));
+      cv.redraw();cv.puzzle.validate();finish()};
+  }).catch(fail);
+  $('#autosolve').onclick=()=>finish();
+}
+
+/* ---------- настоящее зеркало: камера только по запросу, изображение не покидает устройство ---------- */
+let camStream=null;
+function stopCamera(){if(camStream){camStream.getTracks().forEach(tr=>tr.stop());camStream=null}}
+window.addEventListener('pagehide',stopCamera);
+function gSelfMirror(){
+  stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,tl('mirror.say'),'warm')}
+    <div class="selfmirror"><div class="sm-frame"><div class="sm-glass" id="glass"><div class="sm-avatar">${avatar(S.hero)}</div></div></div>
+      <p class="sm-cap" id="smcap" aria-live="polite"></p></div>
+    <p class="muted sm-note">${icon('lock')} ${tl('mirror.privacy')}</p>
+    <div id="out"></div>
+    <div class="actions" id="act"><button class="btn" id="camon">${icon('mirror')}<span>${t('mirror.on')}</span></button><button class="btn ghost" id="camskip">${t('mirror.skip')}</button></div></section>`;
+  const glass=$('#glass');
+  const after=(msg)=>{
+    $('#smcap').textContent=t('mirror.caption',{name:heroName()});
+    $('#out').innerHTML=`<div class="resp"><span class="who">${t('mentor.name')}</span><p>${esc(msg||tl('mirror.after'))}</p></div>`;
+    setMood('joy');addSparks(10,glass);sfx.good();
+    $('#act').innerHTML=`${camStream?`<button class="btn ghost" id="camoff">${t('mirror.off')}</button>`:''}<button class="btn" id="nx">${t('btn.continueShort')}</button>`;
+    const off=$('#camoff');if(off)off.onclick=()=>{stopCamera();glass.innerHTML=`<div class="sm-avatar">${avatar(S.hero)}</div>`;off.remove()};
+    $('#nx').onclick=()=>{stopCamera();sfx.tap();next()};
+  };
+  $('#camskip').onclick=()=>{sfx.tap();after(tl('mirror.afterNoCam'))};
+  $('#camon').onclick=async()=>{
+    const md=navigator.mediaDevices;
+    if(!md||!md.getUserMedia||!window.isSecureContext){after(t('mirror.unsupported'));return}
+    $('#camon').disabled=true;
+    try{
+      const stream=await md.getUserMedia({video:{facingMode:'user',width:{ideal:720},height:{ideal:720}},audio:false});
+      if(!document.body.contains(glass)){stream.getTracks().forEach(tr=>tr.stop());return}
+      stopCamera();camStream=stream;
+      const v=document.createElement('video');v.className='sm-video';v.muted=true;v.playsInline=true;v.autoplay=true;v.setAttribute('playsinline','');v.setAttribute('aria-label',t('mirror.videoLabel'));
+      v.srcObject=stream;glass.innerHTML='';glass.appendChild(v);glass.classList.add('live');
+      try{await v.play()}catch(e){}
+      after();
+    }catch(e){
+      after(e&&e.name==='NotAllowedError'?t('mirror.denied'):t('mirror.unsupported'));
+    }
+  };
 }
 
 function gSpecies(){

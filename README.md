@@ -15,3 +15,11 @@ To add a language:
 3. Add the language to `LANGS` in `i18n.js`.
 
 Placeholders in interface strings look like `{{name}}`. Forms that depend on the player's gender look like `{boy form|girl form}`, e.g. `{Wanderer|Wanderin}`. Texts for the two age groups are written as `{"__ag": 1, "y": "8–11", "t": "12–15"}`.
+
+## Third-party code
+
+`vendor/headbreaker.js` is [headbreaker](https://github.com/flbulgarelli/headbreaker) 3.0.0 (ISC) bundled with [Konva](https://konvajs.org) 6.0.0 (MIT), built from the official npm sources. It powers the real jigsaw in the “Puzzle” world. It is stored in the repository and loaded only on that step, so the game does not contact any outside server. License texts are in `vendor/LICENSES.md`.
+
+## Camera (mirror)
+
+In the “Mirror” world the player can turn on the camera to see themselves in a mirror. The camera starts only after the player presses the button and the browser grants access. The picture stays in the browser: it is not sent or recorded anywhere, and the camera turns off when the player moves on. Without a camera, or if access is denied, the mirror shows the player’s avatar. Browsers allow the camera only over `https://` or on `localhost`.
