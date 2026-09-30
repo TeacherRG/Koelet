@@ -31,7 +31,7 @@ Placeholders in interface strings look like `{{name}}`. Forms that depend on the
 
 ## Music and voice
 
-The game is a spoken quest: when it opens, the Keeper greets the player, and on every screen a voice says what to do (browser speech synthesis in the chosen language). Background music plays from `music/` — four Chabad niggunim listed in `music/tracks.json`. Browsers allow sound only after the first tap, so the game starts with a screen «Начать с музыкой» / «Без звука». Music, track, volume and voice hints can be changed in the menu and on the title screen.
+The game is a spoken quest: when it opens, the Keeper greets the player, and on every screen a voice says what to do (browser speech synthesis in the chosen language). Background music plays from `music/` — four Chabad niggunim listed in `music/tracks.json`. Browsers allow sound only after the first tap, so the game starts with a screen «Начать с музыкой» / «Без звука». Music and voice are on at every start («Без звука» lasts only until the page is reloaded). If the Keeper has been silent for a minute and the player has tapped nothing, he asks «Тебе чем-то помочь?» and repeats what to do. Music, track, volume and voice hints can be changed in the menu and on the title screen; track and volume are remembered.
 
 ## Camera (mirror)
 

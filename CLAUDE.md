@@ -21,7 +21,7 @@ Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's
 | `i18n.js` | Language module: `LANGS`, `t('key', {vars})`, `tl('key')`, language detection, `loadLang()`/`setLang()` |
 | `game-data.js` | Loads texts for the chosen language (falls back to Russian) |
 | `game.js` | Runtime: state `S` (localStorage `koelet-game-v1`), screens, step engine, mini-games, certificate |
-| `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Prefs in localStorage `koelet-audio` |
+| `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Idle help after a minute of silence. Track and volume in localStorage `koelet-audio` |
 | `music/` | Background music (4 Chabad niggunim, mp3) and `tracks.json` (playlist with titles in he/ru/uk/de) |
 | `art.js` | Icon set (`ICONS`, `icon()`), the Keeper (`mentorSvg(mood)`), world themes and backdrops (`SCENES`) |
 | `styles.css` | All styles; colours are CSS variables, world accent in `--accent` |
@@ -56,7 +56,8 @@ Interactive adventure for children aged 8–15 based on Rabbi Shneor Ashkenazi's
 
 ## Music and voice («музыкальный текстовый квест»)
 
-- Browsers block sound until the first tap, so every page load starts with the gate (`showGate()`): «Начать с музыкой» starts the music and speaks the greeting; «Без звука» turns both off (saved).
+- Browsers block sound until the first tap, so every page load starts with the gate (`showGate()`): «Начать с музыкой» starts the music and speaks the greeting; «Без звука» turns both off for this visit only. Music and voice are **on at every page load**; only track and volume are saved.
+- A minute of silence (the Keeper is not speaking, the player taps nothing) → the Keeper asks «Тебе чем-то помочь?» (`voice.idle`) and repeats the screen's hint (`Voice.idle()`, `Voice.idleMs`).
 - After every `render()` the voice guide speaks the main text of the screen plus what to do (`guideParts()` in `music.js`). Hints are locale keys `voice.*`: one per step type (`voice.talk`, `voice.choice`, …) and one per mini-game (`voice.mini.<game>`). **A new step type or mini-game needs a `voice.*` key in all three locales.** After a choice the outcome is spoken.
 - Music ducks to 30 % while the voice speaks and pauses in a hidden tab. Settings (music, track, volume, voice) live in the menu and as quick toggles on the title screen; they are separate from game progress.
 - New track: put the mp3 into `music/` (Latin file name) and add it to `music/tracks.json` with titles for every language. Only add music the project has the right to use.

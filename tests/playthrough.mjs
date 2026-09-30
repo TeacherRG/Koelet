@@ -6,7 +6,9 @@
 //  - the right alphabet (no Cyrillic in German, no ы/э/ъ/ё in Ukrainian);
 //  - all 7 worlds done, final tabs render, certificate image is drawn;
 //  - the real jigsaw appears and the mirror step works without a camera;
-//  - the start screen turns on music, the greeting is spoken, every screen gets a voice hint.
+//  - the start screen turns on music, the greeting is spoken, every screen gets a voice hint;
+//  - sound is on at every start, even if an earlier visit chose «Без звука»;
+//  - after a silence the Keeper asks «Тебе чем-то помочь?».
 //
 // Options:
 //   --lang=de        only scenarios in this language (ru | uk | de)
@@ -58,7 +60,7 @@ async function run(browser, base, sc) {
   page.on('requestfailed', r => { if (r.url().startsWith(base)) add('failed to load ' + r.url().slice(base.length)); });
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) add('console error: ' + m.text()); });
   await page.addInitScript(l => {
-    try { localStorage.setItem('koelet-lang', l); } catch (e) {}
+    try { localStorage.setItem('koelet-lang', l); localStorage.setItem('koelet-audio', JSON.stringify({music: false, voice: false})); } catch (e) {}   // an old «Без звука» must not stick
     // record everything the voice guide says (headless browsers have no audible voices)
     window.__spoken = [];
     if (window.speechSynthesis) { const orig = speechSynthesis.speak.bind(speechSynthesis); speechSynthesis.speak = u => { window.__spoken.push(u.text); try { orig(u); } catch (e) {} }; }
@@ -133,6 +135,12 @@ async function run(browser, base, sc) {
       for (const p of textProblems(tx, sc.lang)) add(`[final/${tab}] ${p}`);
       await snap('final-' + tab);
     }
+    // a minute of silence (shortened here) → the Keeper offers help
+    const idleText = JSON.parse(await readFile(ROOT + `locales/${sc.lang}.json`, 'utf8'))['voice.idle'];
+    await page.evaluate(() => { window.__spoken.length = 0; Voice.idleMs = 700; Voice.cancel(); });
+    await page.waitForTimeout(1500);
+    if (!(await page.evaluate(q => window.__spoken.some(x => x.startsWith(q)), idleText))) add('no «can I help?» after silence');
+    await page.evaluate(() => { Voice.idleMs = 60000; Voice.idle(); });
     if (!(await page.waitForSelector('#cert img', {timeout: 8000}).catch(() => null))) add('certificate image was not drawn');
     // «About» from the menu: project link, four sections, closes with Escape
     await page.click('#menubtn'); await page.click('[data-m="about"]');
