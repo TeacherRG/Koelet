@@ -11,6 +11,10 @@ Game text is stored per language in `/content/<lang>/`: shared labels and settin
 
 Project rules for contributors and Claude Code are in `CLAUDE.md`.
 
+## Teacher's guide
+
+[`docs/guide.ru.md`](docs/guide.ru.md) — how to run the game offline (class, club, family, Shabbat table) with every text of every world for 8–11, 12–15 and 16+. The scenarios are generated from the game texts: run `npm run guide` after changing them.
+
 ## Languages
 
 Available: Russian (`ru`, default), Ukrainian (`uk`) and German (`de`). The game picks the saved language, otherwise the browser language, otherwise Russian. Players can switch on the title screen and in the menu.
