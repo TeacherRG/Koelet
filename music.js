@@ -210,6 +210,7 @@ function guideParts(){
   if (scr === 'done') return [txt($s('.reveal .h2')), t('voice.done')];
   if (scr === 'final') return [t('voice.final')];
   if (scr === 'shabbat') return [t('voice.shabbat')];
+  if (scr === 'pasuk') return [t('voice.pasuk')];
   if (scr !== 'world' && scr !== 'prologue') return [];
   let st = steps()[idx()]; if (!st) return [];
   if (typeof st === 'function') st = st(S);
