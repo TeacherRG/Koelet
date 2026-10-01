@@ -73,7 +73,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Pronunciation fixes (names, «G-tt» → «Gott») go into `lexicon` in `tools/tts-config.json`; changing a voice, rate or lexicon regenerates that language.
 - A minute of silence (the Keeper is not speaking, the player taps nothing) → the Keeper asks «Тебе чем-то помочь?» (`voice.idle`) and repeats the screen's hint (`Voice.idle()`, `Voice.idleMs`).
 - After every `render()` the voice guide speaks the main text of the screen plus what to do (`guideParts()` in `music.js`). Hints are locale keys `voice.*`: one per step type (`voice.talk`, `voice.choice`, …) and one per mini-game (`voice.mini.<game>`). **A new step type or mini-game needs a `voice.*` key in all four locales.** After a choice the outcome is spoken.
-- Music ducks to 30 % while the voice speaks and pauses in a hidden tab. Settings (music, track, volume, voice) live in the menu; the title screen has one settings button in the top corner that opens a popover (`quickMenu()` in `game.js`: language, music and voice switches, «О приложении»). They are separate from game progress.
+- Music ducks to 30 % while the voice speaks and pauses in a hidden tab. Settings (music, track, volume, voice) live in the menu (tracks, volume and credit fold into the «Мелодия» dropdown, `.trkdd` in `audioPanelHTML()`); the title screen has one settings button in the top corner that opens a popover (`quickMenu()` in `game.js`: language, music and voice switches, «О приложении»). They are separate from game progress.
 - New track: put the mp3 into `music/` (Latin file name) and add it to `music/tracks.json` with titles for every language. Only add music the project has the right to use.
 
 ## «К Шабату» (печатные листы)
