@@ -18,7 +18,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 
 | File | What it is |
 |---|---|
-| `index.html` | Page shell; loads `frame-guard.js` first, then in order: `i18n.js` → `game-data.js` → `art.js` → `voice-key.js` → `music.js` → `game.js` → `shabbat.js` → `pasuk.js` |
+| `index.html` | Page shell; loads `frame-guard.js` first, then in order: `i18n.js` → `game-data.js` → `art.js` → `voice-key.js` → `music.js` → `game.js` → `shabbat.js` → `pasuk.js` → `hayomyom.js` → `gallery.js` |
 | `i18n.js` | Language module: `LANGS`, `t('key', {vars})`, `tl('key')`, language detection, `loadLang()`/`setLang()` |
 | `game-data.js` | Loads texts for the chosen language (falls back to Russian) |
 | `game.js` | Runtime: state `S` (localStorage `koelet-game-v1`), screens, step engine, mini-games, certificate |
@@ -27,6 +27,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 | `data/pesukim/` | Стихи для `pasuk.js`: `index.json` (названия книг, имя → стих) и `0..21.json` (по первой букве: пара → её стихи, первый — личный). Генерируется `tools/build-pesukim.mjs` из традиционного списка Torat Emet `tools/sources/toratemet-f_00720.mhtml`, руками не править |
 | `hayomyom.js` | «Твой день в „Айом-йом“»: день рождения (обычный — переводится в еврейский своим календарём `gregToHeb()`, с галочкой «после захода солнца», или еврейский) → запись книги Ребе «היום יום» на этот день |
 | `data/hayomyom.json` | Записи «היום יום» по дням (`"<месяц>-<день>"`, месяцы книги: תשרי…אלול, Адар I и II отдельно), все 383 дня. Генерируется `tools/build-hayomyom.mjs` из `tools/sources/hayomyom.pdf` и `tools/sources/hayomyom-elul.pdf` (нужен pdftotext), руками не править |
+| `gallery.js` | «Стих твоего имени — картина» (только 16+): личный стих пары букв как художественная работа — обои для телефона/компьютера и A4 для печати; фон рисуется кодом, текст стиха — шрифтом из `data/pesukim` |
 | `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Idle help after a minute of silence. Track and volume in localStorage `koelet-audio` |
 | `voice-key.js` | Shared by the game and `tools/tts.mjs`: splits text into sentences (paragraphs, `.!?…`), strips tags and Hebrew, `VoiceKey.key()` = hash of the normalized sentence |
 | `audio/<lang>/` | Ready-made Azure voice: one mp3 per sentence (`<key>.mp3`) + `index.json` (list of keys). Generated, never edit by hand |
@@ -100,6 +101,13 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Text is Hebrew only (as in the book), not spoken; `hy` is in `SKIP_UI`, only `voice.hayom` is spoken.
 - Full certificate = two landscape A4 pages. Page 1 is the certificate as it always was (`drawCertificate()`, photo if taken) — do not put the verse or «Айом-йом» there. Page 2 is the personal page (`drawPersonalSheet()`, only when there is a Hebrew name and/or a birthday): hero name + Hebrew name, panels «Мой стих в Танахе» (right) and «Мой день в „Айом-йом“» (left), or one wide panel; each with its Hebrew and local reference and a one-line note (`sheet.*`). The final screen shows both, downloads each and prints both (one page each); for each missing part it shows a hint with a link to the section.
 
+## «Стих твоего имени — картина» (только 16+)
+
+- Screen `gallery` (`renderGallery()` in `gallery.js`) — only when the hero is 16+ (`adult()`): menu «Твоя часть в Торе» → «Картина со стихом», the title and final screens, the «Твой стих» screen. For younger heroes there is no entry at all, and the screen sends them to the title. «Назад» returns to `S.galFrom`; HUD hidden; on reload the game starts from the title. Choice `S.gal` `{a, b, style, fmt, name}`; the letters default to the first Hebrew name.
+- The verse is the personal verse of the pair from `data/pesukim` (the same as in «Твой стих»), set in Frank Ruhl Libre on a canvas — never drawn by an image generator. Backgrounds are drawn by code (`galDeep`/`galNight`/`galDawn`; random positions seeded by the pair and the scene, so a pair always gives the same picture). Formats `GAL_FMT`: phone 1170×2532 and computer 3840×2160 (JPEG), print A4 2480×3508 with a frame (PNG). The name is written only when the pair is the name's own letters.
+- Everything is drawn on the device. The pictures are free; the donate link goes to `DONATE_ART_URL` (mychitas.app/donate/art) with **only** `lang` and `kind` (`wallpaper|print|personal`) — never the letters, the verse or the name. `test:play` checks this.
+- Texts `gal.*` (not spoken, in `SKIP_UI`; `art.*` is taken by the game content), only `voice.gallery`.
+
 ## About window
 
 - «О приложении» (`showAbout()` in `game.js`) opens from the menu and from the title footer: project link `PROJECT_URL` (https://mychitas.app), short description, rights to the lesson and the music, open-source libraries, privacy. Texts are `about.*` in the locales — update them when the lesson source, music or libraries change.
@@ -118,7 +126,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Icons only from `ICONS` in `art.js` (`icon('name')`), no emoji. The Keeper's moods: `smile`, `joy`, `think`, `wow`, `warm`, `point`.
 - Hero screen: age and boy/girl are required, numbered blocks; «Готово» without them turns the missing block red with a hint (`--err`), scrolls to it and speaks the hint.
 - Contrast WCAG AA; mobile first (375 px wide), one-line HUD, final screen in tabs.
-- HUD: the hero chip (top left) opens `showProfile()` — level, progress, achievements; the menu button (top right) opens `showMenu()` — navigation (with «Твоя часть в Торе», which opens two sub-items: «Стих Торы» → `pasuk` and «Айом-йом» → `hayom`), sound switches, melody and language (submenus like «Твоя часть в Торе»: «Язык · текущий» opens the list, `langPicker('menu')`), «О приложении», donate link. Both are bottom sheets built with `openSheet()` (title + ✕, Escape, tap outside).
+- HUD: the hero chip (top left) opens `showProfile()` — level, progress, achievements; the menu button (top right) opens `showMenu()` — navigation (with «Твоя часть в Торе», which opens sub-items: «Стих Торы» → `pasuk` and «Айом-йом» → `hayom`, plus «Картина со стихом» → `gallery` for 16+), sound switches, melody and language (submenus like «Твоя часть в Торе»: «Язык · текущий» opens the list, `langPicker('menu')`), «О приложении», donate link. Both are bottom sheets built with `openSheet()` (title + ✕, Escape, tap outside).
 - Step arrows (`stepNav()` in `game.js`, inside `head()`): under the HUD, above the world banner of every prologue/world step. «Назад» goes one step back, «Вперёд» only up to the furthest step reached (`S.far`, a finished world is open entirely). A step revisited this way gives no sparks again (`addSparks()`). Labels `hud.back` / `hud.fwd` (not spoken).
 - «Назад» (`#backbar` under `#stage`, `backBar()`/`goBack()`/`backTarget()` in `game.js`) is at the bottom of every screen except the title: a step back inside a world or the prologue, from step 0 to the map, from the map to the title, from «К Шабату» / «Твой стих» to where they were opened. The phone's back button does the same (`armBack()` keeps one extra history entry; `popstate` first closes an open sheet or the quick menu). A new screen needs a line in `backTarget()`.
 - Phone «back» (`popstate` in `game.js`): one guard entry in history (`armBack()`); back closes an open sheet/modal, otherwise steps back like the «Назад» button (`goBack()`/`backTarget()`); on the title screen it asks «Выйти из игры?» (`askExit()`, texts `menu.exit*`): «Остаться» re-arms, «Выйти» or a second back leaves.

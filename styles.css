@@ -722,6 +722,18 @@ a.btn{text-decoration:none}
 .hy-v blockquote{font-size:1.25rem;line-height:1.75}
 .hy-v blockquote p{margin:0 0 .5em}
 .hy-v blockquote p:last-child{margin:0}
+/* Стих твоего имени — картина (16+) */
+.gal .hy-row{grid-template-columns:1fr 1fr}
+.gal select{width:100%;min-height:48px;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font-size:1.125rem}
+.gal-seg{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.gal-prev{display:flex;flex-direction:column;align-items:center;gap:12px}
+.gal-cv{display:block;width:100%;height:auto;border-radius:18px;box-shadow:var(--shadow);background:#03050a}
+.gal-cv.gal-phone{max-width:300px}
+.gal-cv.gal-screen{max-width:640px}
+.gal-cv.gal-print{max-width:360px;border-radius:4px}
+.gal-fig{align-self:stretch}
+.gal-donate{display:flex;flex-direction:column;gap:8px}
+.gal-donate p{margin:0}
 .pasuk-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--accent)}
 .pasuk-more ol{margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
 .pasuk-more li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--panel-2)}

@@ -283,6 +283,24 @@ async function run(browser, base, sc) {
     await snap('hayom');
     await page.click('#hyback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«Айом-йом»: «Назад» did not return to the final screen');
+    // «Картина со стихом» only for 16+: from the menu the picture for משה draws (print A4 in full size); the donate link carries no letters
+    await page.click('#menubtn'); await page.click('[data-m="mine"]');
+    const galItem = await page.$('[data-m="gallery"]');
+    if (sc.age !== 'a') { if (galItem) add('«Картина со стихом» is in the menu for a child'); await page.click('#closeM'); }
+    else if (!galItem) add('«Картина со стихом» is missing from the menu for 16+');
+    else {
+      await galItem.click();
+      await page.waitForSelector('.gal-cv', {timeout: 8000}).catch(() => {});
+      const ga = await page.evaluate(async () => { const c = await galCanvas('print');
+        return {screen: S.screen, prev: !!document.querySelector('.gal-cv'), w: c && c.width, h: c && c.height, href: document.querySelector('#galdon').getAttribute('href'),
+          text: [...document.querySelectorAll('#stage .lead, #stage .group h3, #stage .segb, #stage label, #stage .pasuk-hint, .gal-donate p, .shab-note')].map(e => e.innerText).join('\n')}; });
+      if (ga.screen !== 'gallery' || !ga.prev || ga.w !== 2480 || ga.h !== 3508) add(`«Картина»: screen "${ga.screen}", preview ${ga.prev}, print ${ga.w}×${ga.h} instead of 2480×3508`);
+      if (!/^https:\/\/mychitas\.app\/donate\/art\?lang=\w+&kind=\w+$/.test(ga.href || '')) add('«Картина»: the donate link must carry only language and kind: ' + ga.href);
+      for (const p of textProblems(ga.text, sc.lang)) add(`[gallery] ${p}`);
+      await snap('gallery');
+      await page.click('#galback');
+      if (await page.evaluate(() => S.screen) !== 'final') add('«Картина»: «Назад» did not return to the final screen');
+    }
     // the certificate itself stays as it was; the verse and «Айом-йом» go to the second, personal page
     if (!(await page.evaluate(async () => { const u = await drawPersonalSheet(); return !!u && u.length > 1000 && !!(await personalHayom()) && !!(await personalVerse()); }))) add('the personal page (verse and «Айом-йом») did not draw');
     // final → «Назад» → map, and the map's «Назад» → title (no «Назад» there)

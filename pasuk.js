@@ -123,9 +123,11 @@ function renderPasuk(){
     <p class="lead">${t('pasuk.lead')}</p>
     <p class="shab-note">${icon('info')}<span>${t('pasuk.custom')}</span></p>
     ${hebNameHTML()}
+    ${adult()?`<button class="linkbtn shablink" id="galbtn">${icon('palette')} ${t('gal.open')}</button>`:''}
     <p class="muted pasuk-src">${t('pasuk.src')}</p>
   </section>`;
   $('#paback').onclick=()=>{sfx.tap();go(S.pasukFrom&&S.pasukFrom!=='pasuk'?S.pasukFrom:'title')};
+  const gb=$('#galbtn');if(gb)gb.onclick=()=>{sfx.tap();openGallery()};
   wireHebName();
 }
 /* шаг в мире «Зеркало»: после зеркала с камерой — твоё имя и твой стих */
