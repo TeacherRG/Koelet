@@ -184,7 +184,7 @@ function openSheet(cls,title,body,wire){
   const draw=()=>{
     const a=document.activeElement,keep=a&&m.contains(a)&&['m','audio','track','lang'].map(k=>a.dataset[k]!==undefined&&`[data-${k}="${a.dataset[k]}"]`).find(Boolean);
     m.innerHTML=`<div class="sheet ${cls}${drawn?' still':''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">
-    <div class="sheet-head"><h2 class="sheet-h" id="sheet-h">${title}</h2><button class="iconbtn qx" id="closeM" aria-label="${esc(t('btn.close'))}">✕</button></div>
+    <div class="sheet-head"><h2 class="sheet-h" id="sheet-h">${typeof title==='function'?title():title}</h2><button class="iconbtn qx" id="closeM" aria-label="${esc(t('btn.close'))}">✕</button></div>
     ${body()}</div>`;
     m.querySelector('#closeM').onclick=close;
     if(wire)wire(m,draw,close);
@@ -207,8 +207,8 @@ function showProfile(){
 /* Main menu: navigation first, then sound and language, then info and support */
 function showMenu(){
   let mine=false;   // «Твоя часть в Торе» раскрывается и показывает стих Торы и «Айом-йом»
-  const sfxRow=`<button class="swrow" role="switch" data-m="snd" aria-checked="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sfx')}</span><i class="switch" aria-hidden="true"></i></button>`;
-  openSheet('menu',t('hud.menu'),()=>`
+  const sfxRow=()=>`<button class="swrow" role="switch" data-m="snd" aria-checked="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sfx')}</span><i class="switch" aria-hidden="true"></i></button>`;
+  openSheet('menu',()=>t('hud.menu'),()=>`
     <nav class="menu-list" aria-label="${t('hud.menu')}">
       ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
@@ -219,26 +219,32 @@ function showMenu(){
         <button class="mitem" data-m="hayom">${icon('candles')}<span>${t('menu.mineHayom')}</span></button>
       </div>
     </nav>
-    ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow})}
-    ${langPicker()}
+    ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow()})}
+    ${langPicker('menu')}
     <div class="menu-foot">
       <button class="qlink" data-m="about">${icon('info')}<span>${t('about.title')}</span></button>
       <button class="qlink" data-m="lesson">${icon('chat')}<span>${t('lesson.title')}</span></button>
       <a class="qlink donate-link" href="${DONATE_URL}" target="_blank" rel="noopener">${icon('heart')}<span>${t('donate.label')}</span></a>
     </div>`,
   (m,draw,close)=>{
-    wireLangPicker(m,()=>{draw();hud();render()});
+    wireLangPicker(m,()=>{langDdOpen=false;draw();hud();render()});
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
       if(k==='mine'){mine=!mine;sfx.tap();draw();return}
+      if(k==='langs'){langDdOpen=!langDdOpen;sfx.tap();draw();return}
       m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
 /* ---------- выбор языка ---------- */
+let langDdOpen=false;
 function langPicker(where){
   const codes=Object.keys(LANGS);if(codes.length<2)return '';
+  /* в главном меню — подменю, как «Твоя часть в Торе»: пункт «Язык · текущий», под ним — все языки */
+  if(where==='menu')return `<nav class="menu-list" aria-label="${t('lang.label')}"><button class="mitem mgroup" data-m="langs" aria-expanded="${langDdOpen}" aria-controls="msub-lang">${icon('globe')}<span>${t('lang.label')} · <span lang="${LANG}">${LANGS[LANG].name}</span></span><i class="mchev ${langDdOpen?'open':''}" aria-hidden="true">${icon('up')}</i></button>
+    <div class="msub" id="msub-lang" ${langDdOpen?'':'hidden'}>${codes.map(c=>`<button class="mitem ${c===LANG?'on':''}" data-lang="${c}" lang="${c}" aria-current="${c===LANG}">${icon(c===LANG?'check':'globe')}<span>${LANGS[c].name}</span></button>`).join('')}
+    ${S.started?`<small class="muted">${t('lang.note')}</small>`:''}</div></nav>`;
   return `<div class="langpick ${where||''}" role="group" aria-label="${t('lang.label')}"><span class="kicker">${t('lang.label')}</span><div class="seg">${codes.map(c=>`<button class="segb ${c===LANG?'on':''}" data-lang="${c}" lang="${c}" aria-pressed="${c===LANG}">${LANGS[c].name}</button>`).join('')}</div>${where==='title'||!S.started?'':`<small class="muted">${t('lang.note')}</small>`}</div>`;
 }
 function wireLangPicker(root,after){
