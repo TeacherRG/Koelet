@@ -11,6 +11,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - `npm run test:play` — all 12 scenarios (ru/uk/de/en × 8–11 / 12–15 / 16+, boys and girls), ~3 min. Options: `--lang=de`, `--quick`, `--shots` (screenshots of every screen → `tests/screenshots/`, gitignored), `--headed`.
 - `npm run voice:dry` — how many sentences/characters would be sent to Azure; `npm run voice` generates them (needs `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`; `--lang=`, `--rpm=`, `--jobs=`, `--force`).
 - `npm run test:parsha` — no browser: the «Глава рождения» calculation (`lot.js` + `hayomyom.js`) against Hebcal for every day 1900–2100, Israel and outside Israel, and Hebrew birthdays → day.
+- `npm run test:bot` — no browser, no network: the Telegram bot's texts in all four languages and its conversations.
 - `npm test` — all of the above. Run it before every commit that touches game code or texts.
 - Cloud sessions: `.claude/hooks/session-start.sh` installs Playwright (pinned to 1.56.1, browsers are preinstalled in `/opt/pw-browsers`; never run `playwright install`).
 - If the playthrough gets stuck on a new screen type, teach the driver loop in `tests/playthrough.mjs` how to pass it.
@@ -46,6 +47,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 | `tools/tts.mjs`, `tools/voice-phrases.mjs`, `tools/tts-config.json` | Voice generation via Azure AI Speech: collects every sentence, voices only new ones, prunes stale files. Voices, rate and pronunciation lexicon (`<sub alias>`) in the config |
 | `.github/workflows/voice.yml` | Runs `tools/tts.mjs` after text changes land in `main` (and manually) and commits `audio/` |
 | `docs/guide.ru.md` | Учебник ведущего для офлайн-проведения (учителя, родители, ведущие). Вводная часть — `tools/guide-intro.ru.md` (правится вручную), сценарии со всеми текстами по возрастам генерирует `npm run guide` (`tools/guide.mjs`) из `content/ru` и `locales/ru.json`. `test:data` падает, если учебник не пересобран после правки текстов |
+| `bot/` | Telegram bot «Мой удел в Торе» (`npm run bot`, see below and `bot/README.md`) |
 | `tools/`, `tests/` | Dev server, lint, data check, browser playthrough |
 
 ## Texts and languages (the most common source of mistakes)
@@ -114,6 +116,13 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Portion of the birth: the Shabbat on the birthday or the next one; a festival Shabbat with no weekly portion → the portion read the Shabbat before (agreed with the author). `parshaOf(rd, il)` looks the Shabbat up in `data/parsha.json`; `birthRD()` turns `S.bday` into a day; `test:parsha` checks it against Hebcal.
 - Menu: «Мой удел в Торе» (with the seals) opens «Мои три свитка» (`lot`), «Стих имени» (`pasuk`), «Айом-йом» (`hayom`), «Глава рождения» (`lot`), «Картина со стихом» (16+); then «Для семьи и класса»: «К Шабату», «Провести урок онлайн»; admin item only when signed in. The final screen links to `lot` instead of the separate sections; the certificate hints open the wizard.
 - Texts `lot.*`, `door.*`, `title.both`, `title.family`, `menu.mine*`, `hy.y*`/`hy.place*`, `cert.parsha`, `sheet.parshaNote`, `parsha.names` (54 names); `door` and `parsha` are in `SKIP_UI`; the Keeper says the bubble of each step plus `voice.lot` / `voice.lotName` / `voice.lotDate`. `content/<lang>/parsha.json` is shown, not spoken (skipped in `tools/voice-phrases.mjs`).
+
+## Telegram-бот «Мой удел в Торе»
+
+- `bot/` (`bot/README.md`): the three scrolls of «Мой удел в Торе» in Telegram. `bot/core.mjs` runs the game's own `hayomyom.js`, `pasuk.js`, `lot.js` in `node:vm` with `data/` and `locales/` (a small prelude replaces `t`/`tl`/`T`/`R` from `i18n.js`/`game.js`), so the bot always matches the site — never copy the calculations into the bot. `bot/bot.mjs` = long polling, no dependencies, token in `TELEGRAM_BOT_TOKEN` (never in the repo). Runs on any Node 18+ server, not on GitHub Pages.
+- Conversation: gender → name (`hebGuess()`, fix on an inline Hebrew keyboard) → regular/Jewish date (+ sunset, year, Israel) → the scrolls + link to the site. Everything can be skipped.
+- Bot strings: `bot/texts.json` (ru/uk/de/en, same keys, `{м|ж}` forms); strings of the game's sections (`lot.*`, `hy.*`, `pasuk.*`, `sheet.*`) come from `locales/`, so renaming such a key needs a look at `bot/core.mjs`. `test:bot` plays the conversation in every language.
+- Privacy: nothing on disk or in the log; answers stay in memory only until the scrolls are open (or a day), only the chosen language is remembered until restart (`/privacy` says so). Unlike the site, the name and date do pass through Telegram — the bot is a separate door, the site's «nothing leaves the device» is unchanged.
 
 ## «Стих твоего имени — картина» (только 16+)
 

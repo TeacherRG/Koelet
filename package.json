@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node tools/serve.mjs",
     "lint": "node tools/lint.mjs",
-    "test": "node tools/lint.mjs && node tests/check-data.mjs && node tests/parsha.mjs && node tests/playthrough.mjs",
+    "test": "node tools/lint.mjs && node tests/check-data.mjs && node tests/parsha.mjs && node tests/bot.mjs && node tests/playthrough.mjs",
     "test:data": "node tests/check-data.mjs",
     "test:play": "node tests/playthrough.mjs",
     "test:quick": "node tests/playthrough.mjs --quick",
@@ -13,7 +13,9 @@
     "voice:dry": "node tools/tts.mjs --dry",
     "guide": "node tools/guide.mjs",
     "test:parsha": "node tests/parsha.mjs",
-    "parsha": "node tools/build-parsha.mjs"
+    "parsha": "node tools/build-parsha.mjs",
+    "bot": "node bot/bot.mjs",
+    "test:bot": "node tests/bot.mjs"
   },
   "devDependencies": {
     "@hebcal/core": "^6.11.0",
