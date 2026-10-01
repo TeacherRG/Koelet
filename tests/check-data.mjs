@@ -73,6 +73,12 @@ for (const lang of langs) {
   }
 }
 
+// the teacher's guide (docs/guide.ru.md) is generated from the Russian texts: rebuild it after text changes
+const {build} = await import('../tools/guide.mjs');
+let guide = '';
+try { guide = await readFile(ROOT + 'docs/guide.ru.md', 'utf8'); } catch (e) {}
+if (guide !== build()) err('docs/guide.ru.md', 'out of date with content/ru and locales/ru.json — run npm run guide');
+
 if (errors.length) {
   console.error(`✗ Data check failed (${errors.length}):\n  ` + errors.slice(0, 80).join('\n  ') + (errors.length > 80 ? `\n  …and ${errors.length - 80} more` : ''));
   process.exit(1);
