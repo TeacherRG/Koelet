@@ -105,13 +105,13 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - «О приложении» (`showAbout()` in `game.js`) opens from the menu and from the title footer: project link `PROJECT_URL` (https://mychitas.app), short description, rights to the lesson and the music, open-source libraries, privacy. Texts are `about.*` in the locales — update them when the lesson source, music or libraries change.
 - «Провести урок онлайн» (`showLesson()` in `game.js`) opens from the menu (after «О приложении») and the title settings popover: the project author offers a live online lesson on the game (one or two sessions, any age, one-to-one or group), contact `LESSON_EMAIL` (office@mychitas.app). Texts are `lesson.*` in the locales (not spoken, in `SKIP_UI`). Both windows are built with `infoModal()`.
 
-## Site, search and visit counter
+## Site, search and security
 
 - Hosted on GitHub Pages (`CNAME` → mylot.mychitas.app). Search: `robots.txt`, `sitemap.xml`, canonical/hreflang/JSON-LD in `index.html`. Each language has its own URL `?lang=uk|de|en` (`urlLang()` in `i18n.js`, wins over the saved choice); `setMeta()` sets description (`doc.desc`), og-tags and canonical for the language.
-- Security headers can't be set on Pages, so a Content-Security-Policy lives in a `<meta>` in `index.html`. A new external host (script, font, API) must be added there, otherwise the browser blocks it.
-- Clickjacking: `frame-ancestors` does not work in a `<meta>` CSP, so `frame-guard.js` (first script in `<head>`) hides the page inside a foreign iframe and tries to reopen it as the whole window. Fonts are self-hosted in `fonts/` (`fonts.css`, OFL), no Google requests; the only external host is the visit counter.
+- Security headers can't be set on Pages, so a Content-Security-Policy lives in a `<meta>` in `index.html`: everything only from the site itself (`'self'`), no external hosts at all (no counter, no Google Fonts), `style-src 'self'` without `'unsafe-inline'`, `<meta name="referrer" content="no-referrer">`. Keep it that way: a new external host is a privacy decision for a children's app, not just a CSP line.
+- No `style="…"` in templates or texts (the CSP drops it; `test:data` rejects it in texts, `test:play` fails on CSP console errors). Static styles → a class in `styles.css`; dynamic values (widths, positions, colours) → `data-css="prop:value;…"`, applied by `applyCss()` in `game.js` via `el.style` (MutationObserver on the page; only whitelisted properties `CSS_PROPS`, no `url(`). Call `applyCss(document.body)` before `window.print()` in the same task.
+- Clickjacking: `frame-ancestors` does not work in a `<meta>` CSP, so `frame-guard.js` (first script in `<head>`) hides the page inside a foreign iframe and tries to reopen it as the whole window. Fonts are self-hosted in `fonts/` (`fonts.css`, OFL), no Google requests; the page makes no requests to other servers.
 - The certificate photo is kept only for the tab (`sessionStorage` `koelet-photo`, `save()`/`load()` in `game.js`), never in `koelet-game-v1`; old saved photos are erased on load. `about.privacy` must match what the code really sends.
-- Visit counter on the title screen (`countVisit()` in `game.js`): anonymous `hit` to abacus.jasoncameron.dev once per tab, shown as `VISITS_BASE` (99, visits before the counter) + the server value, text `visits.count`. Counts only on the real domain, not on localhost or in tests; no network → the line is just not shown.
 
 ## Design
 

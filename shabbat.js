@@ -49,11 +49,11 @@ function pageBoard(){
     if(k==='start')inner=`${pic('book','big')}<b>${esc(t('shab.board.start'))}</b><small>${esc(t('map.proName'))}</small>`;
     else if(k==='s'){const w=i/5-1,th=THEMES[WORLD_THEME[w]];
       inner=`<span class="bc-n">${w+1}</span>${pic(WORLD_ICON[w],'big')}<b>${esc(WORLDS[w].name)}</b>${i===BOARD_N-1?`<small>${esc(t('shab.board.finish'))}</small>`:''}<svg class="bc-slot" viewBox="0 0 100 100" aria-hidden="true"><path d="${PIECE}"/></svg>`;
-      cells.push(`<div class="bc s" style="${st};--c:${th.accent}">${inner}</div>`);continue}
+      cells.push(`<div class="bc s" data-css="${st};--c:${th.accent}">${inner}</div>`);continue}
     else if(k==='q')inner=`<span class="bc-q">?</span>`;
     else if(k==='h')inner=pic('heart','big');
     else if(k==='l')inner=pic('candles','big');
-    cells.push(`<div class="bc ${k}" style="${st}"><span class="bc-i">${i}</span>${inner}</div>`);
+    cells.push(`<div class="bc ${k}" data-css="${st}"><span class="bc-i">${i}</span>${inner}</div>`);
   }
   const L=tla('shab.board.legend');
   const legend=`<ul class="pp-legend"><li><span class="bc-q">?</span>${esc(L.q)}</li><li>${pic('heart')}${esc(L.h)}</li><li>${pic('candles')}${esc(L.l)}</li><li><i class="lg-s"></i>${esc(L.s)}</li></ul>`;
@@ -94,7 +94,7 @@ function pageRules(){
     </div><div class="die-box"><h3>${esc(t('shab.rules.die'))}</h3>${dieNet()}</div></div>
     ${cutMark()}
     <h3>${esc(t('shab.rules.tokens'))}</h3><div class="toks">${[0,1,2,3,4,5].map(tentToken).join('')}</div>
-    <h3>${esc(t('shab.rules.pieces'))}</h3><div class="wpieces">${WORLDS.map((w,i)=>`<div class="wpiece" style="--c:${THEMES[WORLD_THEME[i]].accent}"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="${PIECE}"/></svg>${pic(WORLD_ICON[i])}<span>${i+1}</span></div>`).join('')}</div>`);
+    <h3>${esc(t('shab.rules.pieces'))}</h3><div class="wpieces">${WORLDS.map((w,i)=>`<div class="wpiece" data-css="--c:${THEMES[WORLD_THEME[i]].accent}"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="${PIECE}"/></svg>${pic(WORLD_ICON[i])}<span>${i+1}</span></div>`).join('')}</div>`);
 }
 
 /* ---------- 3. Вопросы к субботнему столу: 12 карточек ---------- */
@@ -102,7 +102,7 @@ function pageCards(){
   const ag=shabAge(),list=tla('shab.cards.list',ag);
   return ppPage('cards',t('shab.cards.h'),t('shab.cards.sub'),
     `<p class="pp-age">${esc(t('shab.cards.age',{age:t(SHAB_AGES[ag])}))}</p>
-    <div class="qcards">${list.map((q,i)=>{const w=CARD_WORLD[i];return `<div class="qcard" style="--c:${THEMES[WORLD_THEME[w]].accent}">
+    <div class="qcards">${list.map((q,i)=>{const w=CARD_WORLD[i];return `<div class="qcard" data-css="--c:${THEMES[WORLD_THEME[w]].accent}">
       <div class="qc-top"><span class="qc-n">${i+1}</span>${pic(WORLD_ICON[w])}<small>${esc(WORLDS[w].name)}</small></div><p>${esc(q)}</p></div>`}).join('')}</div>`);
 }
 
@@ -139,9 +139,9 @@ function pageFamily(){
   for(let r=1;r<Rw;r++){d+=`M0 ${r*ch}`;for(let c=0;c<C;c++)d+=jigEdge(c*cw,r*ch,(c+1)*cw,r*ch,(r+c)%2?1:-1,m)}
   for(let c=1;c<C;c++){d+=`M${c*cw} 0`;for(let r=0;r<Rw;r++)d+=jigEdge(c*cw,r*ch,c*cw,(r+1)*ch,(r*3+c)%2?1:-1,m)}
   const cells=[];for(let r=0;r<Rw;r++)for(let c=0;c<C;c++){const k=r*C+c;
-    cells.push(`<div class="fcell" style="left:${c/C*100}%;top:${r/Rw*100}%;width:${100/C}%;height:${100/Rw}%"><span>${esc(t('shab.family.name'))}:</span><i></i>${pic(['heart','star','sparkle','home','dove'][k%5]||'heart','ghost')}</div>`)}
+    cells.push(`<div class="fcell" data-css="left:${c/C*100}%;top:${r/Rw*100}%;width:${100/C}%;height:${100/Rw}%"><span>${esc(t('shab.family.name'))}:</span><i></i>${pic(['heart','star','sparkle','home','dove'][k%5]||'heart','ghost')}</div>`)}
   return ppPage('family',t('shab.family.h'),t('shab.family.sub'),
-    `<div class="fam" style="aspect-ratio:${W}/${H}"><svg viewBox="-1 -1 ${W+2} ${H+2}" aria-hidden="true"><rect x="0" y="0" width="${W}" height="${H}" rx="3"/><path d="${d}"/></svg>${cells.join('')}</div>${cutMark()}`);
+    `<div class="fam" data-css="aspect-ratio:${W}/${H}"><svg viewBox="-1 -1 ${W+2} ${H+2}" aria-hidden="true"><rect x="0" y="0" width="${W}" height="${H}" rx="3"/><path d="${d}"/></svg>${cells.join('')}</div>${cutMark()}`);
 }
 
 const SHAB_PAGES={board:pageBoard,rules:pageRules,cards:pageCards,memory:pageMemory,piece:pagePiece,family:pageFamily};
@@ -163,7 +163,7 @@ function renderShabbat(){
       <button class="shab-thumb" data-view="${k}" aria-label="${esc(items[k].t)}"><span class="pp-scale">${SHAB_PAGES[k]()}</span></button>
       <label class="shab-lbl"><input type="checkbox" data-it="${k}" ${sel.includes(k)?'checked':''}><span><b>${esc(items[k].t)}</b><small>${esc(items[k].s)}</small></span></label></div>`).join('')}</div></div>
     <div class="actions"><button class="btn" id="shprint" ${n?'':'disabled'}>${icon('scroll')}<span>${t('shab.print')}</span></button><span class="muted" id="shcount">${n?t('shab.count',{n}):t('shab.none')}</span></div>
-    <p class="muted" style="font-size:0.875rem" id="shnote" aria-live="polite"></p>
+    <p class="muted fs-sm" id="shnote" aria-live="polite"></p>
   </section>`;
   const keep=()=>{const y=window.scrollY;renderShabbat();window.scrollTo(0,y)};
   $('#shback').onclick=()=>{sfx.tap();go(S.shabFrom&&S.shabFrom!=='shabbat'?S.shabFrom:'title')};
@@ -186,7 +186,7 @@ async function printShabbat(keys){
     const pr=$('#print-area');pr.innerHTML=keys.map(k=>SHAB_PAGES[k]()).join('');pr.classList.add('pp-print');
     if(document.fonts&&document.fonts.ready)await document.fonts.ready;
     window.addEventListener('afterprint',shabPrintDone,{once:true});
-    window.print();
+    applyCss(document.body);window.print();
   }catch(e){const n=$('#shnote');if(n)n.textContent=t('shab.noPrint')}
   if(b)b.disabled=false;
 }

@@ -2,11 +2,11 @@
 <html lang="ru">
 <meta charset="utf-8">
 <!-- Безопасность: GitHub Pages не даёт задать HTTP-заголовки, поэтому политика — в meta.
-     connect-src: свои файлы + счётчик посещений (game.js, countVisit). Шрифты лежат на сайте (fonts/),
+     Все файлы, включая шрифты (fonts/), — только с этого сайта; внешних запросов нет.
      защита от встраивания в чужой iframe — frame-guard.js (frame-ancestors в meta не работает). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' https://abacus.jasoncameron.dev; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <script src="frame-guard.js"></script>
-<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="referrer" content="no-referrer">
 <title>Тайна Коэлета</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="index, follow, max-image-preview:large">

@@ -305,7 +305,7 @@ async function run(browser, base, sc) {
   if (!ph) add('the certificate photo is kept in localStorage (or not cleared from sessionStorage)');
   // inside someone else's iframe the game hides itself and reopens as the whole page (clickjacking guard, frame-guard.js)
   const url = page.url().replace(/[?#].*$/, ''); framing = true;
-  await page.setContent(`<iframe src="${url}" style="width:400px;height:400px"></iframe>`).catch(() => {});
+  await page.setContent(`<iframe src="${url}"></iframe>`).catch(() => {});
   let unframed = false;
   for (let k = 0; k < 40 && !unframed; k++) {
     unframed = await page.evaluate(() => !document.querySelector('iframe') && typeof S === 'object').catch(() => false);
