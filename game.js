@@ -330,15 +330,33 @@ function backBar(){
   const b=$('#stepback');if(b)b.onclick=goBack;
 }
 /* системная «назад»: держим в истории одну лишнюю запись; нажатие снимает её — закрываем окно или делаем шаг назад
-   и ставим запись снова. На титульном экране записи нет, и следующее «назад» уходит из игры, как обычно. */
+   и ставим запись снова. На титульном экране спрашиваем «Выйти из игры?»: «Остаться» ставит запись снова,
+   «Выйти» (или ещё одно «назад») уходит из игры. */
 function armBack(){
-  if(S.screen!=='title'&&!(history.state&&history.state.koelet))try{history.pushState({koelet:1},'')}catch(e){}
+  if(!(history.state&&history.state.koelet))try{history.pushState({koelet:1},'')}catch(e){}
+}
+function askExit(){
+  const m=document.createElement('div');m.className='modal';m.id='exitq';
+  m.innerHTML=`<div class="sheet about exitq" role="alertdialog" aria-modal="true" aria-labelledby="exitq-h" aria-describedby="exitq-p">
+    <h2 class="h2" id="exitq-h">${t('menu.exitQ')}</h2><p class="muted" id="exitq-p">${t('menu.exitSub')}</p>
+    <div class="actions"><button class="btn" id="exstay">${t('menu.exitStay')}</button><button class="btn ghost" id="exleave">${t('menu.exitLeave')}</button></div></div>`;
+  document.body.appendChild(m);
+  const stay=()=>{m.remove();armBack()};
+  m.onclick=e=>{if(e.target===m)stay()};m.onkeydown=e=>{if(e.key==='Escape')stay()};
+  $('#exstay').onclick=()=>{sfx.tap();stay()};
+  /* запись-страж уже снята: ещё один шаг назад уходит со страницы; если уходить некуда (открыто как приложение) — закрываем окно */
+  $('#exleave').onclick=()=>{m.remove();Voice.cancel();Music.stop();history.back();setTimeout(()=>{try{window.close()}catch(e){}},300)};
+  $('#exstay').focus();
 }
 window.addEventListener('popstate',()=>{
   const m=document.querySelector('.modal'),q=$('#qmenu');
   if(m||q){if(m)m.remove();if(q)q.remove();armBack();return}
-  if(!goBack())armBack();
+  if(goBack())return;
+  if(S.screen==='title'){askExit();return}
+  armBack();
 });
+/* запись-страж ставим после первого касания: без него браузер её пропускает */
+['pointerdown','keydown'].forEach(e=>document.addEventListener(e,armBack,{once:true,capture:true}));
 
 function renderTitle(){
   const cols=['#cfe3d6','#f3d9a0','#bcd6ea','#9fd0ae','#f2b8c2','#f2be3d','#d9cdea'];
