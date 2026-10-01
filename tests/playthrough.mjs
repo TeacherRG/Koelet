@@ -185,6 +185,18 @@ async function run(browser, base, sc) {
       await page.keyboard.press('Escape');
       if (await has('.sheet.about')) add('«About» did not close with Escape');
     }
+    // «Book an online lesson» from the menu: mailto link, three sections, closes with Escape
+    await page.click('#menubtn'); await page.click('[data-m="lesson"]');
+    const lesson = await page.evaluate(() => { const d = document.querySelector('.sheet.lesson'); return d && {text: d.innerText, href: (d.querySelector('a[href^="mailto:"]') || {}).href, secs: d.querySelectorAll('.about-sec').length}; });
+    if (!lesson) add('«Online lesson» window did not open');
+    else {
+      if (lesson.href !== 'mailto:office@mychitas.app') add(`«Online lesson»: mail link is "${lesson.href}"`);
+      if (lesson.secs !== 3) add(`«Online lesson»: ${lesson.secs} sections instead of 3`);
+      for (const p of textProblems(lesson.text, sc.lang)) add(`[lesson] ${p}`);
+      await snap('lesson');
+      await page.keyboard.press('Escape');
+      if (await has('.sheet.lesson')) add('«Online lesson» did not close with Escape');
+    }
     // donate button (heart) leads to mychitas.app/donate
     const donate = await page.evaluate(() => (document.querySelector('#donate') || {}).href);
     if (donate !== 'https://mychitas.app/donate') add(`donate link is "${donate}" instead of https://mychitas.app/donate`);
