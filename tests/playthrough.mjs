@@ -264,27 +264,41 @@ async function run(browser, base, sc) {
     await page.click('#shback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«К Шабату»: «Назад» did not return to the final screen');
     // «Твой стих в Танахе» from the menu: a Hebrew name gives a verse for its letters, «Назад» returns
-    await page.click('#menubtn'); await page.click('[data-m="mine"]'); await page.click('[data-m="pasuk"]');
-    await page.evaluate(() => { const i = document.querySelector('#hebname'); i.value = 'משה'; i.dispatchEvent(new Event('input')); });
+    // «Твоя часть в Торе» from the menu: a full screen with two cards
+    await page.click('#menubtn'); await page.click('[data-m="mine"]');
+    const mi = await page.evaluate(() => ({screen: S.screen, cards: document.querySelectorAll('.mine-card').length, text: document.querySelector('#stage').innerText}));
+    if (mi.screen !== 'mine' || mi.cards !== 2) add(`«Твоя часть в Торе»: screen "${mi.screen}", ${mi.cards} cards instead of 2`);
+    for (const p of textProblems(mi.text, sc.lang)) add(`[mine] ${p}`);
+    await snap('mine');
+    await page.click('#mine-pasuk');
+    await page.evaluate(() => { const i = document.querySelector('#hebname0'); i.value = 'משה'; i.dispatchEvent(new Event('input')); });
     await page.waitForSelector('.pasuk-v', {timeout: 5000}).catch(() => {});
     const pa = await page.evaluate(() => ({screen: S.screen, verses: document.querySelectorAll('.pasuk-v').length, text: [...document.querySelectorAll('#stage .lead, #stage .group h3, .pasuk-what, figcaption')].map(e => e.innerText).join('\n')}));
-    if (pa.screen !== 'pasuk' || pa.verses !== 2) add(`«Твой стих»: screen "${pa.screen}", ${pa.verses} verses instead of 2 for משה`);
+    if (pa.screen !== 'pasuk' || pa.verses !== 1) add(`«Твой стих»: screen "${pa.screen}", ${pa.verses} verses instead of 1 for משה (only the personal one, no «verse with the name»)`);
     for (const p of textProblems(pa.text, sc.lang)) add(`[pasuk] ${p}`);
     await snap('pasuk');
+    // a double name: «Добавить ещё одно имя», type it with the on-screen keyboard → a second card with its own verse
+    await page.click('#hebadd');
+    for (const c of 'מנחם') await page.click(`[data-k="${c}"]`);
+    await page.waitForFunction(() => document.querySelectorAll('.pasuk-card').length === 2, null, {timeout: 5000}).catch(() => {});
+    const two = await page.evaluate(() => ({cards: document.querySelectorAll('.pasuk-card').length, name: S.hebName}));
+    if (two.cards !== 2 || two.name !== 'משה מנחם') add(`«Твой стих»: a second name gave ${two.cards} cards, name "${two.name}"`);
     await page.click('#paback');
-    if (await page.evaluate(() => S.screen) !== 'final') add('«Твой стих»: «Назад» did not return to the final screen');
+    if (await page.evaluate(() => S.screen) !== 'mine') add('«Твой стих»: «Назад» did not return to «Твоя часть в Торе»');
+    await page.click('#miback');
+    if (await page.evaluate(() => S.screen) !== 'final') add('«Твоя часть в Торе»: «Назад» did not return to the final screen');
     // «Твой день в „Айом-йом“» from the menu: a birthday gives an entry of the book; the full certificate draws
-    await page.click('#menubtn'); await page.click('[data-m="mine"]'); await page.click('[data-m="hayom"]');
+    await page.click('#menubtn'); await page.click('[data-m="mine"]'); await page.click('#mine-hayom');
     await page.fill('#hyg', '2012-03-14'); await page.dispatchEvent('#hyg', 'change');
     await page.waitForSelector('.hy-v', {timeout: 5000}).catch(() => {});
     const hy = await page.evaluate(() => ({screen: S.screen, ok: !!document.querySelector('.hy-v'), date: (document.querySelector('.hy-loc') || {}).innerText || '', text: [...document.querySelectorAll('#stage .lead, #stage .group h3, #stage label, .hy-loc, figcaption')].map(e => e.innerText).join('\n')}));
     if (hy.screen !== 'hayom' || !hy.ok || !/20/.test(hy.date)) add(`«Айом-йом»: screen "${hy.screen}", entry ${hy.ok}, date "${hy.date}" (14.03.2012 = 20 Adar)`);
     for (const p of textProblems(hy.text, sc.lang)) add(`[hayom] ${p}`);
     await snap('hayom');
-    await page.click('#hyback');
+    await page.click('#hyback'); await page.click('#miback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«Айом-йом»: «Назад» did not return to the final screen');
     // the certificate itself stays as it was; the verse and «Айом-йом» go to the second, personal page
-    if (!(await page.evaluate(async () => { const u = await drawPersonalSheet(); return !!u && u.length > 1000 && !!(await personalHayom()) && !!(await personalVerse()); }))) add('the personal page (verse and «Айом-йом») did not draw');
+    if (!(await page.evaluate(async () => { const u = await drawPersonalSheet(); return !!u && u.length > 1000 && !!(await personalHayom()) && (await personalVerses()).length === 2; }))) add('the personal page (verse and «Айом-йом») did not draw');
     // final → «Назад» → map, and the map's «Назад» → title (no «Назад» there)
     await page.click('#stepback');
     if (await page.evaluate(() => S.screen) !== 'map') add('«Назад» on the final screen did not open the map');

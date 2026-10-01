@@ -92,7 +92,7 @@ function themeKey(){
   if(s==='world'||s==='done')return WORLD_THEME[S.w]||'base';
   if(s==='map')return 'map';
   if(s==='final')return 'sukkah';
-  if(s==='shabbat'||s==='pasuk'||s==='hayom')return 'library';
+  if(['shabbat','pasuk','hayom','mine'].includes(s))return 'library';
   return 'base';
 }
 function applyTheme(){
@@ -166,7 +166,7 @@ function toast(ic,title,sub){
 }
 function hud(){
   const h=$('#hud');
-  const show=!['title','create','welcome','shabbat','pasuk','hayom'].includes(S.screen);
+  const show=!['title','create','welcome','shabbat','pasuk','hayom','mine'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
   h.innerHTML=`<button class="hero-chip" id="herobtn" aria-haspopup="dialog" title="${t('hud.profile')}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b><span class="sr-only">${t('hud.profile')}</span></button>
@@ -206,18 +206,13 @@ function showProfile(){
 }
 /* Main menu: navigation first, then sound and language, then info and support */
 function showMenu(){
-  let mine=false;   // «Твоя часть в Торе» раскрывается и показывает стих Торы и «Айом-йом»
   const sfxRow=`<button class="swrow" role="switch" data-m="snd" aria-checked="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sfx')}</span><i class="switch" aria-hidden="true"></i></button>`;
   openSheet('menu',t('hud.menu'),()=>`
     <nav class="menu-list" aria-label="${t('hud.menu')}">
       ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
       <button class="mitem" data-m="shab">${icon('candles')}<span>${t('shab.open')}</span></button>
-      <button class="mitem mgroup" data-m="mine" aria-expanded="${mine}" aria-controls="msub-mine">${icon('book')}<span>${t('menu.mine')}</span><i class="mchev ${mine?'open':''}" aria-hidden="true">${icon('up')}</i></button>
-      <div class="msub" id="msub-mine" ${mine?'':'hidden'}>
-        <button class="mitem" data-m="pasuk">${icon('scroll')}<span>${t('menu.mineVerse')}</span></button>
-        <button class="mitem" data-m="hayom">${icon('candles')}<span>${t('menu.mineHayom')}</span></button>
-      </div>
+      <button class="mitem" data-m="mine">${icon('book')}<span>${t('menu.mine')}</span></button>
     </nav>
     ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow})}
     ${langPicker()}
@@ -231,8 +226,7 @@ function showMenu(){
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
-      if(k==='mine'){mine=!mine;sfx.tap();draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom()});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='mine')openMine()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
@@ -302,7 +296,7 @@ function go(screen,skipPrologue){
 function render(){
   stopReading();stopCamera();applyTheme();hud();donateBtn();
   Voice.cancel();
-  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk,hayom:renderHayom}[S.screen]||renderTitle)();
+  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk,hayom:renderHayom,mine:renderMine}[S.screen]||renderTitle)();
   backBar();armBack();
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
@@ -320,6 +314,7 @@ function backTarget(){
   if(s==='shabbat')return S.shabFrom&&S.shabFrom!=='shabbat'?S.shabFrom:'title';
   if(s==='pasuk')return S.pasukFrom&&S.pasukFrom!=='pasuk'?S.pasukFrom:'title';
   if(s==='hayom')return S.hayomFrom&&S.hayomFrom!=='hayom'?S.hayomFrom:'title';
+  if(s==='mine')return S.mineFrom&&S.mineFrom!=='mine'?S.mineFrom:'title';
   return null;
 }
 function goBack(){
@@ -376,16 +371,14 @@ function renderTitle(){
     </div>
     <div id="conf"></div>
     <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
-    <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
-    <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
+    <button class="linkbtn shablink" id="minebtn">${icon('book')} ${t('menu.mine')}</button>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
   </section>`;
   $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
-  $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
-  $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
+  $('#minebtn').onclick=()=>{sfx.tap();openMine()};
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
   const n=$('#newg');if(n)n.onclick=()=>{
@@ -1107,7 +1100,7 @@ async function drawCertificate(sc){
 /* ---------- личный лист: второй лист к сертификату — стих по имени и слово «Айом-йом» по дню рождения ---------- */
 /* null, если игрок не указал ни имени на иврите, ни дня рождения */
 async function drawPersonalSheet(sc){
-  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null,hy=await personalHayom();
+  const heb=hebFinals(S.hebName||'').trim().replace(/\s+/g,' '),pvs=heb?await personalVerses():[],pv=pvs.length?pvs[0].v:null,hy=await personalHayom();
   if(!pv&&!hy)return null;
   sc=sc||1;const W=1600,H=1130,c=document.createElement('canvas');c.width=W*sc;c.height=H*sc;const x=c.getContext('2d');x.scale(sc,sc);
   try{await Promise.all(['700 60px Unbounded','500 30px Onest','500 40px "Frank Ruhl Libre"','700 60px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
@@ -1129,7 +1122,10 @@ async function drawPersonalSheet(sc){
   rule(top,330);
   // панели
   const panels=[];
-  if(pv)panels.push({title:t('cert.verse'),he:'פָּסוּק',text:pv[3],max:pv&&hy?40:58,ref:`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`,href:`${PESUKIM.books[pv[0]]} ${hebNum(pv[1])}, ${hebNum(pv[2])}`,note:t('sheet.verseNote')});
+  const vref=v=>`${tl('pasuk.books')[v[0]]||''} ${v[1]}:${v[2]}`,vhref=v=>`${PESUKIM.books[v[0]]} ${hebNum(v[1])}, ${hebNum(v[2])}`;
+  /* двойное или тройное имя: в панели стихи всех имён по очереди, у каждого своё имя и ссылка */
+  if(pvs.length>1)panels.push({title:t('cert.verse'),he:'פְּסוּקִים',items:pvs.map(p=>({name:p.name,text:p.v[3],ref:`${vhref(p.v)} · ${vref(p.v)}`})),max:hy?30:40,note:t('sheet.verseNote')});
+  else if(pv)panels.push({title:t('cert.verse'),he:'פָּסוּק',text:pv[3],max:pv&&hy?40:58,ref:`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`,href:`${PESUKIM.books[pv[0]]} ${hebNum(pv[1])}, ${hebNum(pv[2])}`,note:t('sheet.verseNote')});
   if(hy)panels.push({title:t('cert.hayom'),he:'הַיּוֹם יוֹם',text:hy.text.replace(/\n/g,' '),max:pv?30:38,ref:`${t('hy.cite')} · ${hyDate(hy)}`,href:`היום יום, ${hyHebDate(hy)}`,note:t('sheet.hayomNote')});
   const two=panels.length>1,pw=two?620:1080,py=top+36,ph=H-120-py;
   panels.forEach((p,k)=>{
@@ -1138,6 +1134,7 @@ async function drawPersonalSheet(sc){
     x.fillStyle='#fffdf8';x.strokeStyle='#e6d6ac';x.lineWidth=1.5;x.beginPath();x.roundRect(l,py,pw,ph,18);x.fill();x.stroke();
     x.fillStyle=MUTE;x.font=`500 20px ${B}`;x.textAlign='center';x.fillText(p.title.toUpperCase().split('').join(' ').replace(/ {3}/g,'  '),cx,py+52);
     x.save();x.direction='rtl';x.fillStyle=GOLD;x.font=`500 34px ${HB}`;x.fillText(p.he,cx,py+96);x.restore();
+    if(p.items){drawItems(p,cx,pw,py,ph);return}
     // текст: самый крупный кегль, при котором он помещается в панель
     const tw=pw-90,aTop=py+130,aBot=py+ph-150;
     x.save();x.direction='rtl';x.fillStyle=INK;let f=p.max,lines,lh;
@@ -1152,6 +1149,29 @@ async function drawPersonalSheet(sc){
     x.fillStyle=MUTE;x.font=`400 19px ${B}`;x.fillText(p.ref,cx,py+ph-72);
     x.font=`italic 400 17px ${B}`;const nl=wrapLines(x,p.note,pw-80).slice(0,2);nl.forEach((n,i)=>x.fillText(n,cx,py+ph-(nl.length>1?44:30)+i*22));
   });
+  /* несколько стихов в одной панели: имя золотом, стих, ссылка — самый крупный кегль, при котором всё помещается */
+  function drawItems(p,cx,pw,py,ph){
+    const tw=pw-90,aTop=py+124,aBot=py+ph-70;
+    let f=p.max,blocks,total;
+    x.save();x.direction='rtl';   // только на время замеров: иначе направление «утечёт» в соседнюю панель
+    for(;;){
+      x.font=`500 ${f}px ${HB}`;
+      blocks=p.items.map(it=>({it,lines:wrapLines(x,it.text,tw)}));
+      const lh=Math.round(f*1.5);
+      total=blocks.reduce((a,b)=>a+40+b.lines.length*lh+30,0)+(blocks.length-1)*18;
+      if(total<=aBot-aTop||f<=18)break;f-=2;
+    }
+    x.restore();
+    const lh=Math.round(f*1.5);let y=aTop+Math.max(0,((aBot-aTop)-total)/2);
+    blocks.forEach((b,k)=>{
+      if(k){x.strokeStyle='#efe3c4';x.lineWidth=1;x.beginPath();x.moveTo(cx-pw/2+90,y+4);x.lineTo(cx+pw/2-90,y+4);x.stroke();y+=18}
+      x.save();x.direction='rtl';x.textAlign='center';x.fillStyle=GOLD;x.font=`700 30px ${HB}`;x.fillText(b.it.name,cx,y+30);
+      x.fillStyle=INK;x.font=`500 ${f}px ${HB}`;b.lines.forEach((ln,i)=>x.fillText(ln,cx,y+40+f+i*lh));x.restore();
+      x.textAlign='center';x.fillStyle=MUTE;x.font=`400 18px ${B}`;x.fillText(b.it.ref,cx,y+40+b.lines.length*lh+22);
+      y+=40+b.lines.length*lh+30;
+    });
+    x.font=`italic 400 17px ${B}`;x.fillStyle=MUTE;x.textAlign='center';const nl=wrapLines(x,p.note,pw-80).slice(0,2);nl.forEach((n,i)=>x.fillText(n,cx,py+ph-(nl.length>1?44:30)+i*22));
+  }
   if(two){x.strokeStyle='#e6d6ac';x.lineWidth=1;x.beginPath();x.moveTo(W/2,py+30);x.lineTo(W/2,py+ph-30);x.stroke();diamond(W/2,py+ph/2,5,GOLD)}
   // подвал
   x.textAlign='center';x.fillStyle=LEAF;x.font=`700 22px ${B}`;x.fillText(`${APP_URL.replace(/^https:\/\//,'')}   ·   ${COPYRIGHT}`,W/2,H-74);
@@ -1170,8 +1190,7 @@ function renderFinal(){
     <div class="actions"><button class="btn" id="map">${t('final.backMap')}</button><button class="btn ghost" id="again">${t('final.again')}</button></div>
     <div id="conf"></div>
     <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
-    <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
-    <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
+    <button class="linkbtn shablink" id="minebtn">${icon('book')} ${t('menu.mine')}</button>
     <p class="foot">${t('final.foot')}</p>
   </section>`;
   stage.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S._tab=b.dataset.tab;save();sfx.tap();renderFinal();const t=$('#tab-'+S._tab);if(t)t.focus()});
@@ -1179,8 +1198,7 @@ function renderFinal(){
   ({cert:wireCert,path:wirePath,ach:()=>{}})[tab]();
   $('#map').onclick=()=>go('map');
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
-  $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
-  $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
+  $('#minebtn').onclick=()=>{sfx.tap();openMine()};
   $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>${t('final.confirm')}</p><div class="actions"><button class="btn small" id="yes">${t('btn.yes')}</button><button class="btn ghost small" id="no">${t('btn.cancel')}</button></div></div>`;
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
 }
@@ -1268,7 +1286,7 @@ stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)
 function start(data){
   load();
   if(data&&data.state&&data.state.v===1)S=Object.assign(fresh(),data.state);
-  if(['shabbat','pasuk','hayom'].includes(S.screen))S.screen='title';
+  if(['shabbat','pasuk','hayom','mine'].includes(S.screen))S.screen='title';
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});
