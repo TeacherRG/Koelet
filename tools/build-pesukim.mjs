@@ -11,8 +11,8 @@
 //   npm pack morphhb@2.0.2 && tar xzf morphhb-2.0.2.tgz      # once, anywhere outside the repo
 //   node tools/build-pesukim.mjs path/to/package/wlc
 //
-// Output: data/pesukim/index.json (book names, names → verse) and data/pesukim/<0..21>.json, one per
-// first letter (pair → all its verses, the short, bright ones and those from the Torah and Tehillim first).
+// Output: data/pesukim.json — for every pair of letters one personal verse (from the Torah when it has a
+// fitting one: short and bright; otherwise from the rest of Tanach) and for every name one verse with it.
 // Divine Names are written the way books for learning write them (ה׳, אלקים…).
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {join, dirname} from 'node:path';
@@ -124,30 +124,34 @@ BOOKS.forEach(([, osis], b) => {
   }
 });
 
-/* ---------- 3. order and output ---------- */
-const score = e => { const i = info[`${e.b}.${e.c}.${e.v}`] || {np: 0, mood: 1, edge: false, ok: true};
+/* ---------- 3. one personal verse per pair, one verse per name ---------- */
+const inf = e => info[`${e.b}.${e.c}.${e.v}`] || {np: 0, mood: 1, edge: false, ok: true};
+const score = e => { const i = inf(e);
   return letters(e.text).length * WEIGHT[BOOKS[e.b][2]] * (1 + 2 * i.np) * i.mood * (i.ok ? 1 : 4) * (i.edge ? 3 : 1); };
+const clean = e => { const i = inf(e); return i.ok && !i.edge && i.mood < 3; };
+const best = l => l.slice().sort((x, y) => score(x) - score(y))[0];
 const row = e => [e.b, e.c, e.v, e.text];
-mkdirSync(join(ROOT, 'data', 'pesukim'), {recursive: true});
-let bytes = 0;
-AB.forEach((a, i) => {
-  const out = {};
-  for (const b of AB) if (list[a + b]) out[a + b] = list[a + b].map(e => [e, score(e)]).sort((x, y) => x[1] - y[1]).map(x => row(x[0]));
-  const json = JSON.stringify(out); bytes += json.length;
-  writeFileSync(join(ROOT, 'data', 'pesukim', i + '.json'), json + '\n');
-});
-/* a verse with the name: only verses of the list, the best one */
+/* from the Torah (Chumash) when the pair has a fitting verse there, otherwise from the rest of Tanach */
+const pairs = {};
+let fromTorah = 0;
+for (const k in list) {
+  const torah = list[k].filter(e => BOOKS[e.b][2] === 0 && clean(e));
+  if (torah.length) fromTorah++;
+  pairs[k] = row(best(torah.length ? torah : list[k].filter(clean).length ? list[k].filter(clean) : list[k]));
+}
+/* a verse with the name: only verses of the list */
 const byRef = {};
 for (const k in list) for (const e of list[k]) byRef[`${e.b}.${e.c}.${e.v}`] = e;
 const nameIdx = {};
 for (const [nm, refs] of names) {
-  const cand = refs.map(r => byRef[r]).filter(Boolean).filter(e => (info[`${e.b}.${e.c}.${e.v}`] || {}).ok !== false);
-  if (cand.length) nameIdx[nm] = row(cand.sort((x, y) => score(x) - score(y))[0]);
+  const cand = refs.map(r => byRef[r]).filter(Boolean).filter(e => inf(e).ok);
+  if (cand.length) nameIdx[nm] = row(best(cand.filter(e => BOOKS[e.b][2] === 0).length ? cand.filter(e => BOOKS[e.b][2] === 0) : cand));
 }
-const index = {src: 'Torat Emet, «פסוק המתחיל ומסתיים באות», https://www.toratemetfreeware.com/online/f_00720_all.html',
-  books: BOOKS.map(b => b[0]), names: nameIdx};
-const ij = JSON.stringify(index); bytes += ij.length;
-writeFileSync(join(ROOT, 'data', 'pesukim', 'index.json'), ij + '\n');
+const data = {src: 'Torat Emet, «פסוק המתחיל ומסתיים באות», https://www.toratemetfreeware.com/online/f_00720_all.html',
+  books: BOOKS.map(b => b[0]), pairs, names: nameIdx};
+const json = JSON.stringify(data);
+mkdirSync(join(ROOT, 'data'), {recursive: true});
+writeFileSync(join(ROOT, 'data', 'pesukim.json'), json + '\n');
 const missing = AB.flatMap(a => AB.filter(b => !list[a + b]).map(b => a + b));
 console.log(`${total} verses in ${Object.keys(list).length} pairs (${wrong} skipped: letters do not match the pair); ` +
-  `${missing.length} pairs without a verse; ${Object.keys(nameIdx).length} names; ${(bytes / 1024).toFixed(0)} KB`);
+  `${fromTorah} pairs with a verse from the Torah; ${missing.length} pairs without a verse; ${Object.keys(nameIdx).length} names; ${(json.length / 1024).toFixed(0)} KB`);
