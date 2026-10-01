@@ -245,6 +245,17 @@ async function run(browser, base, sc) {
     await snap('pasuk');
     await page.click('#paback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«Твой стих»: «Назад» did not return to the final screen');
+    // «Твой день в „Айом-йом“» from the menu: a birthday gives an entry of the book; the full certificate draws
+    await page.click('#menubtn'); await page.click('[data-m="hayom"]');
+    await page.fill('#hyg', '2012-03-14'); await page.dispatchEvent('#hyg', 'change');
+    await page.waitForSelector('.hy-v', {timeout: 5000}).catch(() => {});
+    const hy = await page.evaluate(() => ({screen: S.screen, ok: !!document.querySelector('.hy-v'), date: (document.querySelector('.hy-loc') || {}).innerText || '', text: [...document.querySelectorAll('#stage .lead, #stage .group h3, #stage label, .hy-loc, figcaption')].map(e => e.innerText).join('\n')}));
+    if (hy.screen !== 'hayom' || !hy.ok || !/20/.test(hy.date)) add(`«Айом-йом»: screen "${hy.screen}", entry ${hy.ok}, date "${hy.date}" (14.03.2012 = 20 Adar)`);
+    for (const p of textProblems(hy.text, sc.lang)) add(`[hayom] ${p}`);
+    await snap('hayom');
+    await page.click('#hyback');
+    if (await page.evaluate(() => S.screen) !== 'final') add('«Айом-йом»: «Назад» did not return to the final screen');
+    if (!(await page.evaluate(async () => { const u = await drawCertificate(); return u.length > 1000 && !!(await personalHayom()) && !!(await personalVerse()); }))) add('the full certificate (verse and «Айом-йом») did not draw');
     // final → «Назад» → map, and the map's «Назад» → title (no «Назад» there)
     await page.click('#stepback');
     if (await page.evaluate(() => S.screen) !== 'map') add('«Назад» on the final screen did not open the map');

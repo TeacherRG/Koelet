@@ -699,6 +699,14 @@ a.btn{text-decoration:none}
 .pasuk-v figcaption{font-size:0.8125rem;color:var(--muted)}
 .pasuk-h{margin:6px 0 0;font-family:var(--display);font-size:0.8125rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
 .pasuk-src{font-size:0.75rem;margin:0}
+/* Твой день в «Айом-йом» */
+.hy-row{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.hayom select{width:100%;min-height:48px;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font:inherit}
+.hayom input[type=date]{min-height:48px}
+.hy-loc{font-size:0.9375rem;color:var(--muted)}
+.hy-v blockquote{font-size:1.25rem;line-height:1.75}
+.hy-v blockquote p{margin:0 0 .5em}
+.hy-v blockquote p:last-child{margin:0}
 .pasuk-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--accent)}
 .pasuk-more ol{margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
 .pasuk-more li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--panel-2)}

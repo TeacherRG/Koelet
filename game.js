@@ -64,7 +64,7 @@ function themeKey(){
   if(s==='world'||s==='done')return WORLD_THEME[S.w]||'base';
   if(s==='map')return 'map';
   if(s==='final')return 'sukkah';
-  if(s==='shabbat'||s==='pasuk')return 'library';
+  if(s==='shabbat'||s==='pasuk'||s==='hayom')return 'library';
   return 'base';
 }
 function applyTheme(){
@@ -136,7 +136,7 @@ function toast(ic,title,sub){
 }
 function hud(){
   const h=$('#hud');
-  const show=!['title','create','welcome','shabbat','pasuk'].includes(S.screen);
+  const show=!['title','create','welcome','shabbat','pasuk','hayom'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
   h.innerHTML=`<button class="hero-chip" id="herobtn" aria-haspopup="dialog" title="${t('hud.profile')}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b><span class="sr-only">${t('hud.profile')}</span></button>
@@ -183,6 +183,7 @@ function showMenu(){
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
       <button class="mitem" data-m="shab">${icon('candles')}<span>${t('shab.open')}</span></button>
       <button class="mitem" data-m="pasuk">${icon('scroll')}<span>${t('pasuk.open')}</span></button>
+      <button class="mitem" data-m="hayom">${icon('candles')}<span>${t('hy.open')}</span></button>
     </nav>
     ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow})}
     ${langPicker()}
@@ -195,7 +196,7 @@ function showMenu(){
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk()});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
@@ -252,7 +253,7 @@ function go(screen,skipPrologue){
 function render(){
   stopReading();stopCamera();applyTheme();hud();donateBtn();
   Voice.cancel();
-  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk}[S.screen]||renderTitle)();
+  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk,hayom:renderHayom}[S.screen]||renderTitle)();
   backBar();armBack();
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
@@ -269,6 +270,7 @@ function backTarget(){
   if(s==='welcome')return 'create';
   if(s==='shabbat')return S.shabFrom&&S.shabFrom!=='shabbat'?S.shabFrom:'title';
   if(s==='pasuk')return S.pasukFrom&&S.pasukFrom!=='pasuk'?S.pasukFrom:'title';
+  if(s==='hayom')return S.hayomFrom&&S.hayomFrom!=='hayom'?S.hayomFrom:'title';
   return null;
 }
 function goBack(){
@@ -308,6 +310,7 @@ function renderTitle(){
     <div id="conf"></div>
     <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
     <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
+    <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
   </section>`;
@@ -315,6 +318,7 @@ function renderTitle(){
   $('#aboutbtn').onclick=showAbout;
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
   $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
+  $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
   const n=$('#newg');if(n)n.onclick=()=>{
@@ -956,7 +960,11 @@ async function drawCertificate(sc){
   sc=sc||1;const W=1600,H=1130,c=document.createElement('canvas');c.width=W*sc;c.height=H*sc;const x=c.getContext('2d');x.scale(sc,sc);
   try{await Promise.all(['800 60px Unbounded','700 40px Unbounded','400 30px Onest','500 30px Onest','700 60px "Frank Ruhl Libre"','400 34px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
   /* имя на иврите и личный стих (раздел «Твой стих в Танахе»): стих встаёт вместо строки с уровнем */
-  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null;
+  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null,hy=await personalHayom();
+  /* «полный» сертификат: стих по имени и слово «Айом-йом» по дню рождения — каждое, если игрок их указал */
+  const blocks=[];
+  if(pv)blocks.push({label:t('cert.verse'),text:pv[3],ref:`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`});
+  if(hy)blocks.push({label:t('cert.hayom'),text:hy.text.split('\n')[0],ref:`${t('hy.cite')} · ${hyDate(hy)}`});
   const D='Unbounded, "Trebuchet MS", sans-serif',B='Onest, "Segoe UI", sans-serif',HB='"Frank Ruhl Libre", serif';
   x.fillStyle='#fbfdfb';x.fillRect(0,0,W,H);
   // corner puzzle motifs
@@ -973,17 +981,26 @@ async function drawCertificate(sc){
   const st=strengthsList();
   if(st.length){x.fillStyle='#566d67';x.font=`500 28px ${B}`;x.fillText(t('cert.gifts'),W/2,660);
     x.fillStyle='#17282e';x.font=`500 32px ${B}`;wrapLines(x,st.join(' · '),1200).slice(0,2).forEach((l,i)=>x.fillText(l,W/2,706+i*44))}
-  if(pv){
-    x.fillStyle='#566d67';x.font=`500 22px ${B}`;x.fillText(t('cert.verse').toUpperCase(),W/2,778);
-    x.save();x.direction='rtl';x.fillStyle='#17282e';let vf=34;x.font=`400 ${vf}px ${HB}`;
-    while(x.measureText(pv[3]).width>1240&&vf>24){vf-=2;x.font=`400 ${vf}px ${HB}`}
-    const vl=wrapLines(x,pv[3],1240).slice(0,2);vl.forEach((l,i)=>x.fillText(l,W/2,818+i*(vf+6)-(vl.length-1)*(vf+6)/2));x.restore();
-    x.fillStyle='#566d67';x.font=`400 20px ${B}`;x.fillText(`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`,W/2,818+(vl.length>1?(vf+6)/2:0)+30);
+  if(blocks.length){
+    /* одна запись — по центру во всю ширину; две — колонками слева и справа от печати */
+    const two=blocks.length>1,cw=two?560:1240,maxL=two?3:2;
+    /* подпись 770, строки текста ниже, ссылка последней — всё над датой, печатью и подписью Хранителя */
+    blocks.forEach((bl,k)=>{
+      const cx=two?(k?W-170-cw/2:170+cw/2):W/2;
+      x.fillStyle='#566d67';x.font=`500 22px ${B}`;x.fillText(bl.label.toUpperCase(),cx,770);
+      x.save();x.direction='rtl';x.fillStyle='#17282e';let vf=two?26:32;x.font=`400 ${vf}px ${HB}`;
+      while(wrapLines(x,bl.text,cw).length>maxL&&vf>22){vf-=2;x.font=`400 ${vf}px ${HB}`}
+      let vl=wrapLines(x,bl.text,cw);
+      if(vl.length>maxL){vl=vl.slice(0,maxL);let last=vl[maxL-1];while(last&&x.measureText(last+' …').width>cw)last=last.replace(/\s*\S+$/,'');vl[maxL-1]=last+' …'}
+      const lh=vf+6,top=770+vf+6;
+      vl.forEach((l,i)=>x.fillText(l,cx,top+i*lh));x.restore();
+      x.fillStyle='#566d67';x.font=`400 20px ${B}`;x.fillText(bl.ref,cx,top+(vl.length-1)*lh+28);
+    });
   }else{x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(t('cert.stats',{lvl:lvl(),lname:T(LEVELS[lvl()-1]),sparks:S.sparks,ach:Object.keys(S.ach).length}),W/2,820)}
   // seal
   const photo=S.photo&&!S.photoOff?await new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=S.photo}):null;
-  const k=pv?.8:1;
-  x.save();x.translate(W/2,pv?940:photo?918:922);x.scale(k,k);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=photo?(i%2?82:90):(i%2?74:84),a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
+  const k=blocks.length?.75:1;
+  x.save();x.translate(W/2,blocks.length?948:photo?918:922);x.scale(k,k);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=photo?(i%2?82:90):(i%2?74:84),a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
   if(photo){x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,76,0,Math.PI*2);x.fill();x.save();x.beginPath();x.arc(0,0,71,0,Math.PI*2);x.clip();x.drawImage(photo,-71,-71,142,142);x.restore()}
   else{x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,62,0,Math.PI*2);x.fill();x.fillStyle='#c8445b';x.font=`700 50px ${HB}`;x.fillText('חֵלֶק',0,16)}
   x.restore();
@@ -1012,6 +1029,7 @@ function renderFinal(){
     <div id="conf"></div>
     <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
     <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
+    <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
     <p class="foot">${t('final.foot')}</p>
   </section>`;
   stage.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S._tab=b.dataset.tab;save();sfx.tap();renderFinal();const t=$('#tab-'+S._tab);if(t)t.focus()});
@@ -1020,6 +1038,7 @@ function renderFinal(){
   $('#map').onclick=()=>go('map');
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
   $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
+  $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
   $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>${t('final.confirm')}</p><div class="actions"><button class="btn small" id="yes">${t('btn.yes')}</button><button class="btn ghost small" id="no">${t('btn.cancel')}</button></div></div>`;
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
 }
@@ -1028,6 +1047,7 @@ function finalCert(){
       <div class="field"><label for="certname">${t('cert.nameLabel')}</label><input id="certname" maxlength="24" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(S.hero.name)}"></div>
       ${S.photo?`<div class="cert-photo"><img src="${S.photo}" alt=""><label class="cert-pt"><input type="checkbox" id="photoon" ${S.photoOff?'':'checked'}> <span>${t('cert.photoOn')}</span></label><button class="btn ghost small" id="photodel">${t('cert.photoDel')}</button></div>`:`<p class="muted" style="font-size:0.875rem">${icon('mirror')} ${t('cert.photoHint')}</p>`}
       ${(S.hebName||'').trim()?'':`<p class="muted" style="font-size:0.875rem">${icon('scroll')} ${t('cert.verseHint')} <button class="linkbtn" id="certverse">${t('pasuk.open')}</button></p>`}
+      ${bdayHeb()?'':`<p class="muted" style="font-size:0.875rem">${icon('candles')} ${t('cert.hayomHint')} <button class="linkbtn" id="certhayom">${t('hy.open')}</button></p>`}
       <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
       <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a></div>
       <p class="muted" style="font-size:0.875rem" id="printnote">${t('cert.note')}</p></article>`;
@@ -1038,6 +1058,7 @@ function wireCert(){
   paint();
   const pon=$('#photoon');if(pon)pon.onchange=()=>{S.photoOff=!pon.checked;save();paint()};
   const cv=$('#certverse');if(cv)cv.onclick=()=>{sfx.tap();openPasuk()};
+  const ch=$('#certhayom');if(ch)ch.onclick=()=>{sfx.tap();openHayom()};
   const pdel=$('#photodel');if(pdel)pdel.onclick=()=>{delete S.photo;delete S.photoOff;save();sfx.tap();renderFinal()};
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
   $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};
@@ -1100,7 +1121,7 @@ stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)
 function start(data){
   load();
   if(data&&data.state&&data.state.v===1)S=Object.assign(fresh(),data.state);
-  if(S.screen==='shabbat'||S.screen==='pasuk')S.screen='title';
+  if(['shabbat','pasuk','hayom'].includes(S.screen))S.screen='title';
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});
