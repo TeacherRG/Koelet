@@ -857,3 +857,27 @@ a.btn{text-decoration:none}
   .print-area.pp-print .pp{page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;margin:0 auto}
   .print-area.pp-print .pp:last-child{page-break-after:auto;break-after:auto}
 }
+
+/* Бывшие style="…" в шаблонах: CSP разрешает стили только из этого файла (style-src 'self').
+   Динамические значения (ширина полос, позиции) задаются через data-css — см. applyCss() в game.js. */
+.fs-sm{font-size:0.875rem}
+.fs-15{font-size:0.9375rem}
+.fs-md{font-size:1.125rem}
+.fs-lg{font-size:1.25rem}
+.fs-tr{font-size:1.1875rem;font-weight:500}
+.fs-share{font-size:1.1875rem;font-weight:600;color:var(--etrog)}
+.mt12{margin-top:12px}
+.tc{text-align:center}
+.c-pome{color:var(--pome)}
+.c-etrog{color:var(--etrog)}
+.grid8{display:grid;gap:8px}
+.art-bro{display:flex;gap:12px;align-items:flex-end;justify-content:center}
+.art-map{display:flex;gap:14px;align-items:center}
+.av84{width:84px;height:84px;border-radius:24px;overflow:hidden}
+.av72{width:72px;height:72px;flex:none;border-radius:22px;overflow:hidden;border:2px solid var(--etrog)}
+.av70{width:70px;height:70px;border-radius:20px;overflow:hidden;margin:0 auto}
+.done-piece{width:90px;animation:pop .6s ease both}
+.bar.bar10{height:10px}
+.w0{width:0%}
+.w20{width:20%}
+.c-ink{color:var(--ink)}

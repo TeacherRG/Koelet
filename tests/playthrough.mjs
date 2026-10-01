@@ -61,7 +61,8 @@ async function run(browser, base, sc) {
   const problems = new Set(), seen = {jigsaw: false, mirror: false};
   const add = m => problems.add(m);
   page.on('pageerror', e => add('JS error: ' + e.message));
-  page.on('requestfailed', r => { if (r.url().startsWith(base) && !/\/audio\/.*\.mp3$/.test(r.url())) add('failed to load ' + r.url().slice(base.length)); });
+  let framing = false; // the iframe check below aborts the framed page's requests on purpose
+  page.on('requestfailed', r => { if (!framing && r.url().startsWith(base) && !/\/audio\/.*\.mp3$/.test(r.url())) add('failed to load ' + r.url().slice(base.length)); });
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) add('console error: ' + m.text()); });
   await page.addInitScript(l => {
     try { localStorage.setItem('koelet-lang', l); localStorage.setItem('koelet-audio', JSON.stringify({music: false, voice: false})); } catch (e) {}   // an old «Без звука» must not stick
@@ -311,6 +312,20 @@ async function run(browser, base, sc) {
       if (await page.$('#exitq') || await page.evaluate(() => S.screen) !== 'title' || !(await page.evaluate(() => history.state && history.state.koelet))) add('«Остаться» in the exit question did not keep the game');
     }
   }
+  // the certificate photo lives only for the tab (sessionStorage), never in the saved game
+  const ph = await page.evaluate(() => { S.photo = 'data:image/jpeg;base64,AAAA'; save();
+    const ok = !localStorage.getItem(KEY).includes('photo') && sessionStorage.getItem(PHOTO_KEY) === S.photo;
+    delete S.photo; save(); return ok && !sessionStorage.getItem(PHOTO_KEY); });
+  if (!ph) add('the certificate photo is kept in localStorage (or not cleared from sessionStorage)');
+  // inside someone else's iframe the game hides itself and reopens as the whole page (clickjacking guard, frame-guard.js)
+  const url = page.url().replace(/[?#].*$/, ''); framing = true;
+  await page.setContent(`<iframe src="${url}"></iframe>`).catch(() => {});
+  let unframed = false;
+  for (let k = 0; k < 40 && !unframed; k++) {
+    unframed = await page.evaluate(() => !document.querySelector('iframe') && typeof S === 'object').catch(() => false);
+    if (!unframed) await page.waitForTimeout(250);
+  }
+  if (!unframed) add('the game stays inside a foreign iframe');
   await ctx.close();
   return {name, steps, problems: [...problems]};
 }
