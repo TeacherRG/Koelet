@@ -58,6 +58,10 @@ p{margin:0}
 
 /* Scene */
 .scene{display:flex;flex-direction:column;gap:18px;flex:1 0 auto;animation:scene-enter .52s cubic-bezier(.2,.75,.25,1) both}
+.stepnav{display:flex;justify-content:space-between;align-items:center;margin:-4px 0 8px}
+.navbtn{padding:6px;min-width:40px;justify-content:center;color:var(--ink)}
+.navbtn .ic,.navbtn svg{width:20px;height:20px}
+.navbtn:disabled{opacity:.35;cursor:default}
 .scene-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .dots{display:flex;gap:5px}
 .dots i{width:8px;height:8px;border-radius:3px;background:var(--line)}

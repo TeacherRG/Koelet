@@ -106,12 +106,20 @@ async function run(browser, base, sc) {
 
   const has = async s => (await page.$(s)) !== null;
   const enabled = async s => { const e = await page.$(s); return !!e && await e.isEnabled(); };
-  let steps = 0, ownUsed = false, rechosen = false, i = 0;
+  let steps = 0, ownUsed = false, rechosen = false, navChecked = false, i = 0;
   for (; i < 700; i++) {
     const screen = await page.evaluate(() => S.screen);
     const text = await page.evaluate(() => document.querySelector('#stage').innerText);
     for (const p of textProblems(text, sc.lang)) add(`[${screen}] ${p}`);
     if (screen === 'final') break;
+    if (!navChecked && screen === 'world' && await enabled('[data-nav="-1"]')) {
+      // arrows under the HUD: back one step, then forward again up to the step reached
+      navChecked = true; const at = await page.evaluate(() => S.s);
+      await page.click('[data-nav="-1"]'); const back = await page.evaluate(() => S.s);
+      const fwdOn = await enabled('[data-nav="1"]'); await page.click('[data-nav="1"]');
+      if (back !== at - 1 || !fwdOn || await page.evaluate(() => S.s) !== at) add('step arrows do not go back and forward');
+      continue;
+    }
     if (!(await has('.whatif')) && await has('#wi')) { await page.click('#wi'); continue; }
     if (await enabled('#nx')) { await snap(screen); await page.click('#nx'); steps++; continue; }
     if (screen === 'map') { const n = await page.$('.mnode.open'); if (n) { await n.click(); continue; } if (await has('#fin')) { await page.click('#fin'); continue; } }

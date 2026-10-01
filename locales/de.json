@@ -75,6 +75,8 @@
   "hud.pieces": "Teile",
   "hud.menu": "Menü",
   "hud.profile": "Mein Held und Erfolge",
+  "hud.back": "Zurück: vorheriger Schritt",
+  "hud.fwd": "Weiter: bis zum Schritt, an dem du warst",
   "profile.title": "Mein Held",
   "menu.level": "Stufe {{n}}",
   "menu.stats": "{{sparks}} Funken · {{pieces}} von 7 Teilen",

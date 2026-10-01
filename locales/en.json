@@ -75,6 +75,8 @@
   "hud.pieces": "pieces",
   "hud.menu": "Menu",
   "hud.profile": "My hero and achievements",
+  "hud.back": "Back: previous step",
+  "hud.fwd": "Forward: up to the step you reached",
   "profile.title": "My hero",
   "menu.level": "Level {{n}}",
   "menu.stats": "{{sparks}} sparks · {{pieces}} of 7 pieces",

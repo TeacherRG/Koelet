@@ -106,6 +106,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Hero screen: age and boy/girl are required, numbered blocks; «Готово» without them turns the missing block red with a hint (`--err`), scrolls to it and speaks the hint.
 - Contrast WCAG AA; mobile first (375 px wide), one-line HUD, final screen in tabs.
 - HUD: the hero chip (top left) opens `showProfile()` — level, progress, achievements; the menu button (top right) opens `showMenu()` — navigation, sound switches, language, «О приложении», donate link. Both are bottom sheets built with `openSheet()` (title + ✕, Escape, tap outside).
+- Step arrows (`stepNav()` in `game.js`, inside `head()`): under the HUD, above the world banner of every prologue/world step. «Назад» goes one step back, «Вперёд» only up to the furthest step reached (`S.far`, a finished world is open entirely). A step revisited this way gives no sparks again (`addSparks()`). Labels `hud.back` / `hud.fwd` (not spoken).
 - New world visuals: add a theme to `THEMES`/`WORLD_THEME` and a backdrop to `SCENES` in `art.js`.
 
 ## Git

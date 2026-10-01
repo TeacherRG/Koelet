@@ -122,6 +122,8 @@ function haptic(kind='tap'){
 /* ---------- progress ---------- */
 const lvl=()=>Math.min(LEVELS.length,Math.floor(S.sparks/130)+1);
 function addSparks(n,el){
+  /* шаг, на который вернулись стрелкой «назад» (или мир переигрывают), искр не даёт повторно */
+  if((S.screen==='world'||S.screen==='prologue')&&idx()<farSeen())return;
   const before=lvl();S.sparks+=n;
   if(el){const r=el.getBoundingClientRect();const p=document.createElement('div');p.className='plus';p.textContent='+'+n;p.style.left=(r.left+r.width/2-14)+'px';p.style.top=(r.top-6)+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),1200)}
   if(lvl()>before){toast('up',t('toast.level',{name:T(LEVELS[lvl()-1])}),t('toast.levelN',{n:lvl()}));sfx.ach()}
@@ -420,11 +422,28 @@ function next(){
   else{S.s=idx()+1;if(S.s>=steps().length)return completeWorld()}
   save();render();window.scrollTo({top:0,behavior:'smooth'});
 }
+/* Дальний шаг, до которого игрок дошёл в прологе/мире: стрелки «назад/вперёд» ходят только до него.
+   Пройденный мир открыт целиком. */
+const farKey=()=>S.screen==='prologue'?'p':'w'+S.w;
+const farSeen=()=>(S.far||{})[farKey()]??-1;
+function farIdx(){return S.screen==='world'&&S.done[S.w]?steps().length-1:Math.max(farSeen(),idx())}
+function stepNav(){
+  const i=idx(),f=farIdx();
+  return `<nav class="stepnav" aria-label="${t('head.step',{i:i+1,n:steps().length})}">
+    <button class="iconbtn navbtn" data-nav="-1" ${i>0?'':'disabled'} aria-label="${t('hud.back')}" title="${t('hud.back')}">${icon('prev')}</button>
+    <button class="iconbtn navbtn" data-nav="1" ${i<f?'':'disabled'} aria-label="${t('hud.fwd')}" title="${t('hud.fwd')}">${icon('next')}</button></nav>`;
+}
+function stepTo(d){
+  const i=Math.max(0,Math.min(idx()+d,farIdx()));if(i===idx())return;
+  if(S.screen==='prologue')S.ps=i;else S.s=i;
+  sfx.tap();save();render();window.scrollTo({top:0,behavior:'smooth'});
+}
+stage.addEventListener('click',e=>{const b=e.target.closest('[data-nav]');if(b&&!b.disabled)stepTo(+b.dataset.nav)});
 function head(){
   const st=steps(),i=idx();
   const label=S.screen==='prologue'?t('head.prologue'):t('head.world',{n:S.w+1,name:WORLDS[S.w].name});
   const rd=young()&&canSpeak()?`<button class="iconbtn readbtn" data-read aria-label="${t('read.label')}">${icon('sound')}<span>${t('read.listen')}</span></button>`:'';
-  return `<div class="scene-head banner"><div class="bn-art" aria-hidden="true">${sceneSvg(themeKey(),'xMidYMid')}</div><span class="kicker bn-k">${label}</span><div class="bn-row"><div class="dots" role="img" aria-label="${t('head.step',{i:i+1,n:st.length})}">${st.map((_,k)=>`<i class="${k<i?'done':k===i?'on':''}"></i>`).join('')}</div>${rd}</div></div>`;
+  return `${stepNav()}<div class="scene-head banner"><div class="bn-art" aria-hidden="true">${sceneSvg(themeKey(),'xMidYMid')}</div><span class="kicker bn-k">${label}</span><div class="bn-row"><div class="dots" role="img" aria-label="${t('head.step',{i:i+1,n:st.length})}">${st.map((_,k)=>`<i class="${k<i?'done':k===i?'on':''}"></i>`).join('')}</div>${rd}</div></div>`;
 }
 const letter=i=>(t('letters')[i]||String(i+1));
 function optHTML(o,i){return `<button class="opt" data-i="${i}"><span class="ic ${o.ic?'e':''}" aria-hidden="true">${o.ic?icon(o.ic):letter(i)}</span><span class="ot"><span>${esc(o.t)}</span>${o.s?`<small>${esc(o.s)}</small>`:''}</span></button>`}
@@ -441,6 +460,7 @@ function toolbox(){if(!(S.screen==='world'&&WORLDS[S.w].tools))return '';
 function renderStep(){
   let st=steps()[idx()];if(typeof st==='function')st=st(S);if(st&&(st.__dynamic||(st.body&&st.body.__dynamic)))st=resolveDynamic(st);st=R(st);
   S._last=S.screen;
+  S.far=S.far||{};S.far[farKey()]=Math.max(farSeen(),idx());save();
   const fn={talk:rTalk,choice:rChoice,multi:rMulti,quote:rQuote,card:rCard,reveal:rReveal,mini:rMini}[st.type];
   fn(st);
 }
