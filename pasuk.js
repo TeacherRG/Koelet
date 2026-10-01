@@ -83,12 +83,14 @@ const firstOf=n=>HEB_AB.indexOf(baseL(n[0]));
 const pairVerses=n=>(PAIRS[firstOf(n)]||{})[baseL(n[0])+baseL(n.at(-1))]||[];
 function nameVerse(n){return PESUKIM.names[hebFinals(n)]||PESUKIM.loose[nameKey(n)]||null}
 
+/* стих помечен «книга-глава-стих»: по нему админ загружает картину (admin.js), там же стих выбирается с клавиатуры */
+const vAttr=v=>`data-v="${v[0]}-${v[1]}-${v[2]}"${S.screen==='admin'?' tabindex="0"':''}`;
 function verseHTML(v,first){
   /* первая и последняя буквы стиха — тем же цветом, что и буквы имени */
   let txt=esc(v[3]);
   if(first){const a=txt.search(/[א-ת]/),b=txt.search(/[א-ת][^א-ת]*$/);
     if(a>=0&&b>a)txt=txt.slice(0,a)+'<mark>'+txt[a]+'</mark>'+txt.slice(a+1,b)+'<mark>'+txt[b]+'</mark>'+txt.slice(b+1)}
-  return `<figure class="pasuk-v"><blockquote class="heb" lang="he" dir="rtl">${txt}</blockquote>
+  return `<figure class="pasuk-v" ${vAttr(v)}><blockquote class="heb" lang="he" dir="rtl">${txt}</blockquote>
     <figcaption>${verseRef(v)}</figcaption></figure>`;
 }
 const verseRef=v=>`${esc(tl('pasuk.books')[v[0]]||'')} ${v[1]}:${v[2]} · <span class="heb" lang="he">${esc(PESUKIM.books[v[0]])}</span>`;
@@ -123,9 +125,11 @@ function renderPasuk(){
     <p class="lead">${t('pasuk.lead')}</p>
     <p class="shab-note">${icon('info')}<span>${t('pasuk.custom')}</span></p>
     ${hebNameHTML()}
+    ${adult()?`<button class="linkbtn shablink" id="galbtn">${icon('palette')} ${t('gal.open')}</button>`:''}
     <p class="muted pasuk-src">${t('pasuk.src')}</p>
   </section>`;
   $('#paback').onclick=()=>{sfx.tap();go(S.pasukFrom&&S.pasukFrom!=='pasuk'?S.pasukFrom:'title')};
+  const gb=$('#galbtn');if(gb)gb.onclick=()=>{sfx.tap();openGallery()};
   wireHebName();
 }
 /* шаг в мире «Зеркало»: после зеркала с камерой — твоё имя и твой стих */
@@ -158,7 +162,7 @@ function showPasuk(){
       <div class="pasuk-name"><span class="heb" lang="he">${esc(n)}</span><span class="pasuk-ls">${letterChip(n[0])}<i aria-hidden="true">…</i>${letterChip(n.at(-1))}</span></div>
       <p class="pasuk-what">${t('pasuk.what',{a:esc(tl('pasuk.letters')[HEB_AB.indexOf(baseL(n[0]))]),b:esc(tl('pasuk.letters')[HEB_AB.indexOf(baseL(n.at(-1)))])})}</p>
       ${pv?verseHTML(pv,true):`<p class="muted">${t('pasuk.none')}</p>`}
-      ${more.length?`<details class="pasuk-more"><summary>${t('pasuk.more',{n:more.length})}</summary><ol>${more.map(v=>`<li><span class="heb" lang="he" dir="rtl">${esc(v[3])}</span><small>${verseRef(v)}</small></li>`).join('')}</ol></details>`:''}
+      ${more.length?`<details class="pasuk-more"><summary>${t('pasuk.more',{n:more.length})}</summary><ol>${more.map(v=>`<li ${vAttr(v)}><span class="heb" lang="he" dir="rtl">${esc(v[3])}</span><small>${verseRef(v)}</small></li>`).join('')}</ol></details>`:''}
       ${nv?`<h3 class="pasuk-h">${t('pasuk.withName')}</h3>${verseHTML(nv)}`:''}
     </div>`}).join('');
 }

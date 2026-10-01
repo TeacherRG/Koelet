@@ -722,6 +722,33 @@ a.btn{text-decoration:none}
 .hy-v blockquote{font-size:1.25rem;line-height:1.75}
 .hy-v blockquote p{margin:0 0 .5em}
 .hy-v blockquote p:last-child{margin:0}
+/* Стих твоего имени — картина (16+) */
+.gal .hy-row{grid-template-columns:1fr 1fr}
+.gal select{width:100%;min-height:48px;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font-size:1.125rem}
+.gal-seg{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+.gal-seg.wrap{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+.gal-author{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.gal .gal-author{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.gal-author figure{margin:0;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.gal-author img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:var(--shadow);background:#03050a}
+/* админ: загрузка картин к стихам */
+.adm [data-v]{cursor:pointer;border-radius:14px}
+.adm [data-v]:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.adm [data-v]:hover>blockquote,.adm li[data-v]:hover{box-shadow:0 0 0 2px var(--gold-edge)}
+.adm .adm-on>blockquote,.adm li.adm-on{box-shadow:0 0 0 3px var(--gold)}
+.adm-up{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding:14px;border-radius:14px;background:var(--etrog-soft);border:1px dashed var(--gold-edge);cursor:default}
+.adm-up p{margin:0}
+.adm-file{align-self:flex-start;cursor:pointer}
+.adm-file.busy{opacity:.6;pointer-events:none}
+.adm-steps{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;font-size:0.9375rem}
+.gal-prev{display:flex;flex-direction:column;align-items:center;gap:12px}
+.gal-cv{display:block;width:100%;height:auto;border-radius:18px;box-shadow:var(--shadow);background:#03050a}
+.gal-cv.gal-phone{max-width:300px}
+.gal-cv.gal-screen{max-width:640px}
+.gal-cv.gal-print{max-width:360px;border-radius:4px}
+.gal-fig{align-self:stretch}
+.gal-donate{display:flex;flex-direction:column;gap:8px}
+.gal-donate p{margin:0}
 .pasuk-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--accent)}
 .pasuk-more ol{margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
 .pasuk-more li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--panel-2)}
