@@ -36,6 +36,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 | `vendor/headbreaker.js` | Third-party jigsaw library (headbreaker 3.0.0 + Konva 6.0.0), loaded only on the puzzle step. Do not edit; licenses in `vendor/LICENSES.md` |
 | `tools/tts.mjs`, `tools/voice-phrases.mjs`, `tools/tts-config.json` | Voice generation via Azure AI Speech: collects every sentence, voices only new ones, prunes stale files. Voices, rate and pronunciation lexicon (`<sub alias>`) in the config |
 | `.github/workflows/voice.yml` | Runs `tools/tts.mjs` after text changes land in `main` (and manually) and commits `audio/` |
+| `docs/guide.ru.md` | Учебник ведущего для офлайн-проведения (учителя, родители, ведущие). Вводная часть — `tools/guide-intro.ru.md` (правится вручную), сценарии со всеми текстами по возрастам генерирует `npm run guide` (`tools/guide.mjs`) из `content/ru` и `locales/ru.json`. `test:data` падает, если учебник не пересобран после правки текстов |
 | `tools/`, `tests/` | Dev server, lint, data check, browser playthrough |
 
 ## Texts and languages (the most common source of mistakes)
@@ -44,6 +45,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Never hard-code visible text in `game.js`: add a key to all four `locales/*.json` and use `t('key')` / `tl('key')` (for lists, objects and age variants). Escape user input with `esc()`.
 - Gender of the player: `{boy form|girl form}` inside a string, e.g. `ты {прошёл|прошла}`, `{Wanderer|Wanderin}`. Resolved by `T()`; `t()` and step data (via `R()`) apply it automatically. Ukrainian needs forms wherever Russian has them; German and English rarely do.
 - Age groups: `y` (8–11), `t` (12–15), `a` (16+, adults). `{"__ag": 1, "y": "8–11 text", "t": "12–15 text", "a": "16+ text"}` for any value; `a` is optional and falls back to `t`. A whole step only for some groups: `"age": "y"` (8–11 only), `"age": "t"` (12+, i.e. 12–15 **and** 16+), `"age": "a"` (16+ only). The 16+ version follows the full lesson (Maslow, the Netziv, Yoma 22b, the Rebbe and Rabin, Rav Ashkenazi's own story), each idea with its source. Texts for 8–11: 30–40 words per screen, 6 options + «Свой вариант».
+- After changing Russian texts run `npm run guide` and commit `docs/guide.ru.md` (the teacher's guide is generated from them). A new mini-game needs an offline description in `MINI` in `tools/guide.mjs`.
 - Interface placeholders: `{{name}}` (not to be confused with gender forms).
 - Technical values in content JSON are never translated: `type`, `key`, `ic`, `game`, `art`, `mood`, `age`, `tool`, `who: "mentor"`, Hebrew in `he`/`heb`.
 - New language: copy `content/ru/` and `locales/ru.json`, translate, add a line to `LANGS` in `i18n.js`, add an alphabet rule to `tests/check-data.mjs` and scenarios to `tests/playthrough.mjs`.
