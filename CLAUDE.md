@@ -26,7 +26,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 | `pasuk.js` | «Твой стих в Танахе»: имя на иврите (угадывается из имени героя по словарю `HEB_NAMES` или по звукам, правится экранной клавиатурой) → стих, который начинается на первую букву имени и кончается на последнюю, и стих, где встречается само имя |
 | `data/pesukim/` | Стихи для `pasuk.js`: `index.json` (названия книг, имя → стих) и `0..21.json` (по первой букве: пара → её стихи, первый — личный). Генерируется `tools/build-pesukim.mjs` из традиционного списка Torat Emet `tools/sources/toratemet-f_00720.mhtml`, руками не править |
 | `hayomyom.js` | «Твой день в „Айом-йом“»: день рождения (обычный — переводится в еврейский своим календарём `gregToHeb()`, с галочкой «после захода солнца», или еврейский) → запись книги Ребе «היום יום» на этот день |
-| `data/hayomyom.json` | Записи «היום יום» по дням (`"<месяц>-<день>"`, месяцы книги: תשרי…אלול, Адар I и II отдельно). Генерируется `tools/build-hayomyom.mjs` из `tools/sources/hayomyom.pdf` (нужен pdftotext), руками не править |
+| `data/hayomyom.json` | Записи «היום יום» по дням (`"<месяц>-<день>"`, месяцы книги: תשרי…אלול, Адар I и II отдельно), все 383 дня. Генерируется `tools/build-hayomyom.mjs` из `tools/sources/hayomyom.pdf` и `tools/sources/hayomyom-elul.pdf` (нужен pdftotext), руками не править |
 | `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Idle help after a minute of silence. Track and volume in localStorage `koelet-audio` |
 | `voice-key.js` | Shared by the game and `tools/tts.mjs`: splits text into sentences (paragraphs, `.!?…`), strips tags and Hebrew, `VoiceKey.key()` = hash of the normalized sentence |
 | `audio/<lang>/` | Ready-made Azure voice: one mp3 per sentence (`<key>.mp3`) + `index.json` (list of keys). Generated, never edit by hand |
@@ -96,13 +96,20 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 
 - Screen `hayom` (`renderHayom()` in `hayomyom.js`) opens from the title screen, the menu and the final screen; «Назад» returns to `S.hayomFrom`; HUD hidden. Optional: the birthday `S.bday` (`{mode:'g'|'h', g:'YYYY-MM-DD', sunset, hd, hm}`) stays on the device.
 - Calendar: `gregToHeb()` (R.D. days, molad, Rosh Hashana postponements; checked against known dates). After sunset → next day. Adar of a regular year is read as אדר ב of the book (Chabad custom). A day the book lacks (30 Cheshvan / 30 Kislev) → the nearest earlier day with a note.
-- The PDF has no Elul (it ends with 30 Av): Elul shows `hy.none`. When the Elul pages arrive, put the full PDF into `tools/sources/hayomyom.pdf` and run `node tools/build-hayomyom.mjs`.
+- Sources: `tools/sources/hayomyom.pdf` (the book, Tishrei–Av) and `tools/sources/hayomyom-elul.pdf` (Elul, a printout of Chabadpedia «היום יום/אלול»: two columns with edit links mixed in, cut by the «תבנית - שיחה» marker at the end of each day). `node tools/build-hayomyom.mjs` → one file `data/hayomyom.json` (~120 KB, loaded only by this section and the certificate).
 - Text is Hebrew only (as in the book), not spoken; `hy` is in `SKIP_UI`, only `voice.hayom` is spoken.
 - Full certificate = two landscape A4 pages. Page 1 is the certificate as it always was (`drawCertificate()`, photo if taken) — do not put the verse or «Айом-йом» there. Page 2 is the personal page (`drawPersonalSheet()`, only when there is a Hebrew name and/or a birthday): hero name + Hebrew name, panels «Мой стих в Танахе» (right) and «Мой день в „Айом-йом“» (left), or one wide panel; each with its Hebrew and local reference and a one-line note (`sheet.*`). The final screen shows both, downloads each and prints both (one page each); for each missing part it shows a hint with a link to the section.
 
 ## About window
 
 - «О приложении» (`showAbout()` in `game.js`) opens from the menu and from the title footer: project link `PROJECT_URL` (https://mychitas.app), short description, rights to the lesson and the music, open-source libraries, privacy. Texts are `about.*` in the locales — update them when the lesson source, music or libraries change.
+- «Провести урок онлайн» (`showLesson()` in `game.js`) opens from the menu (after «О приложении») and the title settings popover: the project author offers a live online lesson on the game (one or two sessions, any age, one-to-one or group), contact `LESSON_EMAIL` (office@mychitas.app). Texts are `lesson.*` in the locales (not spoken, in `SKIP_UI`). Both windows are built with `infoModal()`.
+
+## Site, search and visit counter
+
+- Hosted on GitHub Pages (`CNAME` → mylot.mychitas.app). Search: `robots.txt`, `sitemap.xml`, canonical/hreflang/JSON-LD in `index.html`. Each language has its own URL `?lang=uk|de|en` (`urlLang()` in `i18n.js`, wins over the saved choice); `setMeta()` sets description (`doc.desc`), og-tags and canonical for the language.
+- Security headers can't be set on Pages, so a Content-Security-Policy lives in a `<meta>` in `index.html`. A new external host (script, font, API) must be added there, otherwise the browser blocks it.
+- Visit counter on the title screen (`countVisit()` in `game.js`): anonymous `hit` to abacus.jasoncameron.dev once per tab, shown as `VISITS_BASE` (99, visits before the counter) + the server value, text `visits.count`. Counts only on the real domain, not on localhost or in tests; no network → the line is just not shown.
 
 ## Design
 

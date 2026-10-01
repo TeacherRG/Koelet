@@ -11,7 +11,7 @@ export const VoiceKey = createRequire(import.meta.url)('../voice-key.js');
 /* Поля, которые никогда не произносятся (технические значения, иврит). */
 const SKIP_FIELDS = new Set(['type', 'key', 'ic', 'game', 'art', 'mood', 'age', 'tool', 'who', 'he', 'heb', 'id', 'v', 'file', 'src', 'color', 'hair', 'skin', 'style', 'theme', 'img']);
 /* Строки интерфейса, которые Хранитель не читает: окно «О приложении», отчёт, сертификат, источники. */
-const SKIP_UI = /^(about|report|rep|cert|final\.foot|donate|shab|pasuk|hy|lang|share|hud|menu|ach|toast|audio|gate)\b/;
+const SKIP_UI = /^(about|doc|visits|lesson|report|rep|cert|final\.foot|donate|shab|pasuk|hy|lang|share|hud|menu|ach|toast|audio|gate)\b/;
 /* Подстановки {{x}} разворачиваются всеми значениями полей «x» из content (например,
    {{what}} → «монет», «идей»…; {{name}} → названия миров). Для {{name}} есть ещё вариант
    без имени: так озвучены фразы с именем героя (игра уберёт имя при поиске).

@@ -1,5 +1,6 @@
 // Builds data/hayomyom.json for «Твой день в „Hayom Yom“» from the Hebrew text of «היום יום»
-// of the Lubavitcher Rebbe (tools/sources/hayomyom.pdf), one entry for every day of the year.
+// of the Lubavitcher Rebbe (tools/sources/hayomyom.pdf, Tishrei–Av) and tools/sources/hayomyom-elul.pdf (Elul),
+// one entry for every day of the year.
 //
 //   node tools/build-hayomyom.mjs          # needs pdftotext (poppler-utils)
 //
@@ -7,7 +8,7 @@
 // Paragraphs of an entry are joined with "\n". The year of the book (5703) was a leap year, so it has
 // אדר א and אדר ב; a birthday in Adar of a regular year uses אדר ב (see hayomyom.js).
 import {execFileSync} from 'node:child_process';
-import {writeFileSync, mkdirSync} from 'node:fs';
+import {writeFileSync, mkdirSync, existsSync} from 'node:fs';
 import {join, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -50,6 +51,25 @@ for (const line of lines.slice(start)) {
   buf.push(s);
 }
 flush();
+/* Элул: в книге-PDF его нет, он взят со страницы Хабадпедии «היום יום/אלול», распечатанной в PDF
+   (tools/sources/hayomyom-elul.pdf). Там две колонки: ссылки «עריכה» и куски адресов перемешаны с текстом,
+   а заголовок дня стоит посреди абзаца, поэтому режем по меткам «תבנית - שיחה» — по одной в конце каждого дня. */
+const ELUL = join(ROOT, 'tools', 'sources', 'hayomyom-elul.pdf');
+if (existsSync(ELUL)) {
+  const el = execFileSync('pdftotext', [ELUL, '-'], {encoding: 'utf8', maxBuffer: 1 << 26}).replace(/[‎‏‪-‮]/g, '');
+  const NAV = new Set(['היום יום', 'תשרי חשוון', 'כסלו', 'טבת', 'שבט', "אדר אדר א' אדר ב' ניסן", 'אייר', 'סיון', 'תמוז', 'מנחם', 'אב', 'אלול', 'ראש חודש']);
+  const junk = l => !l || NAV.has(l) || /chabadpedia|co\.il|%[0-9A-F]|&acti|on=edit|עריכה|^\)|חב"דפדיה/.test(l) || /^[א-ת]{1,2}['"]?[א-ת]?'? אלול$/.test(l);
+  const segs = el.split(/^.*תבנית\s*-\s*שיחה.*$/m);
+  let n = 0;
+  for (const seg of segs) {
+    const text = seg.split('\n').map(l => l.trim()).filter(l => !junk(l)).join(' ').replace(/\s+/g, ' ').trim()
+      .replace(/ ([,.:;!?])(?=[^\s,.:;!?])/g, '$1 ').replace(/ ([,.:;])$/, '$1').replace(/ -(?=[א-ת"'(])/g, ' – ')
+      .replace(/([א-ת])": (?=[א-ת])/g, '$1: "');   // «הזקן": ישראל» → «הזקן: "ישראל»
+    if (!text || n >= 29) continue;
+    days[`12-${++n}`] = text;
+  }
+  if (n !== 29) throw new Error(`Elul: ${n} days instead of 29`);
+}
 const missing = [];
 MONTHS.forEach((_, mi) => { for (let d = 1; d <= 30; d++) if (!days[`${mi}-${d}`] && !(d === 30 && [3,6,8,10,12].includes(mi))) missing.push(`${MONTHS[mi]} ${d}`); });
 mkdirSync(join(ROOT, 'data'), {recursive: true});

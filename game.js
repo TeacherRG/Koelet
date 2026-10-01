@@ -189,6 +189,7 @@ function showMenu(){
     ${langPicker()}
     <div class="menu-foot">
       <button class="qlink" data-m="about">${icon('info')}<span>${t('about.title')}</span></button>
+      <button class="qlink" data-m="lesson">${icon('chat')}<span>${t('lesson.title')}</span></button>
       <a class="qlink donate-link" href="${DONATE_URL}" target="_blank" rel="noopener">${icon('heart')}<span>${t('donate.label')}</span></a>
     </div>`,
   (m,draw,close)=>{
@@ -196,7 +197,7 @@ function showMenu(){
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom()});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
@@ -228,14 +229,50 @@ function donateBtn(){
   a.hidden=S.screen==='title'||!!(st&&st.type==='mini');
 }
 function showAbout(){
-  const m=document.createElement('div');m.className='modal';
   const link=`<a href="${PROJECT_URL}" target="_blank" rel="noopener">mychitas.app</a>`;
   const sec=(h,txt)=>`<section class="about-sec"><h3>${t(h)}</h3><p>${t(txt)}</p></section>`;
-  m.innerHTML=`<div class="sheet about" role="dialog" aria-modal="true" aria-labelledby="about-h">
-    <div class="about-head"><div class="about-m">${mentorSvg('smile')}</div><div><span class="kicker">${t('about.title')}</span>
+  infoModal('about',`<div class="about-head"><div class="about-m">${mentorSvg('smile')}</div><div><span class="kicker">${t('about.title')}</span>
     <h2 class="h2" id="about-h">${t('title.h1a')} ${t('title.h1b')}</h2><p class="about-made">${t('about.made',{link})}</p></div></div>
     <p>${t('about.text')}</p>
-    ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}
+    ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}`);
+}
+/* ---------- Счётчик посещений на титульном экране ----------
+   Бесплатный сервис abacus без cookies: «ещё одно посещение» раз за вкладку, ничего об игроке.
+   До счётчика посещения не считались — берём за начало 99. Считается только на сайте
+   (не на localhost и не в тестах); если сервис недоступен, строка просто не появляется. */
+const VISITS_API='https://abacus.jasoncameron.dev';
+const VISITS_KEY='mylot-mychitas-app/visits';
+const VISITS_BASE=99;
+let visits=null;
+function countVisit(){
+  if(location.hostname!==new URL(APP_URL).hostname)return;
+  let seen=false;try{seen=!!sessionStorage.getItem('koelet-visit')}catch(e){}
+  fetch(`${VISITS_API}/${seen?'get':'hit'}/${VISITS_KEY}`,{credentials:'omit',referrerPolicy:'no-referrer'})
+    .then(r=>r.ok?r.json():null).then(j=>{
+      if(!j||!Number.isFinite(j.value))return;
+      try{sessionStorage.setItem('koelet-visit','1')}catch(e){}
+      visits=VISITS_BASE+j.value;showVisits();
+    }).catch(()=>{});
+}
+function showVisits(){
+  const el=document.getElementById('visits');
+  if(!el||visits==null)return;
+  el.textContent=t('visits.count',{n:visits.toLocaleString(langLocale())});el.hidden=false;
+}
+/* ---------- Провести урок онлайн: предложение автора проекта ---------- */
+const LESSON_EMAIL='office@mychitas.app';
+function showLesson(){
+  const mail=`<a href="mailto:${LESSON_EMAIL}">${LESSON_EMAIL}</a>`;
+  const sec=(h,txt,v)=>`<section class="about-sec"><h3>${t(h)}</h3><p>${t(txt,v)}</p></section>`;
+  infoModal('lesson',`<div class="about-head"><div class="about-m">${mentorSvg('warm')}</div><div><span class="kicker">${t('lesson.title')}</span>
+    <h2 class="h2" id="lesson-h">${t('lesson.h')}</h2></div></div>
+    <p>${t('lesson.text')}</p>
+    ${sec('lesson.formatH','lesson.format')}${sec('lesson.whoH','lesson.who')}${sec('lesson.contactH','lesson.contact',{mail})}`);
+}
+/* окно поверх игры (О приложении, урок онлайн): ✕ внизу, Escape, нажатие мимо */
+function infoModal(cls,html){
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="sheet about ${cls}" role="dialog" aria-modal="true" aria-labelledby="${cls}-h">${html}
     <button class="btn ghost" id="closeA">${t('btn.close')}</button></div>`;
   const back=document.activeElement;const close=()=>{m.remove();if(back&&back.isConnected)back.focus()};
   document.body.appendChild(m);
@@ -313,7 +350,9 @@ function renderTitle(){
     <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
+    <p class="copy" id="visits" hidden></p>
   </section>`;
+  showVisits();
   $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
@@ -344,12 +383,14 @@ function quickMenu(){
     m.innerHTML=`<div class="qhead"><span class="kicker">${t('settings.title')}</span><button class="iconbtn qx" id="qclose" aria-label="${esc(t('btn.close'))}">✕</button></div>
       ${langPicker('title')}
       ${audioPanelHTML(true)}
-      <button class="qlink" id="qabout">${icon('info')}<span>${t('about.title')}</span></button>`;
+      <button class="qlink" id="qabout">${icon('info')}<span>${t('about.title')}</span></button>
+      <button class="qlink" id="qlesson">${icon('chat')}<span>${t('lesson.title')}</span></button>`;
     wireLangPicker(m,()=>{close(false);renderTitle();quickMenu()});
     m.querySelectorAll('[data-audio]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.audio;setTimeout(()=>{const f=m.querySelector(`[data-audio="${k}"]`);if(f)f.focus()})}));
     wireAudioPanel(m,()=>{draw();refreshQuickBtn()});
     m.querySelector('#qclose').onclick=()=>close(true);
     m.querySelector('#qabout').onclick=()=>{close(false);showAbout()};
+    m.querySelector('#qlesson').onclick=()=>{close(false);showLesson()};
   };
   const outside=e=>{if(!m.contains(e.target)&&!e.target.closest('#setbtn'))close(false)};
   const close=focus=>{m.remove();document.removeEventListener('pointerdown',outside,true);const b=$('#setbtn');if(b){b.setAttribute('aria-expanded','false');if(focus)b.focus()}};
@@ -1160,9 +1201,12 @@ function start(data){
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});
+  countVisit();
 }
 window.claude?.hot?.snapshot?.(()=>({state:S}));
-window.GAME_DATA_READY.then(()=>{
+/* тексты могут прийти раньше, чем выполнены shabbat.js и pasuk.js — ждём и их */
+const DOM_READY=document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r,{once:true})):Promise.resolve();
+Promise.all([window.GAME_DATA_READY,DOM_READY]).then(()=>{
   window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 }).catch(()=>{
   const [h,p]=LOAD_ERROR[LANG]||LOAD_ERROR[DEFAULT_LANG];stage.innerHTML=`<section class="scene"><h1 class="h2">${h}</h1><p>${p}</p></section>`;

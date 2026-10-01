@@ -22,7 +22,10 @@ const LOAD_ERROR = {
   en:['Could not load the game texts','Check your connection and reload the page.']
 };
 
+/* ?lang=en в адресе — у каждого языка своя страница для поисковиков (hreflang в index.html) */
+function urlLang(){try{const l=new URLSearchParams(location.search).get('lang');return LANGS[l]?l:null}catch(e){return null}}
 function detectLang(){
+  const u=urlLang();if(u)return u;
   try{const saved=localStorage.getItem(LANG_KEY);if(saved&&LANGS[saved])return saved}catch(e){}
   const prefs=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||'']);
   for(const p of prefs){const code=String(p).slice(0,2).toLowerCase();if(LANGS[code])return code}
@@ -63,11 +66,23 @@ async function loadLang(lang){
   LANG=lang;
   document.documentElement.lang=lang;
   document.title=t('doc.title');
+  setMeta(lang);
+}
+/* описание, canonical и og-теги под язык: Google видит страницу каждого языка на её языке */
+function setMeta(lang){
+  const url=location.origin+location.pathname+(lang===DEFAULT_LANG?'':'?lang='+lang);
+  const set=(sel,attr,v)=>{const el=document.querySelector(sel);if(el)el.setAttribute(attr,v)};
+  set('meta[name="description"]','content',t('doc.desc'));
+  set('meta[property="og:description"]','content',t('doc.desc'));
+  set('meta[property="og:title"]','content',t('doc.title'));
+  set('meta[property="og:locale"]','content',langLocale().replace('-','_'));
+  if(/^https:/.test(location.origin))set('link[rel="canonical"]','href',url);
 }
 /* Переключение языка: сохраняем выбор и перезагружаем тексты. */
 async function setLang(lang){
   if(!LANGS[lang]||lang===LANG)return false;
   try{localStorage.setItem(LANG_KEY,lang)}catch(e){}
+  if(urlLang())try{const u=new URL(location.href);u.searchParams.set('lang',lang);history.replaceState(history.state,'',u)}catch(e){}
   await loadLang(lang);
   return true;
 }
