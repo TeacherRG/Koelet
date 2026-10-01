@@ -13,7 +13,7 @@ Project rules for contributors and Claude Code are in `CLAUDE.md`.
 
 ## Languages
 
-Available: Russian (`ru`, default), Ukrainian (`uk`) and German (`de`). The game picks the saved language, otherwise the browser language, otherwise Russian. Players can switch on the title screen and in the menu.
+Available: Russian (`ru`, default), Ukrainian (`uk`), German (`de`) and English (`en`). The game picks the saved language, otherwise the browser language, otherwise Russian. Players can switch on the title screen and in the menu.
 
 `i18n.js` is the language module. It provides `t('key', {vars})` for interface strings and `tl('key')` for lists, and it loads all texts for the chosen language.
 

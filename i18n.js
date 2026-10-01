@@ -63,6 +63,7 @@ async function loadLang(lang){
   LANG=lang;
   document.documentElement.lang=lang;
   document.title=t('doc.title');
+  const desc=document.querySelector('meta[name="description"]');if(desc)desc.content=t('doc.description');
 }
 /* Переключение языка: сохраняем выбор и перезагружаем тексты. */
 async function setLang(lang){
