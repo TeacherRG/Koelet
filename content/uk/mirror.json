@@ -184,6 +184,10 @@
       "game": "selfmirror"
     },
     {
+      "type": "mini",
+      "game": "pasuk"
+    },
+    {
       "type": "choice",
       "who": "mentor",
       "text": "Що ти {помітив|помітила} в Залі дзеркал?",

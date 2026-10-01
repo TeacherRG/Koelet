@@ -507,7 +507,7 @@ function rReveal(st){
 }
 
 /* ---------- mini-games ---------- */
-function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,maslow:gMaslow,timeline:gTimeline,selfmirror:gSelfMirror,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
+function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,maslow:gMaslow,timeline:gTimeline,selfmirror:gSelfMirror,pasuk:gPasuk,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
 
 function gBook(){
   const cols=['#6e2433','#2c5564','#5a4a78','#3f6b4a','#8a6a3f','#1d2b44','#7a5a2a'];
@@ -916,7 +916,9 @@ function wrapLines(ctx,text,maxW){const words=text.split(' ');const lines=[];let
   for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t}if(cur)lines.push(cur);return lines}
 async function drawCertificate(sc){
   sc=sc||1;const W=1600,H=1130,c=document.createElement('canvas');c.width=W*sc;c.height=H*sc;const x=c.getContext('2d');x.scale(sc,sc);
-  try{await Promise.all(['800 60px Unbounded','700 40px Unbounded','400 30px Onest','500 30px Onest','700 60px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
+  try{await Promise.all(['800 60px Unbounded','700 40px Unbounded','400 30px Onest','500 30px Onest','700 60px "Frank Ruhl Libre"','400 34px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
+  /* имя на иврите и личный стих (раздел «Твой стих в Танахе»): стих встаёт вместо строки с уровнем */
+  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null;
   const D='Unbounded, "Trebuchet MS", sans-serif',B='Onest, "Segoe UI", sans-serif',HB='"Frank Ruhl Libre", serif';
   x.fillStyle='#fbfdfb';x.fillRect(0,0,W,H);
   // corner puzzle motifs
@@ -926,16 +928,24 @@ async function drawCertificate(sc){
   x.textAlign='center';x.fillStyle='#8a5d00';x.font=`500 26px ${B}`;x.fillText(t('cert.top').toUpperCase().split('').join(' '),W/2,170);
   x.fillStyle='#17282e';x.font=`800 92px ${D}`;x.fillText(t('cert.title'),W/2,280);
   x.fillStyle='#566d67';x.font=`400 32px ${B}`;x.fillText(t('cert.given'),W/2,350);
-  x.fillStyle='#2f7d4a';let fs=86;x.font=`700 ${fs}px ${D}`;const nm=heroName();while(x.measureText(nm).width>1100&&fs>40){fs-=4;x.font=`700 ${fs}px ${D}`}x.fillText(nm,W/2,450);
+  x.fillStyle='#2f7d4a';let fs=86;x.font=`700 ${fs}px ${D}`;const nm=heroName();while(x.measureText(nm).width>1100&&fs>40){fs-=4;x.font=`700 ${fs}px ${D}`}x.fillText(nm,W/2,heb?436:450);
+  if(heb){x.save();x.direction='rtl';x.fillStyle='#8a5d00';x.font=`700 42px ${HB}`;x.fillText(heb,W/2,496);x.restore()}
   x.fillStyle='#17282e';x.font=`400 34px ${B}`;
-  wrapLines(x,t('cert.for'),1150).forEach((l,i)=>x.fillText(l,W/2,530+i*46));
+  wrapLines(x,t('cert.for'),1150).forEach((l,i)=>x.fillText(l,W/2,(heb?558:530)+i*46));
   const st=strengthsList();
   if(st.length){x.fillStyle='#566d67';x.font=`500 28px ${B}`;x.fillText(t('cert.gifts'),W/2,660);
     x.fillStyle='#17282e';x.font=`500 32px ${B}`;wrapLines(x,st.join(' · '),1200).slice(0,2).forEach((l,i)=>x.fillText(l,W/2,706+i*44))}
-  x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(t('cert.stats',{lvl:lvl(),lname:T(LEVELS[lvl()-1]),sparks:S.sparks,ach:Object.keys(S.ach).length}),W/2,820);
+  if(pv){
+    x.fillStyle='#566d67';x.font=`500 22px ${B}`;x.fillText(t('cert.verse').toUpperCase(),W/2,778);
+    x.save();x.direction='rtl';x.fillStyle='#17282e';let vf=34;x.font=`400 ${vf}px ${HB}`;
+    while(x.measureText(pv[3]).width>1240&&vf>24){vf-=2;x.font=`400 ${vf}px ${HB}`}
+    const vl=wrapLines(x,pv[3],1240).slice(0,2);vl.forEach((l,i)=>x.fillText(l,W/2,818+i*(vf+6)-(vl.length-1)*(vf+6)/2));x.restore();
+    x.fillStyle='#566d67';x.font=`400 20px ${B}`;x.fillText(`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`,W/2,818+(vl.length>1?(vf+6)/2:0)+30);
+  }else{x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(t('cert.stats',{lvl:lvl(),lname:T(LEVELS[lvl()-1]),sparks:S.sparks,ach:Object.keys(S.ach).length}),W/2,820)}
   // seal
   const photo=S.photo&&!S.photoOff?await new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=S.photo}):null;
-  x.save();x.translate(W/2,photo?918:922);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=photo?(i%2?82:90):(i%2?74:84),a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
+  const k=pv?.8:1;
+  x.save();x.translate(W/2,pv?940:photo?918:922);x.scale(k,k);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=photo?(i%2?82:90):(i%2?74:84),a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
   if(photo){x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,76,0,Math.PI*2);x.fill();x.save();x.beginPath();x.arc(0,0,71,0,Math.PI*2);x.clip();x.drawImage(photo,-71,-71,142,142);x.restore()}
   else{x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,62,0,Math.PI*2);x.fill();x.fillStyle='#c8445b';x.font=`700 50px ${HB}`;x.fillText('חֵלֶק',0,16)}
   x.restore();
@@ -979,6 +989,7 @@ function finalCert(){
   return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted" style="font-size:0.875rem">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">${t('cert.nameLabel')}</label><input id="certname" maxlength="24" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(S.hero.name)}"></div>
       ${S.photo?`<div class="cert-photo"><img src="${S.photo}" alt=""><label class="cert-pt"><input type="checkbox" id="photoon" ${S.photoOff?'':'checked'}> <span>${t('cert.photoOn')}</span></label><button class="btn ghost small" id="photodel">${t('cert.photoDel')}</button></div>`:`<p class="muted" style="font-size:0.875rem">${icon('mirror')} ${t('cert.photoHint')}</p>`}
+      ${(S.hebName||'').trim()?'':`<p class="muted" style="font-size:0.875rem">${icon('scroll')} ${t('cert.verseHint')} <button class="linkbtn" id="certverse">${t('pasuk.open')}</button></p>`}
       <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
       <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a></div>
       <p class="muted" style="font-size:0.875rem" id="printnote">${t('cert.note')}</p></article>`;
@@ -988,6 +999,7 @@ function wireCert(){
     $('#cert').innerHTML=`<img src="${url}" alt="${t('cert.alt',{name:esc(heroName())})}">`;$('#dl').href=url};
   paint();
   const pon=$('#photoon');if(pon)pon.onchange=()=>{S.photoOff=!pon.checked;save();paint()};
+  const cv=$('#certverse');if(cv)cv.onclick=()=>{sfx.tap();openPasuk()};
   const pdel=$('#photodel');if(pdel)pdel.onclick=()=>{delete S.photo;delete S.photoOff;save();sfx.tap();renderFinal()};
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
   $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};

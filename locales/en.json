@@ -181,6 +181,7 @@
   "puzzle.fail": "The puzzle didn't load. Never mind, let's go on.",
 
   "mirror.say": {"__ag": 1, "y": "All those mirrors showed other people. But this mirror is yours. Would you like to look into it? You need a camera for that.", "t": "All the mirrors in this hall showed someone else. But this mirror is yours: it shows only you. Would you like to look? You need a camera for that."},
+  "mirror.verse": {"__ag": 1, "y": "In the mirror you saw yourself. And your Jewish name has its own verse in Tanach: it begins with the first letter of the name and ends with the last. Shall we find it?", "t": "In the mirror you saw yourself, not someone else. Your Jewish name also has something that is only yours: its own verse in Tanach. It begins with the first letter of the name and ends with the last. No one can say it for you. Let’s find it."},
   "mirror.privacy": {"__ag": 1, "y": "The camera image is not sent anywhere. A photo for the certificate is saved only if you press the button yourself, and only on this device. If you like, ask an adult for permission.", "t": "The camera image is not sent anywhere. A photo for the certificate is saved only if you press the button yourself, and only on this device. The camera will turn off as soon as you move on."},
   "mirror.on": "Turn on the mirror",
   "mirror.skip": "Without the camera",
@@ -290,6 +291,8 @@
   "cert.noPrint": "Printing is not available here. Download the picture and print it on an A4 sheet (landscape orientation).",
   "cert.alt": "Certificate of completing the adventure “The Secret of Kohelet” for {{name}}",
   "cert.photoHint": "Would you like a photo on the certificate? Take a picture in the magic mirror.",
+  "cert.verse": "My verse in Tanach",
+  "cert.verseHint": "Write your name in Hebrew, and your verse from Tanach will appear on the certificate.",
   "cert.photoDel": "Delete the photo",
   "cert.photoOn": "Photo from the mirror on the certificate",
 
@@ -351,6 +354,7 @@
   "voice.mini.find": "Find all eight words “chelek” on the board.",
   "voice.mini.puzzle": "Drag the pieces and put the picture together. Pieces that fit will lock together by themselves.",
   "voice.mini.selfmirror": "You can turn on the mirror with the camera or go on without the camera. If you like, take a photo for the certificate.",
+  "voice.mini.pasuk": "Check how your name is written in Hebrew and look at your verse. Then tap “Next”.",
   "voice.mini.species": "Tap each of the four plants and put the bundle together.",
   "voice.mini.sky": "Tap “Night is falling” and see what happens.",
   "voice.mini.hands": "Tap “See” and find out what Yaakov did.",
@@ -410,6 +414,7 @@
   "pasuk.what": "Your verse begins with “{{a}}” and ends with “{{b}}”:",
   "pasuk.none": "There is no verse in Tanach with this first and last letter. Check how the name is spelled, or say a verse with the name itself in it.",
   "pasuk.withName": "A verse with your name",
+  "pasuk.cert": "Your verse will appear on the certificate at the end of the journey.",
   "pasuk.more": "Other verses with these letters ({{n}})",
   "pasuk.src": "The verses come from the traditional list “פסוק המתחיל ומסתיים באות” of the Torat Emet library (toratemetfreeware.com). Your verse comes first, from the Torah where possible; below you can open the other verses with these letters. The Names of the Almighty are written as in books for learning.",
   "pasuk.books": ["Bereishit", "Shemot", "Vayikra", "Bamidbar", "Devarim", "Yehoshua", "Shoftim", "Shmuel I", "Shmuel II", "Melachim I", "Melachim II", "Yeshayahu", "Yirmeyahu", "Yechezkel", "Hoshea", "Yoel", "Amos", "Ovadyah", "Yonah", "Michah", "Nachum", "Chavakuk", "Tzefanyah", "Chaggai", "Zechariah", "Malachi", "Tehillim", "Mishlei", "Iyov", "Shir HaShirim", "Rut", "Eichah", "Kohelet", "Esther", "Daniel", "Ezra", "Nechemyah", "Divrei HaYamim I", "Divrei HaYamim II"],

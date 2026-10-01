@@ -181,6 +181,7 @@
   "puzzle.fail": "Das Puzzle konnte nicht geladen werden. Macht nichts – wir gehen weiter.",
 
   "mirror.say": {"__ag": 1, "y": "All diese Spiegel haben andere gezeigt. Aber dieser Spiegel gehört dir. Möchtest du hineinschauen? Dafür braucht es die Kamera.", "t": "Alle Spiegel in diesem Saal haben jemand anderen gezeigt. Aber dieser Spiegel gehört dir: Er zeigt nur dich. Möchtest du hineinschauen? Dafür braucht es die Kamera."},
+  "mirror.verse": {"__ag": 1, "y": "Im Spiegel hast du dich selbst gesehen. Und dein jüdischer Name hat seinen eigenen Vers im Tanach: Er beginnt mit dem ersten Buchstaben des Namens und endet mit dem letzten. Wollen wir ihn finden?", "t": "Im Spiegel hast du dich selbst gesehen, nicht jemand anderen. Auch dein jüdischer Name hat etwas, das nur dir gehört – deinen eigenen Vers im Tanach: Er beginnt mit dem ersten Buchstaben des Namens und endet mit dem letzten. Niemand kann ihn für dich sagen. Lass ihn uns finden."},
   "mirror.privacy": {"__ag": 1, "y": "Das Kamerabild wird nirgendwohin geschickt. Ein Foto für die Urkunde wird nur gespeichert, wenn du selbst auf den Knopf drückst, und nur auf diesem Gerät. Wenn du magst, frag vorher einen Erwachsenen.", "t": "Das Kamerabild wird nirgendwohin geschickt. Ein Foto für die Urkunde wird nur gespeichert, wenn du selbst auf den Knopf drückst, und nur auf diesem Gerät. Die Kamera geht aus, sobald du weitergehst."},
   "mirror.on": "Spiegel einschalten",
   "mirror.skip": "Ohne Kamera",
@@ -290,6 +291,8 @@
   "cert.noPrint": "Drucken ist hier nicht möglich. Lade das Bild herunter und drucke es auf A4 (Querformat).",
   "cert.alt": "Urkunde für das Abenteuer „Das Geheimnis von Kohelet“ für {{name}}",
   "cert.photoHint": "Möchtest du ein Foto auf der Urkunde? Mach eins im Zauberspiegel.",
+  "cert.verse": "Mein Vers im Tanach",
+  "cert.verseHint": "Schreib deinen Namen auf Hebräisch – dann erscheint dein Vers aus dem Tanach auf der Urkunde.",
   "cert.photoDel": "Foto löschen",
   "cert.photoOn": "Foto aus dem Spiegel auf der Urkunde",
 
@@ -351,6 +354,7 @@
   "voice.mini.find": "Finde auf dem Feld alle acht Wörter „Chelek“.",
   "voice.mini.puzzle": "Zieh die Teile und setz das Bild zusammen. Passende Teile rasten von selbst ein.",
   "voice.mini.selfmirror": "Du kannst den Spiegel mit der Kamera einschalten oder ohne Kamera weitergehen. Wenn du magst, mach ein Foto für die Urkunde.",
+  "voice.mini.pasuk": "Prüf, wie dein Name auf Hebräisch geschrieben wird, und sieh dir deinen Vers an. Dann tippe auf „Weiter“.",
   "voice.mini.species": "Tippe auf jede der vier Pflanzen und binde einen Strauß.",
   "voice.mini.sky": "Tippe auf „Es wird Nacht“ und schau, was passiert.",
   "voice.mini.hands": "Tippe auf „Ansehen“ und erfahre, was Jaakow getan hat.",
@@ -410,6 +414,7 @@
   "pasuk.what": "Dein Vers beginnt mit „{{a}}“ und endet mit „{{b}}“:",
   "pasuk.none": "Im Tanach gibt es keinen Vers mit diesem ersten und letzten Buchstaben. Prüf die Schreibweise des Namens oder sag einen Vers, in dem der Name selbst vorkommt.",
   "pasuk.withName": "Ein Vers mit deinem Namen",
+  "pasuk.cert": "Dein Vers erscheint am Ende des Weges auf der Urkunde.",
   "pasuk.more": "Weitere Verse mit diesen Buchstaben ({{n}})",
   "pasuk.src": "Die Verse stammen aus der traditionellen Liste „פסוק המתחיל ומסתיים באות“ der Bibliothek Torat Emet (toratemetfreeware.com). Zuerst steht dein Vers, wenn möglich aus der Tora; darunter kannst du die anderen Verse mit diesen Buchstaben öffnen. Die Namen von G-tt sind so geschrieben, wie es in Lernbüchern üblich ist.",
   "pasuk.books": ["Bereschit", "Schemot", "Wajikra", "Bamidbar", "Dewarim", "Jehoschua", "Schoftim", "Schmuel I", "Schmuel II", "Melachim I", "Melachim II", "Jeschajahu", "Jirmejahu", "Jecheskel", "Hoschea", "Joel", "Amos", "Owadja", "Jona", "Micha", "Nachum", "Chawakuk", "Zefanja", "Chaggai", "Secharja", "Maleachi", "Tehillim", "Mischle", "Ijow", "Schir haSchirim", "Rut", "Echa", "Kohelet", "Ester", "Daniel", "Esra", "Nechemja", "Diwre haJamim I", "Diwre haJamim II"],
