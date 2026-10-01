@@ -515,7 +515,7 @@
   "adm.login": "Anmelden",
   "adm.checking": "Schlüssel wird geprüft …",
   "adm.bad": "GitHub hat den Schlüssel nicht angenommen. Prüfe, ob er vollständig kopiert und noch gültig ist.",
-  "adm.noRights": "Dieser Schlüssel darf nicht in das Repository TeacherRG/Koelet schreiben.",
+  "adm.noRights": "Dieser Schlüssel darf nicht schreiben. Öffne ihn auf GitHub (Settings → Developer settings → Fine-grained tokens) und prüfe: Repository access – TeacherRG/Koelet, Permissions → Contents – Read and write. Speichern und erneut versuchen.",
   "adm.net": "GitHub ist nicht erreichbar. Prüfe die Internetverbindung.",
   "adm.in": "Angemeldet",
   "adm.out": "Schlüssel aus dem Browser gelöscht",

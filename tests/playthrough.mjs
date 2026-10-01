@@ -73,6 +73,8 @@ async function run(browser, base, sc) {
     gh.push({m, path: u.pathname, body: req.postData()});
     if (u.pathname === '/repos/TeacherRG/Koelet') return r.fulfill({json: {permissions: {push: true}}});
     if (u.pathname === '/user') return r.fulfill({json: {login: 'tester'}});
+    // a read-only key: the public repository can be read, but writing is refused
+    if (req.headers().authorization === 'Bearer github_pat_readonly' && m !== 'GET') return r.fulfill({status: 403, json: {}});
     if (m === 'GET') return r.fulfill({status: 404, json: {}});
     return r.fulfill({status: 201, json: {}});
   });
@@ -333,6 +335,10 @@ async function run(browser, base, sc) {
   if (sc.age === 't' && await page.evaluate(() => S.screen) === 'title') {
     adminOn = true;
     await page.click('#admbtn');
+    await page.fill('#admtok', 'github_pat_readonly');
+    await page.click('#admgo');
+    await page.waitForFunction(t => (document.querySelector('#admmsg') || {}).textContent === t, await page.evaluate(() => t('adm.noRights')), {timeout: 5000}).catch(() => add('admin: a read-only key was let in (or no hint about Contents: Read and write)'));
+    if (await page.evaluate(() => isAdmin())) add('admin: a read-only key was let in');
     await page.fill('#admtok', 'github_pat_test');
     await page.click('#admgo');
     await page.waitForFunction(() => S.screen === 'admin', null, {timeout: 5000}).catch(() => add('admin: sign-in did not open the upload screen'));

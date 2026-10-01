@@ -15,6 +15,12 @@ async function gh(path,opt={}){
   if(!r.ok){const e=new Error('GitHub '+r.status);e.status=r.status;throw e}
   return r.status===204?null:r.json();
 }
+/* ошибка GitHub — понятным текстом: 401 — ключ не принят (выходим), 403/404 — нет права записи */
+function admErr(e){
+  if(e.status===401){ADM=null;admSave();return t('adm.bad')}
+  if(e.status===403||e.status===404)return t('adm.noRights');
+  return t('adm.fail',{err:e.status?'GitHub '+e.status:e.message});
+}
 /* base64 для GitHub: файл и текст в UTF-8 */
 const admB64=blob=>new Promise((ok,no)=>{const fr=new FileReader();fr.onload=()=>ok(String(fr.result).split(',')[1]);fr.onerror=no;fr.readAsDataURL(blob)});
 function admUtf8B64(s){const b=new TextEncoder().encode(s);let out='';for(let i=0;i<b.length;i+=0x8000)out+=String.fromCharCode(...b.subarray(i,i+0x8000));return btoa(out)}
@@ -40,6 +46,9 @@ function showAdminLogin(){
       try{
         const r=await gh('/repos/'+ADM_REPO);
         if(r&&r.permissions&&!r.permissions.push){const e=new Error();e.status=403;throw e}
+        /* репозиторий публичный — прочитать его может любой ключ. Право записи проверяем делом: пустой blob
+           (Contents: write) ни в один коммит не попадает и в истории не виден */
+        await gh(`/repos/${ADM_REPO}/git/blobs`,{method:'POST',body:JSON.stringify({content:'',encoding:'utf-8'})});
         let login='';try{login=(await gh('/user')).login||''}catch(e){}
         ADM={token:tok,login};admSave();close();sfx.good();toast('key',t('adm.in'),login?'@'+login:'');openAdmin();
       }catch(e){ADM=null;msg.textContent=t(e.status===401?'adm.bad':e.status===403||e.status===404?'adm.noRights':'adm.net');btn.disabled=false}
@@ -131,7 +140,7 @@ async function admUpload(key,file,p){
     await admEditMap(m=>{(m[key]=m[key]||[]).push(name)},`Картина к стиху ${ref}: в списке галереи`);
     sfx.good();st.textContent=t('adm.done');
     admShow(key,p,{[name]:URL.createObjectURL(blob)});   // на сайте файл появится позже — показываем свой
-  }catch(e){st.textContent=t('adm.fail',{err:e.status?'GitHub '+e.status:e.message})}
+  }catch(e){st.textContent=admErr(e)}
   finally{lab.classList.remove('busy')}
 }
 async function admRemove(key,name,p){
@@ -144,5 +153,5 @@ async function admRemove(key,name,p){
       await gh(`/repos/${ADM_REPO}/contents/gallery/${name}`,{method:'DELETE',body:JSON.stringify({message:`Картина к стиху ${ref}: файл удалён`,sha:f.sha,branch:ADM_BRANCH})})}
     catch(e){if(e.status!==404)throw e}
     st.textContent=t('adm.deleted');admShow(key,p);
-  }catch(e){st.textContent=t('adm.fail',{err:e.status?'GitHub '+e.status:e.message})}
+  }catch(e){st.textContent=admErr(e)}
 }

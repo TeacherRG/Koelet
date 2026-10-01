@@ -515,7 +515,7 @@
   "adm.login": "Войти",
   "adm.checking": "Проверяю ключ…",
   "adm.bad": "GitHub не принял ключ. Проверь, что он скопирован полностью и не просрочен.",
-  "adm.noRights": "У этого ключа нет права записи в репозиторий TeacherRG/Koelet.",
+  "adm.noRights": "У этого ключа нет права записи. На GitHub открой ключ (Settings → Developer settings → Fine-grained tokens), проверь: Repository access — TeacherRG/Koelet, Permissions → Contents — Read and write. Сохрани и попробуй снова.",
   "adm.net": "Не получилось связаться с GitHub. Проверь интернет.",
   "adm.in": "Вход выполнен",
   "adm.out": "Ключ удалён из браузера",

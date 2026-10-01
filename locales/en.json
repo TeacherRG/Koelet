@@ -515,7 +515,7 @@
   "adm.login": "Sign in",
   "adm.checking": "Checking the key…",
   "adm.bad": "GitHub did not accept the key. Check that it was copied in full and has not expired.",
-  "adm.noRights": "This key cannot write to the TeacherRG/Koelet repository.",
+  "adm.noRights": "This key cannot write. Open it on GitHub (Settings → Developer settings → Fine-grained tokens) and check: Repository access is TeacherRG/Koelet, Permissions → Contents is Read and write. Save it and try again.",
   "adm.net": "Could not reach GitHub. Check your internet connection.",
   "adm.in": "Signed in",
   "adm.out": "The key was erased from the browser",
