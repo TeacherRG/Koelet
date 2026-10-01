@@ -188,6 +188,7 @@ function showMenu(){
     ${langPicker()}
     <div class="menu-foot">
       <button class="qlink" data-m="about">${icon('info')}<span>${t('about.title')}</span></button>
+      <button class="qlink" data-m="lesson">${icon('chat')}<span>${t('lesson.title')}</span></button>
       <a class="qlink donate-link" href="${DONATE_URL}" target="_blank" rel="noopener">${icon('heart')}<span>${t('donate.label')}</span></a>
     </div>`,
   (m,draw,close)=>{
@@ -195,7 +196,7 @@ function showMenu(){
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk()});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
@@ -227,14 +228,27 @@ function donateBtn(){
   a.hidden=S.screen==='title'||!!(st&&st.type==='mini');
 }
 function showAbout(){
-  const m=document.createElement('div');m.className='modal';
   const link=`<a href="${PROJECT_URL}" target="_blank" rel="noopener">mychitas.app</a>`;
   const sec=(h,txt)=>`<section class="about-sec"><h3>${t(h)}</h3><p>${t(txt)}</p></section>`;
-  m.innerHTML=`<div class="sheet about" role="dialog" aria-modal="true" aria-labelledby="about-h">
-    <div class="about-head"><div class="about-m">${mentorSvg('smile')}</div><div><span class="kicker">${t('about.title')}</span>
+  infoModal('about',`<div class="about-head"><div class="about-m">${mentorSvg('smile')}</div><div><span class="kicker">${t('about.title')}</span>
     <h2 class="h2" id="about-h">${t('title.h1a')} ${t('title.h1b')}</h2><p class="about-made">${t('about.made',{link})}</p></div></div>
     <p>${t('about.text')}</p>
-    ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}
+    ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}`);
+}
+/* ---------- Провести урок онлайн: предложение автора проекта ---------- */
+const LESSON_EMAIL='office@mychitas.app';
+function showLesson(){
+  const mail=`<a href="mailto:${LESSON_EMAIL}">${LESSON_EMAIL}</a>`;
+  const sec=(h,txt,v)=>`<section class="about-sec"><h3>${t(h)}</h3><p>${t(txt,v)}</p></section>`;
+  infoModal('lesson',`<div class="about-head"><div class="about-m">${mentorSvg('warm')}</div><div><span class="kicker">${t('lesson.title')}</span>
+    <h2 class="h2" id="lesson-h">${t('lesson.h')}</h2></div></div>
+    <p>${t('lesson.text')}</p>
+    ${sec('lesson.formatH','lesson.format')}${sec('lesson.whoH','lesson.who')}${sec('lesson.contactH','lesson.contact',{mail})}`);
+}
+/* окно поверх игры (О приложении, урок онлайн): ✕ внизу, Escape, нажатие мимо */
+function infoModal(cls,html){
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="sheet about ${cls}" role="dialog" aria-modal="true" aria-labelledby="${cls}-h">${html}
     <button class="btn ghost" id="closeA">${t('btn.close')}</button></div>`;
   const back=document.activeElement;const close=()=>{m.remove();if(back&&back.isConnected)back.focus()};
   document.body.appendChild(m);
@@ -302,12 +316,14 @@ function quickMenu(){
     m.innerHTML=`<div class="qhead"><span class="kicker">${t('settings.title')}</span><button class="iconbtn qx" id="qclose" aria-label="${esc(t('btn.close'))}">✕</button></div>
       ${langPicker('title')}
       ${audioPanelHTML(true)}
-      <button class="qlink" id="qabout">${icon('info')}<span>${t('about.title')}</span></button>`;
+      <button class="qlink" id="qabout">${icon('info')}<span>${t('about.title')}</span></button>
+      <button class="qlink" id="qlesson">${icon('chat')}<span>${t('lesson.title')}</span></button>`;
     wireLangPicker(m,()=>{close(false);renderTitle();quickMenu()});
     m.querySelectorAll('[data-audio]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.audio;setTimeout(()=>{const f=m.querySelector(`[data-audio="${k}"]`);if(f)f.focus()})}));
     wireAudioPanel(m,()=>{draw();refreshQuickBtn()});
     m.querySelector('#qclose').onclick=()=>close(true);
     m.querySelector('#qabout').onclick=()=>{close(false);showAbout()};
+    m.querySelector('#qlesson').onclick=()=>{close(false);showLesson()};
   };
   const outside=e=>{if(!m.contains(e.target)&&!e.target.closest('#setbtn'))close(false)};
   const close=focus=>{m.remove();document.removeEventListener('pointerdown',outside,true);const b=$('#setbtn');if(b){b.setAttribute('aria-expanded','false');if(focus)b.focus()}};
