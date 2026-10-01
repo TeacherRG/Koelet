@@ -98,7 +98,7 @@ function letterChip(c){const L=tl('pasuk.letters');return `<span class="pasuk-l"
 
 function openPasuk(){if(S.screen!=='pasuk')S.pasukFrom=S.screen;go('pasuk')}
 /* имя на иврите: поле и экранная клавиатура (раздел и шаг в «Зеркале») */
-function hebNameHTML(){
+function hebNameHTML(noRes){
   if(S.hebName==null)S.hebName=hebGuess(S.hero.name);
   const kb=[...'אבגדהוזחטיכךלמםנןסעפףצץקרשת'];
   return `<div class="group"><h3><label for="hebname">${t('pasuk.nameH')}</label></h3>
@@ -107,7 +107,7 @@ function hebNameHTML(){
       <div class="pasuk-kb" role="group" aria-label="${esc(t('pasuk.kb'))}" dir="rtl">${kb.map(c=>`<button class="heb" lang="he" data-k="${c}">${c}</button>`).join('')}
         <button data-k=" " class="wide" aria-label="${esc(t('pasuk.space'))}">␣</button><button data-k="del" class="wide" aria-label="${esc(t('pasuk.del'))}">⌫</button></div>
     </div>
-    <div id="pares" aria-live="polite"></div>`;
+    ${noRes?'':'<div id="pares" aria-live="polite"></div>'}`;
 }
 function wireHebName(){
   const inp=$('#hebname');

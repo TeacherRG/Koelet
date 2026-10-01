@@ -92,7 +92,7 @@ function themeKey(){
   if(s==='world'||s==='done')return WORLD_THEME[S.w]||'base';
   if(s==='map')return 'map';
   if(s==='final')return 'sukkah';
-  if(s==='shabbat'||s==='pasuk'||s==='hayom'||s==='gallery'||s==='admin')return 'library';
+  if(s==='shabbat'||s==='pasuk'||s==='hayom'||s==='gallery'||s==='admin'||s==='lot')return 'library';
   return 'base';
 }
 function applyTheme(){
@@ -166,7 +166,7 @@ function toast(ic,title,sub){
 }
 function hud(){
   const h=$('#hud');
-  const show=!['title','create','welcome','shabbat','pasuk','hayom','gallery','admin'].includes(S.screen);
+  const show=!['title','create','welcome','shabbat','pasuk','hayom','gallery','admin','lot'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
   h.innerHTML=`<button class="hero-chip" id="herobtn" aria-haspopup="dialog" title="${t('hud.profile')}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b><span class="sr-only">${t('hud.profile')}</span></button>
@@ -212,20 +212,23 @@ function showMenu(){
     <nav class="menu-list" aria-label="${t('hud.menu')}">
       ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
-      <button class="mitem" data-m="shab">${icon('candles')}<span>${t('shab.open')}</span></button>
-      ${isAdmin()?`<button class="mitem" data-m="admin">${icon('key')}<span>${t('adm.menu')}</span></button>`:''}
-      <button class="mitem mgroup" data-m="mine" aria-expanded="${mine}" aria-controls="msub-mine">${icon('book')}<span>${t('menu.mine')}</span><i class="mchev ${mine?'open':''}" aria-hidden="true">${icon('up')}</i></button>
+      <button class="mitem mgroup" data-m="mine" aria-expanded="${mine}" aria-controls="msub-mine">${icon('scroll')}<span>${t('menu.mine')}</span>${lotSeals()}<i class="mchev ${mine?'open':''}" aria-hidden="true">${icon('up')}</i></button>
       <div class="msub" id="msub-mine" ${mine?'':'hidden'}>
+        <button class="mitem" data-m="lot">${icon('book')}<span>${t('menu.mineLot')}</span></button>
         <button class="mitem" data-m="pasuk">${icon('scroll')}<span>${t('menu.mineVerse')}</span></button>
         <button class="mitem" data-m="hayom">${icon('candles')}<span>${t('menu.mineHayom')}</span></button>
+        <button class="mitem" data-m="parsha">${icon('book')}<span>${t('menu.mineParsha')}</span></button>
         ${adult()?`<button class="mitem" data-m="gallery">${icon('palette')}<span>${t('menu.mineArt')}</span></button>`:''}
       </div>
+      <span class="menu-cap">${t('title.family')}</span>
+      <button class="mitem" data-m="shab">${icon('candles')}<span>${t('shab.open')}</span></button>
+      <button class="mitem" data-m="lesson">${icon('chat')}<span>${t('lesson.title')}</span></button>
+      ${isAdmin()?`<button class="mitem" data-m="admin">${icon('key')}<span>${t('adm.menu')}</span></button>`:''}
     </nav>
     ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow()})}
     ${langPicker('menu')}
     <div class="menu-foot">
       <button class="qlink" data-m="about">${icon('info')}<span>${t('about.title')}</span></button>
-      <button class="qlink" data-m="lesson">${icon('chat')}<span>${t('lesson.title')}</span></button>
       <a class="qlink donate-link" href="${DONATE_URL}" target="_blank" rel="noopener">${icon('heart')}<span>${t('donate.label')}</span></a>
     </div>`,
   (m,draw,close)=>{
@@ -235,7 +238,7 @@ function showMenu(){
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
       if(k==='mine'){mine=!mine;sfx.tap();draw();return}
       if(k==='langs'){langDdOpen=!langDdOpen;sfx.tap();draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom();if(k==='gallery')openGallery();if(k==='admin')openAdmin()});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom();if(k==='gallery')openGallery();if(k==='admin')openAdmin();if(k==='lot')openLot();if(k==='parsha')openLot()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
@@ -277,7 +280,9 @@ function showAbout(){
   infoModal('about',`<div class="about-head"><div class="about-m">${mentorSvg('smile')}</div><div><span class="kicker">${t('about.title')}</span>
     <h2 class="h2" id="about-h">${t('title.h1a')} ${t('title.h1b')}</h2><p class="about-made">${t('about.made',{link})}</p></div></div>
     <p>${t('about.text')}</p>
-    ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}`);
+    ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}
+    <p class="muted fs-sm"><button class="linkbtn" id="admabout">${icon('key')} ${t(isAdmin()?'adm.menu':'adm.open')}</button></p>`);
+  const ad=$('#admabout');if(ad)ad.onclick=()=>{const m=ad.closest('.modal');if(m)m.remove();adminEntry()};
 }
 /* ---------- Провести урок онлайн: предложение автора проекта ---------- */
 const LESSON_EMAIL='office@mychitas.app';
@@ -310,7 +315,7 @@ function go(screen,skipPrologue){
 function render(){
   stopReading();stopCamera();applyTheme();hud();donateBtn();
   Voice.cancel();
-  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk,hayom:renderHayom,gallery:renderGallery,admin:renderAdmin}[S.screen]||renderTitle)();
+  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk,hayom:renderHayom,gallery:renderGallery,admin:renderAdmin,lot:renderLot}[S.screen]||renderTitle)();
   backBar();armBack();
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
@@ -330,6 +335,7 @@ function backTarget(){
   if(s==='hayom')return S.hayomFrom&&S.hayomFrom!=='hayom'?S.hayomFrom:'title';
   if(s==='gallery')return S.galFrom&&S.galFrom!=='gallery'?S.galFrom:'title';
   if(s==='admin')return S.admFrom&&S.admFrom!=='admin'?S.admFrom:'title';
+  if(s==='lot')return S.lotStep&&(S.lotDone||{})[S.lotStep]?()=>{S.lotStep=null}:lotBack();
   return null;
 }
 function goBack(){
@@ -376,30 +382,45 @@ window.addEventListener('popstate',()=>{
 function renderTitle(){
   const cols=['#cfe3d6','#f3d9a0','#bcd6ea','#9fd0ae','#f2b8c2','#f2be3d','#d9cdea'];
   let wall='';for(let i=0;i<15;i++){wall+= i===7?`<div class="pw-hole">${pieceSvg('none')}</div>`:pieceSvg(cols[(i*3)%cols.length])}
+  const pieces=S.done.filter(Boolean).length,adm=isAdmin()||/[?&]admin\b/.test(location.search);
   stage.innerHTML=`<section class="title-screen scene">
     <div class="title-bar"><span class="kicker">${t('title.kicker')}</span>${quickBtnHTML()}</div>
     <h1 class="h1">${t('title.h1a')}<br><span>${t('title.h1b')}</span></h1>
-    <p class="lead">${t('title.lead')}</p>
-    <div class="puzzlewall" aria-hidden="true">${wall}</div>
-    <div class="actions" id="ta">
-      ${S.sparks>0?`<button class="btn" id="cont">${t('btn.continue')}</button><button class="btn ghost" id="newg">${t('btn.restart')}</button>`:`<button class="btn" id="start">${t('btn.start')}</button>`}
+    <p class="lead">${t('title.both')}</p>
+    <div class="doors">
+      <article class="door door-q" aria-labelledby="door-q-h">
+        <div class="puzzlewall" aria-hidden="true">${wall}</div>
+        <span class="kicker">${icon('puzzle')} ${t('door.qK')}</span>
+        <h2 class="h2" id="door-q-h">${t('door.qH')}</h2>
+        <p>${t('door.q')}</p>
+        ${S.sparks>0?`<p class="door-meta">${icon('puzzle')}<span>${t('door.qProgress',{n:pieces})}</span></p>`:''}
+        <div class="actions" id="ta">
+          ${S.sparks>0?`<button class="btn" id="cont">${t('btn.continue')}</button><button class="btn ghost" id="newg">${t('btn.restart')}</button>`:`<button class="btn" id="start">${t('btn.start')}</button>`}
+        </div>
+        <div id="conf"></div>
+      </article>
+      <article class="door door-l" aria-labelledby="door-l-h">
+        <p class="door-quote heb" lang="he" dir="rtl">וְתֵן חֶלְקֵנוּ בְּתוֹרָתֶךָ</p>
+        <span class="kicker">${icon('scroll')} ${t('door.lK')}</span>
+        <h2 class="h2" id="door-l-h">${t('door.lH')}</h2>
+        <p>${t('door.l')}</p>
+        <p class="door-meta">${lotSeals()}<span>${t('door.lProgress',{n:lotCount()})}</span></p>
+        <div class="actions"><button class="btn" id="lotbtn">${t(lotCount()?'door.lCont':'door.lGo')}</button></div>
+      </article>
     </div>
-    <div id="conf"></div>
-    <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
-    <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
-    <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
-    ${adult()?`<button class="linkbtn shablink" id="galbtn">${icon('palette')} ${t('gal.open')}</button>`:''}
+    <div class="family"><span class="kicker">${t('title.family')}</span>
+      <div class="family-l"><button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
+      <button class="linkbtn shablink" id="lessonbtn">${icon('chat')} ${t('lesson.title')}</button></div></div>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
-    <p class="foot"><button class="linkbtn" id="admbtn">${icon('key')} ${t(isAdmin()?'adm.menu':'adm.open')}</button></p>
+    ${adm?`<p class="foot"><button class="linkbtn" id="admbtn">${icon('key')} ${t(isAdmin()?'adm.menu':'adm.open')}</button></p>`:''}
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
   </section>`;
   $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
-  $('#admbtn').onclick=adminEntry;
+  const ab=$('#admbtn');if(ab)ab.onclick=adminEntry;
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
-  $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
-  $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
-  const gb=$('#galbtn');if(gb)gb.onclick=()=>{sfx.tap();openGallery()};
+  $('#lessonbtn').onclick=()=>{sfx.tap();showLesson()};
+  $('#lotbtn').onclick=()=>{sfx.tap();openLot()};
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
   const n=$('#newg');if(n)n.onclick=()=>{
@@ -483,7 +504,9 @@ function renderCreate(){
       if(Audio_.prefs.voice&&Audio_.unlocked)Voice.say(!h.age?t('create.needAge'):t('create.needG'));
       return;
     }
-    createTried=false;sfx.good();if(!S.started)S.started=new Date().toISOString();go('welcome')};
+    createTried=false;sfx.good();if(!S.started)S.started=new Date().toISOString();
+    if(S.createFor==='lot'){S.createFor=null;openLot();return}   // пришли из «Моего удела в Торе» — туда и возвращаемся
+    go('welcome')};
 }
 
 function renderWelcome(){
@@ -1121,8 +1144,8 @@ async function drawCertificate(sc){
 /* ---------- личный лист: второй лист к сертификату — стих по имени и слово «Айом-йом» по дню рождения ---------- */
 /* null, если игрок не указал ни имени на иврите, ни дня рождения */
 async function drawPersonalSheet(sc){
-  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null,hy=await personalHayom();
-  if(!pv&&!hy)return null;
+  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null,hy=await personalHayom(),pp=await personalParsha();
+  if(!pv&&!hy&&!pp)return null;
   sc=sc||1;const W=1600,H=1130,c=document.createElement('canvas');c.width=W*sc;c.height=H*sc;const x=c.getContext('2d');x.scale(sc,sc);
   try{await Promise.all(['700 60px Unbounded','500 30px Onest','500 40px "Frank Ruhl Libre"','700 60px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
   const D='Unbounded, "Trebuchet MS", sans-serif',B='Onest, "Segoe UI", sans-serif',HB='"Frank Ruhl Libre", serif';
@@ -1143,11 +1166,13 @@ async function drawPersonalSheet(sc){
   rule(top,330);
   // панели
   const panels=[];
-  if(pv)panels.push({title:t('cert.verse'),he:'פָּסוּק',text:pv[3],max:pv&&hy?40:58,ref:`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`,href:`${PESUKIM.books[pv[0]]} ${hebNum(pv[1])}, ${hebNum(pv[2])}`,note:t('sheet.verseNote')});
-  if(hy)panels.push({title:t('cert.hayom'),he:'הַיּוֹם יוֹם',text:hy.text.replace(/\n/g,' '),max:pv?30:38,ref:`${t('hy.cite')} · ${hyDate(hy)}`,href:`היום יום, ${hyHebDate(hy)}`,note:t('sheet.hayomNote')});
-  const two=panels.length>1,pw=two?620:1080,py=top+36,ph=H-120-py;
+  const n=[pv,hy,pp].filter(Boolean).length;
+  if(pv)panels.push({title:t('cert.verse'),he:'פָּסוּק',text:pv[3],max:[0,58,40,34][n],ref:`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`,href:`${PESUKIM.books[pv[0]]} ${hebNum(pv[1])}, ${hebNum(pv[2])}`,note:t('sheet.verseNote')});
+  if(hy)panels.push({title:t('cert.hayom'),he:'הַיּוֹם יוֹם',text:hy.text.replace(/\n/g,' '),max:[0,38,30,26][n],ref:`${t('hy.cite')} · ${hyDate(hy)}`,href:`היום יום, ${hyHebDate(hy)}`,note:t('sheet.hayomNote')});
+  if(pp)panels.push({title:t('cert.parsha'),he:'פָּרָשָׁה',text:`פרשת ${parshaHe(pp)}`,max:[0,64,52,44][n],ref:`${parshaName(pp)} · ${parshaRange(pp)}`,href:`שבת ${hebDateStr(rdToHeb(pp.sh))}`,note:t('sheet.parshaNote')});
+  const gap=n===3?40:120,pw=n===1?1080:(1360-gap*(n-1))/n,py=top+36,ph=H-120-py;
   panels.forEach((p,k)=>{
-    const cx=two?(k?W/2-60-pw/2:W/2+60+pw/2):W/2;   // стих справа (иврит читают справа), «Айом-йом» слева
+    const cx=W/2+((n-1)/2-k)*(pw+gap);   // справа налево, как читают иврит: стих, «Айом-йом», глава
     const l=cx-pw/2;
     x.fillStyle='#fffdf8';x.strokeStyle='#e6d6ac';x.lineWidth=1.5;x.beginPath();x.roundRect(l,py,pw,ph,18);x.fill();x.stroke();
     x.fillStyle=MUTE;x.font=`500 20px ${B}`;x.textAlign='center';x.fillText(p.title.toUpperCase().split('').join(' ').replace(/ {3}/g,'  '),cx,py+52);
@@ -1166,7 +1191,7 @@ async function drawPersonalSheet(sc){
     x.fillStyle=MUTE;x.font=`400 19px ${B}`;x.fillText(p.ref,cx,py+ph-72);
     x.font=`italic 400 17px ${B}`;const nl=wrapLines(x,p.note,pw-80).slice(0,2);nl.forEach((n,i)=>x.fillText(n,cx,py+ph-(nl.length>1?44:30)+i*22));
   });
-  if(two){x.strokeStyle='#e6d6ac';x.lineWidth=1;x.beginPath();x.moveTo(W/2,py+30);x.lineTo(W/2,py+ph-30);x.stroke();diamond(W/2,py+ph/2,5,GOLD)}
+  for(let k=0;k<n-1;k++){const sx=W/2+((n-1)/2-k-.5)*(pw+gap);x.strokeStyle='#e6d6ac';x.lineWidth=1;x.beginPath();x.moveTo(sx,py+30);x.lineTo(sx,py+ph-30);x.stroke();diamond(sx,py+ph/2,5,GOLD)}
   // подвал
   x.textAlign='center';x.fillStyle=LEAF;x.font=`700 22px ${B}`;x.fillText(`${APP_URL.replace(/^https:\/\//,'')}   ·   ${COPYRIGHT}`,W/2,H-74);
   return c.toDataURL('image/png');
@@ -1183,9 +1208,8 @@ function renderFinal(){
     <div id="tabp" role="tabpanel" aria-labelledby="tab-${tab}" class="final-grid">${({cert:finalCert,path:finalPath,ach:finalAch})[tab]()}</div>
     <div class="actions"><button class="btn" id="map">${t('final.backMap')}</button><button class="btn ghost" id="again">${t('final.again')}</button></div>
     <div id="conf"></div>
+    <button class="linkbtn shablink" id="lotbtn">${icon('scroll')} ${t('door.lH')}</button>
     <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
-    <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
-    <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
     ${adult()?`<button class="linkbtn shablink" id="galbtn">${icon('palette')} ${t('gal.open')}</button>`:''}
     <p class="foot">${t('final.foot')}</p>
   </section>`;
@@ -1194,8 +1218,7 @@ function renderFinal(){
   ({cert:wireCert,path:wirePath,ach:()=>{}})[tab]();
   $('#map').onclick=()=>go('map');
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
-  $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
-  $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
+  $('#lotbtn').onclick=()=>{sfx.tap();openLot()};
   const gb=$('#galbtn');if(gb)gb.onclick=()=>{sfx.tap();openGallery()};
   $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>${t('final.confirm')}</p><div class="actions"><button class="btn small" id="yes">${t('btn.yes')}</button><button class="btn ghost small" id="no">${t('btn.cancel')}</button></div></div>`;
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
@@ -1204,8 +1227,8 @@ function finalCert(){
   return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted fs-sm">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">${t('cert.nameLabel')}</label><input id="certname" maxlength="24" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(S.hero.name)}"></div>
       ${S.photo?`<div class="cert-photo"><img src="${S.photo}" alt=""><label class="cert-pt"><input type="checkbox" id="photoon" ${S.photoOff?'':'checked'}> <span>${t('cert.photoOn')}</span></label><button class="btn ghost small" id="photodel">${t('cert.photoDel')}</button></div>`:`<p class="muted fs-sm">${icon('mirror')} ${t('cert.photoHint')}</p>`}
-      ${(S.hebName||'').trim()?'':`<p class="muted fs-sm">${icon('scroll')} ${t('cert.verseHint')} <button class="linkbtn" id="certverse">${t('pasuk.open')}</button></p>`}
-      ${bdayHeb()?'':`<p class="muted fs-sm">${icon('candles')} ${t('cert.hayomHint')} <button class="linkbtn" id="certhayom">${t('hy.open')}</button></p>`}
+      ${(S.hebName||'').trim()?'':`<p class="muted fs-sm">${icon('scroll')} ${t('cert.verseHint')} <button class="linkbtn" id="certverse">${t('door.lH')}</button></p>`}
+      ${bdayHeb()?'':`<p class="muted fs-sm">${icon('candles')} ${t('cert.hayomHint')} <button class="linkbtn" id="certhayom">${t('door.lH')}</button></p>`}
       <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
       <div class="cert-frame" id="cert2" hidden></div>
       <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a><a class="btn ghost" id="dl2" download="${t('sheet.file')}" href="#" hidden>${t('sheet.download')}</a></div>
@@ -1218,8 +1241,8 @@ function wireCert(){
     if(u2){c2.innerHTML=`<img src="${u2}" alt="${t('sheet.alt',{name:esc(heroName())})}">`;d2.href=u2}};
   paint();
   const pon=$('#photoon');if(pon)pon.onchange=()=>{S.photoOff=!pon.checked;save();paint()};
-  const cv=$('#certverse');if(cv)cv.onclick=()=>{sfx.tap();openPasuk()};
-  const ch=$('#certhayom');if(ch)ch.onclick=()=>{sfx.tap();openHayom()};
+  const cv=$('#certverse');if(cv)cv.onclick=()=>{sfx.tap();openLot('name')};
+  const ch=$('#certhayom');if(ch)ch.onclick=()=>{sfx.tap();openLot('date')};
   const pdel=$('#photodel');if(pdel)pdel.onclick=()=>{delete S.photo;delete S.photoOff;save();sfx.tap();renderFinal()};
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
   $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};
@@ -1284,7 +1307,7 @@ stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)
 function start(data){
   load();
   if(data&&data.state&&data.state.v===1)S=Object.assign(fresh(),data.state);
-  if(['shabbat','pasuk','hayom','gallery','admin'].includes(S.screen))S.screen='title';
+  if(['shabbat','pasuk','hayom','gallery','admin','lot'].includes(S.screen))S.screen='title';
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});
