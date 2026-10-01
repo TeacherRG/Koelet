@@ -1,6 +1,7 @@
 /* «Твой стих в Танахе»: стих, который начинается на первую букву имени на иврите и кончается на последнюю,
    и стих, где встречается само имя. Обычай — говорить его в конце Амиды, перед вторым «יהיו לרצון».
-   Данные — data/pesukim.json (tools/build-pesukim.mjs), грузятся только на этом экране. Тексты — pasuk.* в locales. */
+   Стихи — традиционный список Torat Emet «פסוק המתחיל ומסתיים באות» (tools/build-pesukim.mjs → data/pesukim/):
+   index.json (книги, имена) и по файлу на первую букву; грузятся только на этом экране. Тексты — pasuk.* в locales. */
 const HEB_AB=[...'אבגדהוזחטיכלמנסעפצקרשת'];
 const HEB_FINAL={'כ':'ך','מ':'ם','נ':'ן','פ':'ף','צ':'ץ'};
 const HEB_BASE={'ך':'כ','ם':'מ','ן':'נ','ף':'פ','ץ':'צ'};
@@ -60,28 +61,35 @@ function hebGuess(name){
   return hebFinals(out.replace(/(.)\1/g,'$1').replace(/יא$/,'יה'));
 }
 
-let PESUKIM=null,pesukimLoad=null;
-function loadPesukim(){
-  if(!pesukimLoad)pesukimLoad=fetch('data/pesukim.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
-    /* имена без «лишних» י и ו: אהרון найдёт אהרן */
-    d.loose={};for(const n in d.names){const k=nameKey(n);if(!(k in d.loose))d.loose[k]=d.names[n]}
-    return PESUKIM=d}).catch(e=>{pesukimLoad=null;throw e});
-  return pesukimLoad;
+let PESUKIM=null;const PAIRS={},pesukimLoad={};
+const getJSON=f=>fetch('data/pesukim/'+f+'.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()});
+function loadOnce(k,f,then){
+  if(!pesukimLoad[k])pesukimLoad[k]=getJSON(f).then(then).catch(e=>{delete pesukimLoad[k];throw e});
+  return pesukimLoad[k];
+}
+/* справочник и стихи на нужные первые буквы */
+function loadPesukim(firsts){
+  return Promise.all([loadOnce('index','index',d=>{
+      /* имена без «лишних» י и ו: אהרון найдёт אהרן */
+      d.loose={};for(const n in d.names){const k=nameKey(n);if(!(k in d.loose))d.loose[k]=d.names[n]}
+      PESUKIM=d}),
+    ...firsts.map(i=>loadOnce(i,i,d=>{PAIRS[i]=d}))]);
 }
 const baseL=c=>HEB_BASE[c]||c;
 const nameKey=n=>[...n].map(baseL).join('').replace(/(?!^)[וי]/g,'');
-function pairVerses(n){const k=baseL(n[0])+baseL(n.at(-1));return (PESUKIM.pairs[k]||[]).map(i=>PESUKIM.v[i])}
-function nameVerse(n){const i=PESUKIM.names[hebFinals(n)]??PESUKIM.loose[nameKey(n)];return i==null?null:PESUKIM.v[i]}
+const firstOf=n=>HEB_AB.indexOf(baseL(n[0]));
+function pairVerses(n){return (PAIRS[firstOf(n)]||{})[baseL(n[0])+baseL(n.at(-1))]||[]}
+function nameVerse(n){return PESUKIM.names[hebFinals(n)]||PESUKIM.loose[nameKey(n)]||null}
 
-function verseHTML(v,first,last){
-  const books=tl('pasuk.books');
+function verseHTML(v,first){
   /* первая и последняя буквы стиха — тем же цветом, что и буквы имени */
   let txt=esc(v[3]);
   if(first){const a=txt.search(/[א-ת]/),b=txt.search(/[א-ת][^א-ת]*$/);
     if(a>=0&&b>a)txt=txt.slice(0,a)+'<mark>'+txt[a]+'</mark>'+txt.slice(a+1,b)+'<mark>'+txt[b]+'</mark>'+txt.slice(b+1)}
   return `<figure class="pasuk-v"><blockquote class="heb" lang="he" dir="rtl">${txt}</blockquote>
-    <figcaption>${esc(books[v[0]]||'')} ${v[1]}:${v[2]} · <span class="heb" lang="he">${esc(PESUKIM.books[v[0]])}</span></figcaption></figure>`;
+    <figcaption>${verseRef(v)}</figcaption></figure>`;
 }
+const verseRef=v=>`${esc(tl('pasuk.books')[v[0]]||'')} ${v[1]}:${v[2]} · <span class="heb" lang="he">${esc(PESUKIM.books[v[0]])}</span>`;
 function letterChip(c){const L=tl('pasuk.letters');return `<span class="pasuk-l"><b class="heb" lang="he">${c}</b><small>${esc(L[HEB_AB.indexOf(baseL(c))]||'')}</small></span>`}
 
 function openPasuk(){if(S.screen!=='pasuk')S.pasukFrom=S.screen;go('pasuk')}
@@ -113,10 +121,11 @@ function renderPasuk(){
 }
 function showPasuk(){
   const box=$('#pares');if(!box)return;
-  if(!PESUKIM){box.innerHTML=`<p class="muted">${t('pasuk.loading')}</p>`;
-    loadPesukim().then(showPasuk).catch(()=>{const b=$('#pares');if(b)b.innerHTML=`<p class="muted">${t('pasuk.error')}</p>`});return}
   const names=hebFinals(S.hebName||'').trim().split(' ').filter(n=>n.length>=2).slice(0,3);
   if(!names.length){box.innerHTML=`<p class="muted">${t('pasuk.empty')}</p>`;return}
+  const need=names.map(firstOf).filter(i=>!PAIRS[i]);
+  if(!PESUKIM||need.length){box.innerHTML=`<p class="muted">${t('pasuk.loading')}</p>`;
+    loadPesukim(need).then(showPasuk).catch(()=>{const b=$('#pares');if(b)b.innerHTML=`<p class="muted">${t('pasuk.error')}</p>`});return}
   S.pasukAlt=S.pasukAlt||{};
   box.innerHTML=names.map((n,ni)=>{
     const list=pairVerses(n),alt=(S.pasukAlt[n]||0)%Math.max(list.length,1),nv=nameVerse(n);
@@ -124,7 +133,8 @@ function showPasuk(){
       <div class="pasuk-name"><span class="heb" lang="he">${esc(n)}</span><span class="pasuk-ls">${letterChip(n[0])}<i aria-hidden="true">…</i>${letterChip(n.at(-1))}</span></div>
       <p class="pasuk-what">${t('pasuk.what',{a:esc(tl('pasuk.letters')[HEB_AB.indexOf(baseL(n[0]))]),b:esc(tl('pasuk.letters')[HEB_AB.indexOf(baseL(n.at(-1)))])})}</p>
       ${list.length?verseHTML(list[alt],true):`<p class="muted">${t('pasuk.none')}</p>`}
-      ${list.length>1?`<button class="btn ghost small" data-alt="${ni}">${icon('sparkle')}<span>${t('pasuk.other',{n:alt+1,all:list.length})}</span></button>`:''}
+      ${list.length>1?`<button class="btn ghost small" data-alt="${ni}">${icon('sparkle')}<span>${t('pasuk.other',{n:alt+1,all:list.length})}</span></button>
+      <details class="pasuk-all"><summary>${t('pasuk.all',{n:list.length})}</summary><ol>${list.map(v=>`<li><span class="heb" lang="he" dir="rtl">${esc(v[3])}</span><small>${verseRef(v)}</small></li>`).join('')}</ol></details>`:''}
       ${nv?`<h3 class="pasuk-h">${t('pasuk.withName')}</h3>${verseHTML(nv)}`:''}
     </div>`}).join('');
   box.querySelectorAll('[data-alt]').forEach(b=>b.onclick=()=>{sfx.tap();const n=names[+b.dataset.alt];S.pasukAlt[n]=(S.pasukAlt[n]||0)+1;save();showPasuk();

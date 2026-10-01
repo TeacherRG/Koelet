@@ -696,6 +696,11 @@ a.btn{text-decoration:none}
 .pasuk-card .btn{align-self:flex-start}
 .pasuk-h{margin:6px 0 0;font-family:var(--display);font-size:0.8125rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
 .pasuk-src{font-size:0.75rem;margin:0}
+.pasuk-all summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--accent)}
+.pasuk-all ol{margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.pasuk-all li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--panel-2)}
+.pasuk-all li .heb{font-size:1.125rem;line-height:1.6;text-align:right}
+.pasuk-all li small{font-size:0.75rem;color:var(--muted)}
 
 /* ---------- Лист A4 (просмотр и печать) ---------- */
 .pp{width:188mm;height:270mm;box-sizing:border-box;padding:1mm 1mm 0;background:#fff;color:#17282e;font-family:var(--body);font-size:10.5pt;line-height:1.35;display:flex;flex-direction:column;gap:3mm;overflow:hidden;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
