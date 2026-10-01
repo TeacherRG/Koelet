@@ -3,7 +3,9 @@
    пузырьков и скал зависит от пары букв), текст стиха ставится настоящим шрифтом прямо из data/pesukim
    (тот же стих, что в разделе «Твой стих в Танахе»), ничего не генерирует ИИ. Всё рисуется на устройстве,
    имя никуда не отправляется. Работы бесплатны; рядом — ссылка на страницу пожертвования mychitas.app,
-   в ссылке только язык и вид работы, без букв и имени. Выбор — S.gal {a, b, style, fmt, name}; тексты — gal.* в locales. */
+   в ссылке только язык и вид работы, без букв и имени. Выбор — S.gal {a, b, style, fmt, name}; тексты — gal.* в locales.
+   Свои фоны автора (картины без текста) — gallery/backgrounds.json и файлы рядом, как добавить — gallery/README.md;
+   они идут в списке сюжетов первыми, стих на них ставится так же, шрифтом. */
 const GAL_FMT={phone:[1170,2532],screen:[3840,2160],print:[2480,3508]};   // print — A4 при 300 dpi
 const GAL_PREV={phone:300,screen:640,print:360};                          // ширина превью
 const GAL_STYLES=['deep','night','dawn'];
@@ -14,8 +16,21 @@ function openGallery(){
   if(S.screen!=='gallery')S.galFrom=S.screen;
   const g=galState(),n=galName();
   if(n){g.a=baseL(n[0]);g.b=baseL(n.at(-1))}   // по умолчанию — буквы своего имени
-  go('gallery');
+  galLoadOwn().then(()=>go('gallery'));
 }
+/* свои фоны: {id, name:{ru,uk,de,en}, files:{phone,screen,print}, pairs?, band?, shade?, frame?} */
+let GAL_OWN=null,galOwnLoad=null;
+function galLoadOwn(){
+  if(!galOwnLoad)galOwnLoad=fetch('gallery/backgrounds.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
+    .then(d=>GAL_OWN=((d&&d.scenes)||[]).filter(s=>s&&s.id&&s.files&&!GAL_STYLES.includes(s.id)));
+  return galOwnLoad;
+}
+const galOwn=id=>(GAL_OWN||[]).find(s=>s.id===id);
+/* сюжеты для пары: сначала свои (если фон подходит к этой паре букв), потом нарисованные кодом */
+const galStyles=g=>[...(GAL_OWN||[]).filter(s=>!s.pairs||!s.pairs.length||s.pairs.includes(g.a+g.b)).map(s=>s.id),...GAL_STYLES];
+const galStyleName=k=>{const s=galOwn(k);return s?esc((s.name||{})[LANG]||(s.name||{}).ru||k):t('gal.style.'+k)};
+/* форматы: у своего фона — только те, для которых есть файл */
+const galFmts=st=>{const s=galOwn(st);return Object.keys(GAL_FMT).filter(f=>!s||s.files[f])};
 function galState(){return S.gal||(S.gal={a:'א',b:'ה',style:'deep',fmt:'phone',name:true})}
 /* первое имя на иврите, если оно есть */
 function galName(){const n=hebFinals(S.hebName||'').trim().split(' ')[0]||'';return n.length>=2?n:''}
@@ -26,9 +41,11 @@ const galDonateHref=g=>`${DONATE_ART_URL}?lang=${LANG}&kind=${galKind(g)}`;
 
 function renderGallery(){
   if(!adult()){S.screen='title';render();return}
-  const g=galState(),L=tl('pasuk.letters');
+  const g=galState(),L=tl('pasuk.letters'),styles=galStyles(g);
+  if(!styles.includes(g.style))g.style=styles[0];
+  const fmts=galFmts(g.style);if(!fmts.includes(g.fmt))g.fmt=fmts[0];
   const opt=sel=>HEB_AB.map((c,i)=>`<option value="${c}" ${c===sel?'selected':''}>${c} · ${esc(L[i]||'')}</option>`).join('');
-  const segs=(name,keys,cur,lab)=>`<div class="seg gal-seg" role="group" aria-labelledby="${name}-l">${keys.map(k=>`<button class="segb ${cur===k?'on':''}" data-${name}="${k}" aria-pressed="${cur===k}">${t(lab+k)}</button>`).join('')}</div>`;
+  const segs=(name,keys,cur,lab,cls)=>`<div class="seg gal-seg ${cls||''}" role="group" aria-labelledby="${name}-l">${keys.map(k=>`<button class="segb ${cur===k?'on':''}" data-${name}="${esc(k)}" aria-pressed="${cur===k}">${lab(k)}</button>`).join('')}</div>`;
   const n=galName();
   stage.innerHTML=`<section class="scene pasuk gal">
     <div><button class="btn ghost small" id="galback">${t('shab.back')}</button></div>
@@ -42,8 +59,8 @@ function renderGallery(){
         :`<p class="muted pasuk-hint">${t('gal.notMine')} <button class="linkbtn" id="galmine">${t('gal.mine')} <span class="heb" lang="he">${esc(n)}</span></button></p>`)
         :`<p class="muted pasuk-hint">${t('gal.noName')} <button class="linkbtn" id="galpasuk">${t('pasuk.open')}</button></p>`}
     </div>
-    <div class="group"><h3 id="gst-l">${t('gal.styleH')}</h3>${segs('gst',GAL_STYLES,g.style,'gal.style.')}</div>
-    <div class="group"><h3 id="gfmt-l">${t('gal.fmtH')}</h3>${segs('gfmt',Object.keys(GAL_FMT),g.fmt,'gal.fmt.')}
+    <div class="group"><h3 id="gst-l">${t('gal.styleH')}</h3>${segs('gst',styles,g.style,galStyleName,styles.length>3?'wrap':'')}</div>
+    <div class="group"><h3 id="gfmt-l">${t('gal.fmtH')}</h3>${segs('gfmt',fmts,g.fmt,k=>t('gal.fmt.'+k))}
       <p class="muted pasuk-hint">${t('gal.size.'+g.fmt)}</p></div>
     <div class="gal-prev" id="galprev" aria-live="polite"><p class="muted">${t('pasuk.loading')}</p></div>
     <div class="actions"><button class="btn" id="galdl" disabled>${icon('next')}<span>${t('gal.download')}</span></button></div>
@@ -60,7 +77,7 @@ function renderGallery(){
   const nm=$('#galnm');if(nm)nm.onchange=()=>{g.name=nm.checked;redo();$('#galnm').focus()};
   const mine=$('#galmine');if(mine)mine.onclick=()=>{sfx.tap();g.a=baseL(n[0]);g.b=baseL(n.at(-1));redo()};
   const pa=$('#galpasuk');if(pa)pa.onclick=()=>{sfx.tap();openPasuk()};
-  stage.querySelectorAll('[data-gst]').forEach(b=>b.onclick=()=>{sfx.tap();g.style=b.dataset.gst;redo();stage.querySelector(`[data-gst="${g.style}"]`).focus()});
+  stage.querySelectorAll('[data-gst]').forEach(b=>b.onclick=()=>{sfx.tap();g.style=b.dataset.gst;redo();stage.querySelector(`[data-gst="${CSS.escape(g.style)}"]`).focus()});
   stage.querySelectorAll('[data-gfmt]').forEach(b=>b.onclick=()=>{sfx.tap();g.fmt=b.dataset.gfmt;redo();stage.querySelector(`[data-gfmt="${g.fmt}"]`).focus()});
   $('#galdl').onclick=galDownload;
   galPreview();
@@ -76,7 +93,8 @@ async function galPreview(){
   let v;try{v=await galVerse(g)}catch(e){if(my===galTok&&box)box.innerHTML=`<p class="muted">${t('pasuk.error')}</p>`;return}
   if(my!==galTok||!$('#galprev'))return;
   if(!v){box.innerHTML=`<p class="muted">${t('pasuk.none')}</p>`;return}
-  const [W,H]=GAL_FMT[g.fmt],w=GAL_PREV[g.fmt],c=await galDraw(g,v,w,Math.round(w*H/W),g.fmt);
+  const [W,H]=GAL_FMT[g.fmt],w=GAL_PREV[g.fmt];
+  let c;try{c=await galDraw(g,v,w,Math.round(w*H/W),g.fmt)}catch(e){if(my===galTok&&$('#galprev'))box.innerHTML=`<p class="muted">${t('gal.imgError')}</p>`;return}
   if(my!==galTok||!$('#galprev'))return;
   c.className='gal-cv gal-'+g.fmt;c.setAttribute('role','img');
   c.setAttribute('aria-label',t('gal.alt',{ref:`${tl('pasuk.books')[v[0]]||''} ${v[1]}:${v[2]}`}));
@@ -188,12 +206,29 @@ function galDawn(x,W,H,u,r,land){
   galRidge(x,W,H,hz+u*110,u*30,r,'#220e18',null,u);
   return land?[.14,.6]:[.2,.62];
 }
+/* свой фон: картина автора заполняет весь лист (лишнее по краям обрезается), под полосой текста — лёгкое затемнение */
+const galImgs={};
+function galImg(src){
+  return galImgs[src]||(galImgs[src]=new Promise((ok,no)=>{const im=new Image();
+    im.onload=()=>ok(im);im.onerror=()=>{delete galImgs[src];no(new Error(src))};im.src='gallery/'+src}));
+}
+async function galPhoto(x,W,H,s,fmt,land){
+  const im=await galImg(s.files[fmt]);
+  const k=Math.max(W/im.naturalWidth,H/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;
+  x.drawImage(im,(W-w)/2,(H-h)/2,w,h);
+  const band=(s.band&&s.band[fmt])||(land?[.25,.7]:[.33,.64]),shade=s.shade==null?.35:s.shade;
+  if(shade>0){const a=H*(band[0]-.08),b=H*(band[1]+.08),gr=x.createLinearGradient(0,a,0,b);
+    gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(.25,`rgba(0,0,0,${shade})`);gr.addColorStop(.75,`rgba(0,0,0,${shade})`);gr.addColorStop(1,'rgba(0,0,0,0)');
+    x.fillStyle=gr;x.fillRect(0,a,W,b-a)}
+  return band;
+}
 async function galDraw(g,v,W,H,fmt){
   const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
   const HB='"Frank Ruhl Libre", serif',B='Onest, "Segoe UI", sans-serif';
   try{await Promise.all([document.fonts.load(`700 40px ${HB}`,v[3]),document.fonts.load(`500 40px ${HB}`,'אב'),document.fonts.load(`500 20px ${B}`,'Aa')])}catch(e){}
   const u=Math.min(W,H)/1000,land=W>H,r=galRand(g);
-  const [bt,bb]=({deep:galDeep,night:galNight,dawn:galDawn}[g.style]||galDeep)(x,W,H,u,r,land);
+  const own=galOwn(g.style);
+  const [bt,bb]=own?await galPhoto(x,W,H,own,fmt,land):({deep:galDeep,night:galNight,dawn:galDawn}[g.style]||galDeep)(x,W,H,u,r,land);
   const print=fmt==='print';
   // текст: самый крупный кегль, при котором стих помещается в свою полосу
   const tw=W*(land?.6:.8),top=H*bt,bot=H*bb,name=g.name&&galNameFits()?galName():'';
@@ -216,7 +251,7 @@ async function galDraw(g,v,W,H,fmt){
   x.font=`500 ${u*40}px ${HB}`;x.fillStyle='#e9c77c';x.fillText(`${PESUKIM.books[v[0]]} ${hebNum(v[1])}, ${hebNum(v[2])}`,W/2,y+u*66);
   x.direction='ltr';x.font=`400 ${u*24}px ${B}`;x.fillStyle='rgba(235,222,190,.8)';x.fillText(`${tl('pasuk.books')[v[0]]||''} ${v[1]}:${v[2]}`,W/2,y+u*106);
   // рамка для печати и подпись сайта
-  if(print){x.strokeStyle='rgba(227,181,90,.8)';x.lineWidth=u*3;x.strokeRect(u*50,u*50,W-u*100,H-u*100);x.lineWidth=u*1.2;x.strokeRect(u*66,u*66,W-u*132,H-u*132)}
+  if(print&&!(own&&own.frame===false)){x.strokeStyle='rgba(227,181,90,.8)';x.lineWidth=u*3;x.strokeRect(u*50,u*50,W-u*100,H-u*100);x.lineWidth=u*1.2;x.strokeRect(u*66,u*66,W-u*132,H-u*132)}
   x.font=`500 ${u*20}px ${B}`;x.fillStyle='rgba(235,222,190,.55)';x.fillText(APP_URL.replace(/^https:\/\//,''),W/2,H-u*(print?90:44));
   return c;
 }

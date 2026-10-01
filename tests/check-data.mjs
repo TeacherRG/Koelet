@@ -76,6 +76,50 @@ for (const lang of langs) {
   }
 }
 
+// the author's own backgrounds for «Картина со стихом» (gallery/backgrounds.json, see gallery/README.md)
+{
+  const own = await load('gallery/backgrounds.json');
+  const FMT = {phone: [1170, 2532], screen: [3840, 2160], print: [2480, 3508]}, BUILTIN = ['deep', 'night', 'dawn'];
+  const ids = new Set();
+  // width and height from the file header (PNG, JPEG, WebP)
+  const size = b => {
+    if (b.readUInt32BE(0) === 0x89504e47) return [b.readUInt32BE(16), b.readUInt32BE(20)];
+    if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') {
+      const k = b.toString('ascii', 12, 16);
+      if (k === 'VP8X') return [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)];
+      if (k === 'VP8 ') return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
+      if (k === 'VP8L') { const n = b.readUInt32LE(21); return [1 + (n & 0x3fff), 1 + ((n >> 14) & 0x3fff)]; }
+    }
+    if (b[0] === 0xff && b[1] === 0xd8) for (let i = 2; i < b.length - 9;) {
+      if (b[i] !== 0xff) { i++; continue; }
+      const m = b[i + 1], len = b.readUInt16BE(i + 2);
+      if (m >= 0xc0 && m <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(m)) return [b.readUInt16BE(i + 7), b.readUInt16BE(i + 5)];
+      i += 2 + len;
+    }
+    return null;
+  };
+  for (const [n, s] of ((own && own.scenes) || []).entries()) {
+    const where = `gallery/backgrounds.json scene ${n + 1}${s && s.id ? ` «${s.id}»` : ''}`;
+    if (!s || !/^[a-z0-9-]+$/.test(s.id || '')) { err(where, 'id must be latin letters, digits or -'); continue; }
+    if (BUILTIN.includes(s.id) || ids.has(s.id)) err(where, 'id is already taken'); ids.add(s.id);
+    for (const l of langs) if (!s.name || typeof s.name[l] !== 'string' || !s.name[l].trim()) err(where, `no name in ${l}`);
+    const files = Object.entries(s.files || {});
+    if (!files.length) err(where, 'needs at least one file in files: phone, screen or print');
+    for (const [f, file] of files) {
+      if (!FMT[f]) { err(where, `unknown format "${f}" (phone, screen, print)`); continue; }
+      if (!/^[\w.-]+\.(jpe?g|png|webp)$/i.test(file || '')) { err(where, `${f}: "${file}" — a latin file name .jpg, .png or .webp next to backgrounds.json`); continue; }
+      let b; try { b = await readFile(ROOT + 'gallery/' + file); } catch (e) { err(where, `${f}: gallery/${file} is missing`); continue; }
+      const wh = size(b);
+      if (!wh) err(where, `${f}: cannot read the size of ${file}`);
+      else if (wh[0] < FMT[f][0] / 2 || wh[1] < FMT[f][1] / 2) err(where, `${f}: ${file} is ${wh.join('×')}, too small (best ${FMT[f].join('×')})`);
+      if (b.length > 4e6) err(where, `${f}: ${file} is ${(b.length / 1e6).toFixed(1)} MB — compress it below 4 MB`);
+    }
+    for (const p of s.pairs || []) if (!/^[אבגדהוזחטיכלמנסעפצקרשת]{2}$/.test(p)) err(where, `pair "${p}" must be two Hebrew letters (no final forms), e.g. "מה"`);
+    for (const [f, band] of Object.entries(s.band || {})) if (!FMT[f] || !Array.isArray(band) || band.length !== 2 || !(band[0] >= 0 && band[0] < band[1] && band[1] <= 1)) err(where, `band.${f} must be [top, bottom] between 0 and 1`);
+    if (s.shade != null && !(s.shade >= 0 && s.shade <= 1)) err(where, 'shade must be between 0 and 1');
+  }
+}
+
 // the teacher's guide (docs/guide.ru.md) is generated from the Russian texts: rebuild it after text changes
 const {build} = await import('../tools/guide.mjs');
 let guide = '';

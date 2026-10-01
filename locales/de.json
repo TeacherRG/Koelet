@@ -501,6 +501,7 @@
   "gal.saved": "Bild gespeichert",
   "gal.savedSub": "Du findest es im Download-Ordner.",
   "gal.fail": "Das Bild konnte nicht gespeichert werden",
+  "gal.imgError": "Der Hintergrund konnte nicht geladen werden. Wähle ein anderes Motiv oder öffne den Bereich noch einmal.",
   "shab.back": "Zurück",
   "shab.cut": "Vor Schabbat ausschneiden",
   "shab.items": {

@@ -501,6 +501,7 @@
   "gal.saved": "Picture saved",
   "gal.savedSub": "Look for it in your downloads folder.",
   "gal.fail": "The picture could not be saved",
+  "gal.imgError": "The background could not be loaded. Choose another scene or open this section again.",
   "shab.back": "Back",
   "shab.cut": "Cut out before Shabbat",
   "shab.items": {
