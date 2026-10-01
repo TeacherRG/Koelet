@@ -958,13 +958,7 @@ function wrapLines(ctx,text,maxW){const words=text.split(' ');const lines=[];let
   for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t}if(cur)lines.push(cur);return lines}
 async function drawCertificate(sc){
   sc=sc||1;const W=1600,H=1130,c=document.createElement('canvas');c.width=W*sc;c.height=H*sc;const x=c.getContext('2d');x.scale(sc,sc);
-  try{await Promise.all(['800 60px Unbounded','700 40px Unbounded','400 30px Onest','500 30px Onest','700 60px "Frank Ruhl Libre"','400 34px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
-  /* имя на иврите и личный стих (раздел «Твой стих в Танахе»): стих встаёт вместо строки с уровнем */
-  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null,hy=await personalHayom();
-  /* «полный» сертификат: стих по имени и слово «Айом-йом» по дню рождения — каждое, если игрок их указал */
-  const blocks=[];
-  if(pv)blocks.push({label:t('cert.verse'),text:pv[3],ref:`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`});
-  if(hy)blocks.push({label:t('cert.hayom'),text:hy.text.split('\n')[0],ref:`${t('hy.cite')} · ${hyDate(hy)}`});
+  try{await Promise.all(['800 60px Unbounded','700 40px Unbounded','400 30px Onest','500 30px Onest','700 60px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
   const D='Unbounded, "Trebuchet MS", sans-serif',B='Onest, "Segoe UI", sans-serif',HB='"Frank Ruhl Libre", serif';
   x.fillStyle='#fbfdfb';x.fillRect(0,0,W,H);
   // corner puzzle motifs
@@ -974,33 +968,16 @@ async function drawCertificate(sc){
   x.textAlign='center';x.fillStyle='#8a5d00';x.font=`500 26px ${B}`;x.fillText(t('cert.top').toUpperCase().split('').join(' '),W/2,170);
   x.fillStyle='#17282e';x.font=`800 92px ${D}`;x.fillText(t('cert.title'),W/2,280);
   x.fillStyle='#566d67';x.font=`400 32px ${B}`;x.fillText(t('cert.given'),W/2,350);
-  x.fillStyle='#2f7d4a';let fs=86;x.font=`700 ${fs}px ${D}`;const nm=heroName();while(x.measureText(nm).width>1100&&fs>40){fs-=4;x.font=`700 ${fs}px ${D}`}x.fillText(nm,W/2,heb?436:450);
-  if(heb){x.save();x.direction='rtl';x.fillStyle='#8a5d00';x.font=`700 42px ${HB}`;x.fillText(heb,W/2,496);x.restore()}
+  x.fillStyle='#2f7d4a';let fs=86;x.font=`700 ${fs}px ${D}`;const nm=heroName();while(x.measureText(nm).width>1100&&fs>40){fs-=4;x.font=`700 ${fs}px ${D}`}x.fillText(nm,W/2,450);
   x.fillStyle='#17282e';x.font=`400 34px ${B}`;
-  wrapLines(x,t('cert.for'),1150).forEach((l,i)=>x.fillText(l,W/2,(heb?558:530)+i*46));
+  wrapLines(x,t('cert.for'),1150).forEach((l,i)=>x.fillText(l,W/2,530+i*46));
   const st=strengthsList();
   if(st.length){x.fillStyle='#566d67';x.font=`500 28px ${B}`;x.fillText(t('cert.gifts'),W/2,660);
     x.fillStyle='#17282e';x.font=`500 32px ${B}`;wrapLines(x,st.join(' · '),1200).slice(0,2).forEach((l,i)=>x.fillText(l,W/2,706+i*44))}
-  if(blocks.length){
-    /* одна запись — по центру во всю ширину; две — колонками слева и справа от печати */
-    const two=blocks.length>1,cw=two?560:1240,maxL=two?3:2;
-    /* подпись 770, строки текста ниже, ссылка последней — всё над датой, печатью и подписью Хранителя */
-    blocks.forEach((bl,k)=>{
-      const cx=two?(k?W-170-cw/2:170+cw/2):W/2;
-      x.fillStyle='#566d67';x.font=`500 22px ${B}`;x.fillText(bl.label.toUpperCase(),cx,770);
-      x.save();x.direction='rtl';x.fillStyle='#17282e';let vf=two?26:32;x.font=`400 ${vf}px ${HB}`;
-      while(wrapLines(x,bl.text,cw).length>maxL&&vf>22){vf-=2;x.font=`400 ${vf}px ${HB}`}
-      let vl=wrapLines(x,bl.text,cw);
-      if(vl.length>maxL){vl=vl.slice(0,maxL);let last=vl[maxL-1];while(last&&x.measureText(last+' …').width>cw)last=last.replace(/\s*\S+$/,'');vl[maxL-1]=last+' …'}
-      const lh=vf+6,top=770+vf+6;
-      vl.forEach((l,i)=>x.fillText(l,cx,top+i*lh));x.restore();
-      x.fillStyle='#566d67';x.font=`400 20px ${B}`;x.fillText(bl.ref,cx,top+(vl.length-1)*lh+28);
-    });
-  }else{x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(t('cert.stats',{lvl:lvl(),lname:T(LEVELS[lvl()-1]),sparks:S.sparks,ach:Object.keys(S.ach).length}),W/2,820)}
+  x.fillStyle='#566d67';x.font=`400 28px ${B}`;x.fillText(t('cert.stats',{lvl:lvl(),lname:T(LEVELS[lvl()-1]),sparks:S.sparks,ach:Object.keys(S.ach).length}),W/2,820);
   // seal
   const photo=S.photo&&!S.photoOff?await new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=S.photo}):null;
-  const k=blocks.length?.75:1;
-  x.save();x.translate(W/2,blocks.length?948:photo?918:922);x.scale(k,k);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=photo?(i%2?82:90):(i%2?74:84),a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
+  x.save();x.translate(W/2,photo?918:922);x.fillStyle='#f2be3d';x.beginPath();for(let i=0;i<32;i++){const r=photo?(i%2?82:90):(i%2?74:84),a=i/32*Math.PI*2;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fill();
   if(photo){x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,76,0,Math.PI*2);x.fill();x.save();x.beginPath();x.arc(0,0,71,0,Math.PI*2);x.clip();x.drawImage(photo,-71,-71,142,142);x.restore()}
   else{x.fillStyle='#fbfdfb';x.beginPath();x.arc(0,0,62,0,Math.PI*2);x.fill();x.fillStyle='#c8445b';x.font=`700 50px ${HB}`;x.fillText('חֵלֶק',0,16)}
   x.restore();
@@ -1013,6 +990,59 @@ async function drawCertificate(sc){
   x.textAlign='center';x.font=`400 20px ${B}`;x.fillText(t('cert.foot'),W/2,1028);
   // app link and copyright: the printed PDF is this same image
   x.fillStyle='#2f7d4a';x.font=`700 24px ${B}`;x.fillText(`${APP_URL.replace(/^https:\/\//,'')}   ·   ${COPYRIGHT}`,W/2,1058);
+  return c.toDataURL('image/png');
+}
+/* ---------- личный лист: второй лист к сертификату — стих по имени и слово «Айом-йом» по дню рождения ---------- */
+/* null, если игрок не указал ни имени на иврите, ни дня рождения */
+async function drawPersonalSheet(sc){
+  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null,hy=await personalHayom();
+  if(!pv&&!hy)return null;
+  sc=sc||1;const W=1600,H=1130,c=document.createElement('canvas');c.width=W*sc;c.height=H*sc;const x=c.getContext('2d');x.scale(sc,sc);
+  try{await Promise.all(['700 60px Unbounded','500 30px Onest','500 40px "Frank Ruhl Libre"','700 60px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
+  const D='Unbounded, "Trebuchet MS", sans-serif',B='Onest, "Segoe UI", sans-serif',HB='"Frank Ruhl Libre", serif';
+  const GOLD='#b8861b',INK='#1f2a2e',MUTE='#6b6656',LEAF='#2f7d4a';
+  // бумага, двойная золотая рамка, ромбы в углах
+  x.fillStyle='#fbf6ea';x.fillRect(0,0,W,H);
+  const g=x.createRadialGradient(W/2,H/2,200,W/2,H/2,900);g.addColorStop(0,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.strokeStyle=GOLD;x.lineWidth=4;x.strokeRect(44,44,W-88,H-88);x.lineWidth=1.2;x.strokeRect(58,58,W-116,H-116);
+  const diamond=(cx,cy,r,fill)=>{x.save();x.translate(cx,cy);x.rotate(Math.PI/4);x.fillStyle=fill;x.fillRect(-r,-r,2*r,2*r);x.restore()};
+  [[58,58],[W-58,58],[58,H-58],[W-58,H-58]].forEach(([a,b])=>{diamond(a,b,11,'#fbf6ea');x.save();x.translate(a,b);x.rotate(Math.PI/4);x.strokeStyle=GOLD;x.lineWidth=2;x.strokeRect(-11,-11,22,22);x.restore();diamond(a,b,4,GOLD)});
+  const rule=(y,half)=>{x.strokeStyle=GOLD;x.lineWidth=1.2;x.beginPath();x.moveTo(W/2-half,y);x.lineTo(W/2-14,y);x.moveTo(W/2+14,y);x.lineTo(W/2+half,y);x.stroke();diamond(W/2,y,5,GOLD)};
+  // шапка: подзаголовок, имя героя и имя на иврите
+  x.textAlign='center';x.fillStyle=GOLD;x.font=`500 22px ${B}`;x.fillText(t('sheet.kicker').toUpperCase().split('').join(' '),W/2,128);
+  let fs=60;x.font=`700 ${fs}px ${D}`;const nm=heroName();while(x.measureText(nm).width>900&&fs>32){fs-=4;x.font=`700 ${fs}px ${D}`}
+  x.fillStyle=LEAF;x.fillText(nm,W/2,210);
+  let top=250;
+  if(heb){x.save();x.direction='rtl';x.fillStyle=GOLD;x.font=`700 52px ${HB}`;x.fillText(heb,W/2,276);x.restore();top=306}
+  rule(top,330);
+  // панели
+  const panels=[];
+  if(pv)panels.push({title:t('cert.verse'),he:'פָּסוּק',text:pv[3],max:pv&&hy?40:58,ref:`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`,href:`${PESUKIM.books[pv[0]]} ${hebNum(pv[1])}, ${hebNum(pv[2])}`,note:t('sheet.verseNote')});
+  if(hy)panels.push({title:t('cert.hayom'),he:'הַיּוֹם יוֹם',text:hy.text.replace(/\n/g,' '),max:pv?30:38,ref:`${t('hy.cite')} · ${hyDate(hy)}`,href:`היום יום, ${hyHebDate(hy)}`,note:t('sheet.hayomNote')});
+  const two=panels.length>1,pw=two?620:1080,py=top+36,ph=H-120-py;
+  panels.forEach((p,k)=>{
+    const cx=two?(k?W/2-60-pw/2:W/2+60+pw/2):W/2;   // стих справа (иврит читают справа), «Айом-йом» слева
+    const l=cx-pw/2;
+    x.fillStyle='#fffdf8';x.strokeStyle='#e6d6ac';x.lineWidth=1.5;x.beginPath();x.roundRect(l,py,pw,ph,18);x.fill();x.stroke();
+    x.fillStyle=MUTE;x.font=`500 20px ${B}`;x.textAlign='center';x.fillText(p.title.toUpperCase().split('').join(' ').replace(/ {3}/g,'  '),cx,py+52);
+    x.save();x.direction='rtl';x.fillStyle=GOLD;x.font=`500 34px ${HB}`;x.fillText(p.he,cx,py+96);x.restore();
+    // текст: самый крупный кегль, при котором он помещается в панель
+    const tw=pw-90,aTop=py+130,aBot=py+ph-150;
+    x.save();x.direction='rtl';x.fillStyle=INK;let f=p.max,lines,lh;
+    for(;;){x.font=`500 ${f}px ${HB}`;lines=wrapLines(x,p.text,tw);lh=Math.round(f*1.55);if(lines.length*lh<=aBot-aTop||f<=20)break;f-=2}
+    const fit=Math.floor((aBot-aTop)/lh);
+    if(lines.length>fit){lines=lines.slice(0,fit);let last=lines[fit-1];while(last&&x.measureText(last+' …').width>tw)last=last.replace(/\s*\S+$/,'');lines[fit-1]=last+' …'}
+    const y0=aTop+((aBot-aTop)-lines.length*lh)/2+f;
+    lines.forEach((ln,i)=>x.fillText(ln,cx,y0+i*lh));x.restore();
+    // ссылка и пояснение
+    x.strokeStyle='#e6d6ac';x.lineWidth=1;x.beginPath();x.moveTo(cx-pw/2+60,py+ph-132);x.lineTo(cx+pw/2-60,py+ph-132);x.stroke();
+    x.save();x.direction='rtl';x.fillStyle=GOLD;x.font=`500 24px ${HB}`;x.fillText(p.href,cx,py+ph-98);x.restore();
+    x.fillStyle=MUTE;x.font=`400 19px ${B}`;x.fillText(p.ref,cx,py+ph-72);
+    x.font=`italic 400 17px ${B}`;const nl=wrapLines(x,p.note,pw-80).slice(0,2);nl.forEach((n,i)=>x.fillText(n,cx,py+ph-(nl.length>1?44:30)+i*22));
+  });
+  if(two){x.strokeStyle='#e6d6ac';x.lineWidth=1;x.beginPath();x.moveTo(W/2,py+30);x.lineTo(W/2,py+ph-30);x.stroke();diamond(W/2,py+ph/2,5,GOLD)}
+  // подвал
+  x.textAlign='center';x.fillStyle=LEAF;x.font=`700 22px ${B}`;x.fillText(`${APP_URL.replace(/^https:\/\//,'')}   ·   ${COPYRIGHT}`,W/2,H-74);
   return c.toDataURL('image/png');
 }
 function renderFinal(){
@@ -1049,12 +1079,15 @@ function finalCert(){
       ${(S.hebName||'').trim()?'':`<p class="muted" style="font-size:0.875rem">${icon('scroll')} ${t('cert.verseHint')} <button class="linkbtn" id="certverse">${t('pasuk.open')}</button></p>`}
       ${bdayHeb()?'':`<p class="muted" style="font-size:0.875rem">${icon('candles')} ${t('cert.hayomHint')} <button class="linkbtn" id="certhayom">${t('hy.open')}</button></p>`}
       <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
-      <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a></div>
+      <div class="cert-frame" id="cert2" hidden></div>
+      <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a><a class="btn ghost" id="dl2" download="${t('sheet.file')}" href="#" hidden>${t('sheet.download')}</a></div>
       <p class="muted" style="font-size:0.875rem" id="printnote">${t('cert.note')}</p></article>`;
 }
 function wireCert(){
-  let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;
-    $('#cert').innerHTML=`<img src="${url}" alt="${t('cert.alt',{name:esc(heroName())})}">`;$('#dl').href=url};
+  let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate(),u2=await drawPersonalSheet();if(my!==tok||!$('#cert'))return;
+    $('#cert').innerHTML=`<img src="${url}" alt="${t('cert.alt',{name:esc(heroName())})}">`;$('#dl').href=url;
+    const c2=$('#cert2'),d2=$('#dl2');c2.hidden=d2.hidden=!u2;
+    if(u2){c2.innerHTML=`<img src="${u2}" alt="${t('sheet.alt',{name:esc(heroName())})}">`;d2.href=u2}};
   paint();
   const pon=$('#photoon');if(pon)pon.onchange=()=>{S.photoOff=!pon.checked;save();paint()};
   const cv=$('#certverse');if(cv)cv.onclick=()=>{sfx.tap();openPasuk()};
@@ -1062,9 +1095,11 @@ function wireCert(){
   const pdel=$('#photodel');if(pdel)pdel.onclick=()=>{delete S.photo;delete S.photoOff;save();sfx.tap();renderFinal()};
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
   $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};
+  $('#dl2').onclick=e=>{if($('#dl2').getAttribute('href')==='#')e.preventDefault()};
   $('#print').onclick=async()=>{const b=$('#print');b.disabled=true;
-    try{shabPrintDone();const url=await drawCertificate(2);const pr=$('#print-area');pr.innerHTML=`<img src="${url}" alt="">`;
-      await new Promise(r=>{const im=pr.querySelector('img');if(im.complete)r();else{im.onload=r;im.onerror=r}});
+    try{shabPrintDone();const url=await drawCertificate(2),u2=await drawPersonalSheet(2);const pr=$('#print-area');
+      pr.innerHTML=`<img src="${url}" alt="">${u2?`<img src="${u2}" alt="">`:''}`;
+      await Promise.all([...pr.querySelectorAll('img')].map(im=>new Promise(r=>{if(im.complete)r();else{im.onload=r;im.onerror=r}})));
       window.print();
     }catch(e){$('#printnote').textContent=t('cert.noPrint')}
     b.disabled=false};

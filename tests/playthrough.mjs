@@ -255,7 +255,8 @@ async function run(browser, base, sc) {
     await snap('hayom');
     await page.click('#hyback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«Айом-йом»: «Назад» did not return to the final screen');
-    if (!(await page.evaluate(async () => { const u = await drawCertificate(); return u.length > 1000 && !!(await personalHayom()) && !!(await personalVerse()); }))) add('the full certificate (verse and «Айом-йом») did not draw');
+    // the certificate itself stays as it was; the verse and «Айом-йом» go to the second, personal page
+    if (!(await page.evaluate(async () => { const u = await drawPersonalSheet(); return !!u && u.length > 1000 && !!(await personalHayom()) && !!(await personalVerse()); }))) add('the personal page (verse and «Айом-йом») did not draw');
     // final → «Назад» → map, and the map's «Назад» → title (no «Назад» there)
     await page.click('#stepback');
     if (await page.evaluate(() => S.screen) !== 'map') add('«Назад» on the final screen did not open the map');
