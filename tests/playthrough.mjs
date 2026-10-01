@@ -289,6 +289,13 @@ async function run(browser, base, sc) {
     if (await page.evaluate(() => S.screen) !== 'map') add('«Назад» on the final screen did not open the map');
     await page.click('#stepback');
     if (await page.evaluate(() => S.screen) !== 'title' || await page.evaluate(() => !document.querySelector('#backbar').hidden)) add('«Назад» on the map did not open the title screen, or the title has a «Назад» button');
+    // the phone's «back» on the title screen asks before leaving; «Остаться» keeps the game open
+    await page.goBack();
+    if (!(await page.waitForSelector('#exitq', {timeout: 2000}).catch(() => null))) add('system «back» on the title screen left without asking');
+    else {
+      await page.click('#exstay');
+      if (await page.$('#exitq') || await page.evaluate(() => S.screen) !== 'title' || !(await page.evaluate(() => history.state && history.state.koelet))) add('«Остаться» in the exit question did not keep the game');
+    }
   }
   await ctx.close();
   return {name, steps, problems: [...problems]};
