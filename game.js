@@ -178,14 +178,18 @@ function showProfile(){
 }
 /* Main menu: navigation first, then sound and language, then info and support */
 function showMenu(){
+  let mine=false;   // «Твоя часть в Торе» раскрывается и показывает стих Торы и «Айом-йом»
   const sfxRow=`<button class="swrow" role="switch" data-m="snd" aria-checked="${S.sound}">${icon(S.sound?'sound':'mute')}<span>${t('menu.sfx')}</span><i class="switch" aria-hidden="true"></i></button>`;
   openSheet('menu',t('hud.menu'),()=>`
     <nav class="menu-list" aria-label="${t('hud.menu')}">
       ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
       <button class="mitem" data-m="shab">${icon('candles')}<span>${t('shab.open')}</span></button>
-      <button class="mitem" data-m="pasuk">${icon('scroll')}<span>${t('pasuk.open')}</span></button>
-      <button class="mitem" data-m="hayom">${icon('candles')}<span>${t('hy.open')}</span></button>
+      <button class="mitem mgroup" data-m="mine" aria-expanded="${mine}" aria-controls="msub-mine">${icon('book')}<span>${t('menu.mine')}</span><i class="mchev ${mine?'open':''}" aria-hidden="true">${icon('up')}</i></button>
+      <div class="msub" id="msub-mine" ${mine?'':'hidden'}>
+        <button class="mitem" data-m="pasuk">${icon('scroll')}<span>${t('menu.mineVerse')}</span></button>
+        <button class="mitem" data-m="hayom">${icon('candles')}<span>${t('menu.mineHayom')}</span></button>
+      </div>
     </nav>
     ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow})}
     ${langPicker()}
@@ -199,6 +203,7 @@ function showMenu(){
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
+      if(k==='mine'){mine=!mine;sfx.tap();draw();return}
       m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom()});
   });
 }
