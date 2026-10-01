@@ -86,7 +86,7 @@ document.addEventListener('visibilitychange', () => {
    см. voice-key.js и tools/tts.mjs). Предложения, которых нет в audio/<язык>/index.json
    (имя героя, числа, новые тексты), говорит синтез речи браузера. */
 const Voice = {
-  seq: 0, idleMs: 60000, idleT: null, el: null, keys: null, keysLang: null, speaking: false, reading: false,
+  seq: 0, idleMs: 60000, gapMs: 500, idleT: null, el: null, keys: null, keysLang: null, speaking: false, reading: false,
   synthOk(){ try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'; } catch (e) { return false; } },
   can(){ return !!this.keys || this.synthOk(); },
   /* Список готовых фраз для текущего языка (один раз на язык). */
@@ -153,13 +153,17 @@ const Voice = {
   say(parts, {force = false, reading = false} = {}){
     this.load();
     if ((!Audio_.prefs.voice && !force) || !this.can() || !Audio_.unlocked) return Promise.resolve(false);
-    const sents = [].concat(parts).filter(Boolean).flatMap(p => VoiceKey.sentences(p));
+    const sents = [].concat(parts).filter(Boolean).flatMap((p, n) => VoiceKey.sentences(p).map(text => ({text, n})));
     if (!sents.length) return Promise.resolve(false);
-    /* подряд идущие предложения без файла — одной фразой, чтобы синтез звучал связно */
+    /* Заголовок и текст, фраза и подсказка — разные части: между ними пауза. Строка без точки
+       в конце (заголовок) тоже отделяется паузой, а для синтеза браузера получает точку. */
+    const open = s => !/[.!?…:;][»"“”)\]]*$/.test(s);
     const items = [];
-    for (const s of sents) {
+    for (const {text: s, n} of sents) {
       const url = this.clip(s), last = items[items.length - 1];
-      if (!url && last && !last.url) last.text += ' ' + s; else items.push({url, text: s});
+      const gap = !last ? 0 : last.n !== n || open(last.text) ? this.gapMs : 0;
+      /* подряд идущие предложения без файла — одной фразой, чтобы синтез звучал связно */
+      if (!url && last && !last.url && !gap) last.text += ' ' + s; else items.push({url, text: s, n, gap});
     }
     this.cancel(); const my = this.seq;
     this.speaking = true; this.reading = reading; clearTimeout(this.idleT); Music.duck(true);
@@ -167,9 +171,10 @@ const Voice = {
     return (async () => {
       let any = false;
       for (const it of items) {
+        if (it.gap && any) await new Promise(r => setTimeout(r, it.gap));
         if (my !== this.seq) return null;
         let ok = it.url ? await this._clip(it.url, my) : false;
-        if (!ok && my === this.seq) ok = await this._synth(it.text, my);
+        if (!ok && my === this.seq) ok = await this._synth(open(it.text) ? it.text + '.' : it.text, my);
         any = any || ok;
       }
       if (my !== this.seq) return null;
@@ -238,11 +243,13 @@ function audioPanelHTML(compact, opt){
   const head = `<span class="kicker">${o.title || t('audio.title')}</span>${o.pre || ''}${sw('music', 'note', P.music)}${sw('voice', 'chat', P.voice)}`;
   if (compact) return `<div class="audiopanel compact" role="group" aria-label="${t('audio.title')}">${head}</div>`;
   const opts = [['all', t('audio.all')], ...Audio_.tracks.map(tr => [tr.id, Music.title(tr)])];
+  const cur = (opts.find(([id]) => id === P.track) || opts[0])[1];
+  /* мелодии, громкость и авторство — в выпадающем списке под одной кнопкой «Мелодия» */
   return `<div class="audiopanel" role="group" aria-label="${o.title || t('audio.title')}">${head}
-    ${Audio_.tracks.length ? `<span class="lbl" id="trk">${t('audio.track')}</span>
-    <div class="chips" role="group" aria-labelledby="trk">${opts.map(([id, name]) => `<button class="chip ${P.track === id ? 'on' : ''}" data-track="${id}" aria-pressed="${P.track === id}">${esc(name)}</button>`).join('')}</div>
+    ${Audio_.tracks.length ? `<details class="trkdd" ${Audio_.ddOpen ? 'open' : ''}><summary class="swrow">${icon('note')}<span>${t('audio.track')}<small>${esc(cur)}</small></span><i class="chev" aria-hidden="true">${icon('next')}</i></summary>
+    <div class="trklist" role="radiogroup" aria-label="${t('audio.track')}">${opts.map(([id, name]) => `<button class="trk ${P.track === id ? 'on' : ''}" data-track="${id}" role="radio" aria-checked="${P.track === id}">${icon(P.track === id ? 'check' : 'note')}<span>${esc(name)}</span></button>`).join('')}
     <label class="lbl" for="vol">${t('audio.volume')}</label><input type="range" id="vol" min="0" max="100" step="5" value="${Math.round(P.volume * 100)}">
-    <small class="muted">${t('audio.credit')}</small>` : ''}</div>`;
+    <small class="muted">${t('audio.credit')}</small></div></details>` : ''}</div>`;
 }
 
 function wireAudioPanel(root, redraw){
@@ -253,6 +260,7 @@ function wireAudioPanel(root, redraw){
     redraw();
   });
   root.querySelectorAll('[data-track]').forEach(b => b.onclick = () => { Audio_.unlocked = true; if (!Audio_.prefs.music) Audio_.prefs.music = true; Music.setTrack(b.dataset.track); if (!Music.playing) Music.start(); redraw(); });
+  const dd = root.querySelector('.trkdd'); if (dd) dd.ontoggle = () => { Audio_.ddOpen = dd.open; };
   const vol = root.querySelector('#vol'); if (vol) vol.oninput = () => Music.setVolume(vol.value / 100);
 }
 

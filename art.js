@@ -60,6 +60,8 @@ const ICONS = {
   arava:'<path d="M12 21.5V3"/><path class="f" d="M12 8C9.5 7.5 8 6 7.5 3.5 10 4 11.5 5.5 12 8zm0 5c2.5-.5 4-2 4.5-4.5-2.5.5-4 2-4.5 4.5zm0 5c-2.5-.5-4-2-4.5-4.5 2.5.5 4 2 4.5 4.5z"/>',
   lock:'<rect class="f" x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  prev:'<path d="M14.5 6l-6 6 6 6"/>',
+  next:'<path d="M9.5 6l6 6-6 6"/>',
   stop:'<rect class="f" x="6" y="6" width="12" height="12" rx="2"/>',
   flask:'<path class="f" d="M10.5 3.5V9L5 18.5A1.5 1.5 0 0 0 6.3 21h11.4a1.5 1.5 0 0 0 1.3-2.5L13.5 9V3.5"/><path d="M9.5 3.5h5M7.5 15h9"/>',
   tent:'<path class="f" d="M3 20.5L12 4l9 16.5z"/><path d="M9 20.5l3-6 3 6"/>',
