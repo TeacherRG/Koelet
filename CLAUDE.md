@@ -98,6 +98,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Hero screen: age and boy/girl are required, numbered blocks; «Готово» without them turns the missing block red with a hint (`--err`), scrolls to it and speaks the hint.
 - Contrast WCAG AA; mobile first (375 px wide), one-line HUD, final screen in tabs.
 - HUD: the hero chip (top left) opens `showProfile()` — level, progress, achievements; the menu button (top right) opens `showMenu()` — navigation, sound switches, language, «О приложении», donate link. Both are bottom sheets built with `openSheet()` (title + ✕, Escape, tap outside).
+- «Назад» (`#backbar` under `#stage`, `backBar()`/`goBack()`/`backTarget()` in `game.js`) is at the bottom of every screen except the title: a step back inside a world or the prologue, from step 0 to the map, from the map to the title, from «К Шабату» / «Твой стих» to where they were opened. The phone's back button does the same (`armBack()` keeps one extra history entry; `popstate` first closes an open sheet or the quick menu). A new screen needs a line in `backTarget()`.
 - New world visuals: add a theme to `THEMES`/`WORLD_THEME` and a backdrop to `SCENES` in `art.js`.
 
 ## Git

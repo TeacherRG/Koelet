@@ -112,6 +112,19 @@ async function run(browser, base, sc) {
     const text = await page.evaluate(() => document.querySelector('#stage').innerText);
     for (const p of textProblems(text, sc.lang)) add(`[${screen}] ${p}`);
     if (screen === 'final') break;
+    // «Назад» at the bottom and the phone's back button: one step back each
+    if (!seen.back && screen === 'world' && await page.evaluate(() => S.s) >= 3) {
+      seen.back = true;
+      const s0 = await page.evaluate(() => S.s);
+      if (!(await has('#stepback'))) add('no «Назад» button at the bottom of a step');
+      else {
+        await page.click('#stepback');
+        if (await page.evaluate(() => S.s) !== s0 - 1) add(`«Назад» did not go one step back (${s0} → ${await page.evaluate(() => S.s)})`);
+        await page.goBack();
+        await page.waitForFunction(n => S.s === n, s0 - 2, {timeout: 3000}).catch(() => add('the phone\'s back button did not go one step back'));
+      }
+      continue;
+    }
     if (!(await has('.whatif')) && await has('#wi')) { await page.click('#wi'); continue; }
     if (await enabled('#nx')) { await snap(screen); await page.click('#nx'); steps++; continue; }
     if (screen === 'map') { const n = await page.$('.mnode.open'); if (n) { await n.click(); continue; } if (await has('#fin')) { await page.click('#fin'); continue; } }
@@ -232,6 +245,11 @@ async function run(browser, base, sc) {
     await snap('pasuk');
     await page.click('#paback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«Твой стих»: «Назад» did not return to the final screen');
+    // final → «Назад» → map, and the map's «Назад» → title (no «Назад» there)
+    await page.click('#stepback');
+    if (await page.evaluate(() => S.screen) !== 'map') add('«Назад» on the final screen did not open the map');
+    await page.click('#stepback');
+    if (await page.evaluate(() => S.screen) !== 'title' || await page.evaluate(() => !document.querySelector('#backbar').hidden)) add('«Назад» on the map did not open the title screen, or the title has a «Назад» button');
   }
   await ctx.close();
   return {name, steps, problems: [...problems]};

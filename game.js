@@ -253,8 +253,46 @@ function render(){
   stopReading();stopCamera();applyTheme();hud();donateBtn();
   Voice.cancel();
   ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk}[S.screen]||renderTitle)();
+  backBar();armBack();
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
+
+/* ---------- шаг назад: кнопка внизу каждого экрана и системная кнопка «назад» телефона ---------- */
+/* куда ведёт «назад» с текущего экрана; null — некуда (титульный экран) */
+function backTarget(){
+  const s=S.screen;
+  if(s==='world')return S.s>0?()=>{S.s=idx()-1}:'map';
+  if(s==='prologue')return S.ps>0?()=>{S.ps=idx()-1}:(S.mapSeen?'map':'welcome');
+  if(s==='done')return ()=>{S.screen='world';S.s=steps().length-1};
+  if(s==='final')return 'map';
+  if(s==='map'||s==='create')return 'title';
+  if(s==='welcome')return 'create';
+  if(s==='shabbat')return S.shabFrom&&S.shabFrom!=='shabbat'?S.shabFrom:'title';
+  if(s==='pasuk')return S.pasukFrom&&S.pasukFrom!=='pasuk'?S.pasukFrom:'title';
+  return null;
+}
+function goBack(){
+  const to=backTarget();if(!to)return false;
+  sfx.tap();
+  if(typeof to==='string'){go(to);return true}
+  to();save();render();window.scrollTo({top:0,behavior:'smooth'});return true;
+}
+function backBar(){
+  const bar=$('#backbar');if(!bar)return;
+  bar.hidden=!backTarget();
+  bar.innerHTML=bar.hidden?'':`<button class="btn ghost small" id="stepback">${icon('up')}<span>${t('btn.back')}</span></button>`;
+  const b=$('#stepback');if(b)b.onclick=goBack;
+}
+/* системная «назад»: держим в истории одну лишнюю запись; нажатие снимает её — закрываем окно или делаем шаг назад
+   и ставим запись снова. На титульном экране записи нет, и следующее «назад» уходит из игры, как обычно. */
+function armBack(){
+  if(S.screen!=='title'&&!(history.state&&history.state.koelet))try{history.pushState({koelet:1},'')}catch(e){}
+}
+window.addEventListener('popstate',()=>{
+  const m=document.querySelector('.modal'),q=$('#qmenu');
+  if(m||q){if(m)m.remove();if(q)q.remove();armBack();return}
+  if(!goBack())armBack();
+});
 
 function renderTitle(){
   const cols=['#cfe3d6','#f3d9a0','#bcd6ea','#9fd0ae','#f2b8c2','#f2be3d','#d9cdea'];
@@ -867,7 +905,7 @@ function renderDone(){
   $('#nx').onclick=()=>{sfx.tap();go('map')};
 }
 function renderMap(){
-  S._last='map';
+  S._last='map';S.mapSeen=1;
   const firstOpen=S.done.findIndex(d=>!d);
   const prologueDone=S.ps>=PRO().length;
   /* узлы: пролог + 7 миров; тропа петляет слева направо */

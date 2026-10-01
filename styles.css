@@ -22,6 +22,10 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--etrog);outline-
 .app{position:relative;z-index:1;max-width:760px;margin:0 auto;padding-inline:16px;padding-block:10px 80px;display:flex;flex-direction:column;gap:16px;min-height:100%;min-height:100dvh}
 /* The screen fills the whole viewport: the task grows into free space, the buttons sit at the bottom */
 #stage{flex:1 0 auto;display:flex;flex-direction:column}
+.backbar{display:flex;justify-content:flex-start;padding:14px 0 6px}
+.backbar[hidden]{display:none}
+.backbar .btn.ghost{background:var(--panel);box-shadow:var(--shadow)}
+.backbar .btn .ico{transform:rotate(-90deg)}
 .scene>.actions:last-child{margin-top:auto}
 .scene>.opts{flex:1 0 auto;grid-auto-rows:1fr}
 .scene.talk>.say{margin-block:auto}
