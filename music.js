@@ -244,12 +244,12 @@ function audioPanelHTML(compact, opt){
   if (compact) return `<div class="audiopanel compact" role="group" aria-label="${t('audio.title')}">${head}</div>`;
   const opts = [['all', t('audio.all')], ...Audio_.tracks.map(tr => [tr.id, Music.title(tr)])];
   const cur = (opts.find(([id]) => id === P.track) || opts[0])[1];
-  /* мелодии, громкость и авторство — в выпадающем списке под одной кнопкой «Мелодия» */
+  /* мелодии, громкость и авторство — в подменю «Мелодия · текущая», как «Твоя часть в Торе» и «Язык» */
   return `<div class="audiopanel" role="group" aria-label="${o.title || t('audio.title')}">${head}
-    ${Audio_.tracks.length ? `<details class="trkdd" ${Audio_.ddOpen ? 'open' : ''}><summary class="swrow">${icon('note')}<span>${t('audio.track')}<small>${esc(cur)}</small></span><i class="chev" aria-hidden="true">${icon('next')}</i></summary>
-    <div class="trklist" role="radiogroup" aria-label="${t('audio.track')}">${opts.map(([id, name]) => `<button class="trk ${P.track === id ? 'on' : ''}" data-track="${id}" role="radio" aria-checked="${P.track === id}">${icon(P.track === id ? 'check' : 'note')}<span>${esc(name)}</span></button>`).join('')}
+    ${Audio_.tracks.length ? `<button class="mitem mgroup" data-trkgrp aria-expanded="${!!Audio_.ddOpen}" aria-controls="msub-trk">${icon('note')}<span>${t('audio.track')} · ${esc(cur)}</span><i class="mchev ${Audio_.ddOpen ? 'open' : ''}" aria-hidden="true">${icon('up')}</i></button>
+    <div class="msub" id="msub-trk" ${Audio_.ddOpen ? '' : 'hidden'}>${opts.map(([id, name]) => `<button class="mitem ${P.track === id ? 'on' : ''}" data-track="${id}" aria-current="${P.track === id}">${icon(P.track === id ? 'check' : 'note')}<span>${esc(name)}</span></button>`).join('')}
     <label class="lbl" for="vol">${t('audio.volume')}</label><input type="range" id="vol" min="0" max="100" step="5" value="${Math.round(P.volume * 100)}">
-    <small class="muted">${t('audio.credit')}</small></div></details>` : ''}</div>`;
+    <small>${t('audio.credit')}</small></div>` : ''}</div>`;
 }
 
 function wireAudioPanel(root, redraw){
@@ -260,7 +260,7 @@ function wireAudioPanel(root, redraw){
     redraw();
   });
   root.querySelectorAll('[data-track]').forEach(b => b.onclick = () => { Audio_.unlocked = true; if (!Audio_.prefs.music) Audio_.prefs.music = true; Music.setTrack(b.dataset.track); if (!Music.playing) Music.start(); redraw(); });
-  const dd = root.querySelector('.trkdd'); if (dd) dd.ontoggle = () => { Audio_.ddOpen = dd.open; };
+  const grp = root.querySelector('[data-trkgrp]'); if (grp) grp.onclick = () => { Audio_.ddOpen = !Audio_.ddOpen; if (typeof sfx !== 'undefined') sfx.tap(); redraw(); };
   const vol = root.querySelector('#vol'); if (vol) vol.oninput = () => Music.setVolume(vol.value / 100);
 }
 
