@@ -534,6 +534,7 @@ a.btn{text-decoration:none}
 .trk .ico{width:18px;height:18px;color:var(--muted)}
 .trk.on{background:var(--etrog-soft);border-color:var(--etrog);font-weight:700}
 .trk.on .ico{color:var(--leaf)}
+.trklist>small{font-size:0.75rem;padding:4px 10px}
 .audiopanel input[type=range]{width:100%;accent-color:var(--leaf);min-height:36px}
 .audiopanel small{font-size:0.75rem}
 .audiopanel.compact{flex-direction:row;flex-wrap:wrap;gap:8px}
