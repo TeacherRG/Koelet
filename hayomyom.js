@@ -74,31 +74,47 @@ async function personalHayom(){
 
 /* ---------- экран ---------- */
 function openHayom(){if(S.screen!=='hayom')S.hayomFrom=S.screen;go('hayom')}
-function renderHayom(){
+/* форма дня рождения: здесь и в мастере «Мой удел в Торе» (full — ещё год по еврейскому счёту и место рождения:
+   они нужны главе рождения) */
+function bdayFormHTML(full){
   const b=S.bday||(S.bday={mode:'g',g:'',sunset:false,hd:'',hm:''});
-  const months=tl('hy.months');
+  const months=tl('hy.months'),thisYear=new Date().getFullYear()+3761;
+  return `<div class="group"><h3 id="hymode-l">${t('hy.modeH')}</h3>
+      <div class="seg" role="group" aria-labelledby="hymode-l">${['g','h'].map(k=>`<button class="segb ${b.mode===k?'on':''}" data-hymode="${k}" aria-pressed="${b.mode===k}">${t('hy.mode.'+k)}</button>`).join('')}</div>
+      ${b.mode==='g'?`<div class="field"><label for="hyg">${t('hy.gLabel')}</label><input type="date" id="hyg" max="${new Date().toISOString().slice(0,10)}" value="${esc(b.g||'')}"></div>
+        <label class="cert-pt"><input type="checkbox" id="hysun" ${b.sunset?'checked':''}> <span>${t('hy.sunset')}</span></label>`
+      :`<div class="hy-row"><div class="field"><label for="hyd">${t('hy.dLabel')}</label><select id="hyd"><option value="">—</option>${Array.from({length:30},(_,i)=>`<option value="${i+1}" ${+b.hd===i+1?'selected':''}>${i+1}</option>`).join('')}</select></div>
+        <div class="field"><label for="hym">${t('hy.mLabel')}</label><select id="hym"><option value="">—</option>${HY_PICK.map(k=>`<option value="${k}" ${String(b.hm)===String(k)?'selected':''}>${esc(k==='adar'?t('hy.adar'):months[k])}</option>`).join('')}</select></div></div>
+        ${full?`<div class="field"><label for="hyy">${t('hy.yLabel')}</label><input type="number" id="hyy" inputmode="numeric" min="5600" max="${thisYear}" placeholder="${thisYear-30}" value="${esc(b.hy||'')}"></div>
+        <p class="muted pasuk-hint">${t('hy.yHint')}</p>`:''}`}
+    </div>
+    ${full?`<div class="group"><h3 id="hyil-l">${t('hy.placeH')}</h3>
+      <div class="seg" role="group" aria-labelledby="hyil-l">${[[0,'hy.place.d'],[1,'hy.place.il']].map(([v,k])=>`<button class="segb ${!!b.il===!!v?'on':''}" data-hyil="${v}" aria-pressed="${!!b.il===!!v}">${t(k)}</button>`).join('')}</div>
+      <p class="muted pasuk-hint">${t('hy.placeHint')}</p></div>`:''}`;
+}
+/* again() — перерисовать форму (смена «обычная/еврейская»), upd() — дата изменилась */
+function wireBdayForm(again,upd){
+  const b=S.bday,ch=()=>{save();upd()};
+  stage.querySelectorAll('[data-hymode]').forEach(x=>x.onclick=()=>{b.mode=x.dataset.hymode;sfx.tap();save();again();const f=stage.querySelector(`[data-hymode="${b.mode}"]`);if(f)f.focus()});
+  stage.querySelectorAll('[data-hyil]').forEach(x=>x.onclick=()=>{b.il=x.dataset.hyil==='1';sfx.tap();save();again();const f=stage.querySelector(`[data-hyil="${x.dataset.hyil}"]`);if(f)f.focus()});
+  const g=$('#hyg');if(g)g.onchange=g.oninput=()=>{b.g=g.value;ch()};
+  const sun=$('#hysun');if(sun)sun.onchange=()=>{b.sunset=sun.checked;ch()};
+  const d=$('#hyd');if(d)d.onchange=()=>{b.hd=d.value;ch()};
+  const m=$('#hym');if(m)m.onchange=()=>{b.hm=m.value;ch()};
+  const y=$('#hyy');if(y)y.oninput=()=>{b.hy=y.value.replace(/\D/g,'').slice(0,4);ch()};
+}
+function renderHayom(){
   stage.innerHTML=`<section class="scene pasuk hayom">
     <div><button class="btn ghost small" id="hyback">${t('shab.back')}</button></div>
     <span class="kicker">${icon('candles')} ${t('hy.kicker')}</span>
     <h2 class="h2">${t('hy.title')}</h2>
     <p class="lead">${t('hy.lead')}</p>
     <p class="shab-note">${icon('lock')}<span>${t('hy.note')}</span></p>
-    <div class="group"><h3 id="hymode-l">${t('hy.modeH')}</h3>
-      <div class="seg" role="group" aria-labelledby="hymode-l">${['g','h'].map(k=>`<button class="segb ${b.mode===k?'on':''}" data-hymode="${k}" aria-pressed="${b.mode===k}">${t('hy.mode.'+k)}</button>`).join('')}</div>
-      ${b.mode==='g'?`<div class="field"><label for="hyg">${t('hy.gLabel')}</label><input type="date" id="hyg" max="${new Date().toISOString().slice(0,10)}" value="${esc(b.g||'')}"></div>
-        <label class="cert-pt"><input type="checkbox" id="hysun" ${b.sunset?'checked':''}> <span>${t('hy.sunset')}</span></label>`
-      :`<div class="hy-row"><div class="field"><label for="hyd">${t('hy.dLabel')}</label><select id="hyd"><option value="">—</option>${Array.from({length:30},(_,i)=>`<option value="${i+1}" ${+b.hd===i+1?'selected':''}>${i+1}</option>`).join('')}</select></div>
-        <div class="field"><label for="hym">${t('hy.mLabel')}</label><select id="hym"><option value="">—</option>${HY_PICK.map(k=>`<option value="${k}" ${String(b.hm)===String(k)?'selected':''}>${esc(k==='adar'?t('hy.adar'):months[k])}</option>`).join('')}</select></div></div>`}
-    </div>
+    ${bdayFormHTML(false)}
     <div id="hyres" aria-live="polite"></div>
     <p class="muted pasuk-src">${t('hy.src')}</p>
   </section>`;
-  const upd=()=>{save();showHayom()};
-  stage.querySelectorAll('[data-hymode]').forEach(x=>x.onclick=()=>{b.mode=x.dataset.hymode;sfx.tap();save();renderHayom();const f=stage.querySelector(`[data-hymode="${b.mode}"]`);if(f)f.focus()});
-  const g=$('#hyg');if(g)g.onchange=g.oninput=()=>{b.g=g.value;upd()};
-  const sun=$('#hysun');if(sun)sun.onchange=()=>{b.sunset=sun.checked;upd()};
-  const d=$('#hyd');if(d)d.onchange=()=>{b.hd=d.value;upd()};
-  const m=$('#hym');if(m)m.onchange=()=>{b.hm=m.value;upd()};
+  wireBdayForm(renderHayom,showHayom);
   $('#hyback').onclick=()=>{sfx.tap();go(S.hayomFrom&&S.hayomFrom!=='hayom'?S.hayomFrom:'title')};
   showHayom();
 }

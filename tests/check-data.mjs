@@ -135,6 +135,23 @@ for (const lang of langs) {
   }
 }
 
+// texts about the weekly portions (content/<lang>/parsha.json, filled in by the author): 54 portions in the order of
+// data/parsha.json, the same structure in every language; empty fields are simply not shown
+{
+  const ph = await load('data/parsha.json');
+  if (ph) {
+    for (const k of ['d', 'il']) if (Object.keys(ph[k] || {}).length !== 14) err('data/parsha.json', `${k}: expected 14 year types — rebuild with node tools/build-parsha.mjs`);
+    if ((ph.he || []).length !== 54 || (ph.ranges || []).length !== 54) err('data/parsha.json', 'expected 54 portions');
+  }
+  const ref = await load(`content/${REF}/parsha.json`);
+  if (ref && (ref.parshiot || []).length !== 54) err(`content/${REF}/parsha.json`, 'expected 54 portions');
+  if (ref && ph) ref.parshiot.forEach((p, i) => { if (p.he !== ph.he[i]) err(`content/${REF}/parsha.json`, `portion ${i + 1}: "he" must be ${ph.he[i]}`); });
+  for (const lang of langs) if (lang !== REF) {
+    const val = await load(`content/${lang}/parsha.json`);
+    if (ref !== undefined && val !== undefined) compare(`content/${lang}/parsha.json`, ref, val, lang);
+  }
+}
+
 // the teacher's guide (docs/guide.ru.md) is generated from the Russian texts: rebuild it after text changes
 const {build} = await import('../tools/guide.mjs');
 let guide = '';

@@ -73,6 +73,8 @@ async function run(browser, base, sc) {
     gh.push({m, path: u.pathname, body: req.postData()});
     if (u.pathname === '/repos/TeacherRG/Koelet') return r.fulfill({json: {permissions: {push: true}}});
     if (u.pathname === '/user') return r.fulfill({json: {login: 'tester'}});
+    // a read-only key: the public repository can be read, but writing is refused
+    if (req.headers().authorization === 'Bearer github_pat_readonly' && m !== 'GET') return r.fulfill({status: 403, json: {}});
     if (m === 'GET') return r.fulfill({status: 404, json: {}});
     return r.fulfill({status: 201, json: {}});
   });
@@ -313,6 +315,19 @@ async function run(browser, base, sc) {
       await page.click('#galback');
       if (await page.evaluate(() => S.screen) !== 'final') add('«Картина»: «Назад» did not return to the final screen');
     }
+    // «Мой удел в Торе» from the menu: three scrolls — the verse of משה, «Айом-йом» and the portion of 14.03.2012
+    // (Shabbat 17.03.2012 = Vayakhel-Pekudei), and the sheet with all three
+    await page.click('#menubtn'); await page.click('[data-m="mine"]'); await page.click('[data-m="lot"]');
+    await page.waitForFunction(() => document.querySelector('#lot-parsha .pasuk-name') && document.querySelector('#lot-hayom .hy-v') && document.querySelector('#lot-verse .pasuk-v'), null, {timeout: 8000}).catch(() => {});
+    const lot = await page.evaluate(() => ({screen: S.screen, step: S.lotStep, parsha: (document.querySelector('#lot-parsha') || {}).innerText || '', names: tl('parsha.names'),
+      sheet: !!document.querySelector('#lotsheet img'), text: document.querySelector('#stage').innerText}));
+    if (lot.screen !== 'lot' || lot.step) add(`«Мой удел»: screen "${lot.screen}", step "${lot.step}" instead of the three scrolls`);
+    if (!lot.parsha.includes('ויקהל') || !lot.parsha.includes(lot.names[21]) || !lot.parsha.includes(lot.names[22])) add('«Мой удел»: the portion of 14.03.2012 is not Vayakhel-Pekudei: ' + lot.parsha.slice(0, 120));
+    if (!lot.sheet) add('«Мой удел»: the sheet with the three scrolls did not draw');
+    for (const p of textProblems(lot.text, sc.lang)) add(`[lot] ${p}`);
+    await snap('lot');
+    await page.click('#lotback');
+    if (await page.evaluate(() => S.screen) !== 'final') add('«Мой удел»: «Назад» did not return to the final screen');
     // the certificate itself stays as it was; the verse and «Айом-йом» go to the second, personal page
     if (!(await page.evaluate(async () => { const u = await drawPersonalSheet(); return !!u && u.length > 1000 && !!(await personalHayom()) && !!(await personalVerse()); }))) add('the personal page (verse and «Айом-йом») did not draw');
     // final → «Назад» → map, and the map's «Назад» → title (no «Назад» there)
@@ -332,7 +347,13 @@ async function run(browser, base, sc) {
   // screen, a tap on a verse shows the upload button; the picture and gallery/verses.json go to the repository (mocked)
   if (sc.age === 't' && await page.evaluate(() => S.screen) === 'title') {
     adminOn = true;
-    await page.click('#admbtn');
+    // the title has no admin button for players: the way in is at the bottom of «О приложении»
+    if (await page.$('#admbtn')) add('admin: the sign-in button is on the title screen for everyone');
+    await page.click('#aboutbtn'); await page.click('#admabout');
+    await page.fill('#admtok', 'github_pat_readonly');
+    await page.click('#admgo');
+    await page.waitForFunction(t => (document.querySelector('#admmsg') || {}).textContent === t, await page.evaluate(() => t('adm.noRights')), {timeout: 5000}).catch(() => add('admin: a read-only key was let in (or no hint about Contents: Read and write)'));
+    if (await page.evaluate(() => isAdmin())) add('admin: a read-only key was let in');
     await page.fill('#admtok', 'github_pat_test');
     await page.click('#admgo');
     await page.waitForFunction(() => S.screen === 'admin', null, {timeout: 5000}).catch(() => add('admin: sign-in did not open the upload screen'));

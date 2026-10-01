@@ -218,6 +218,7 @@ function guideParts(){
   if (scr === 'pasuk') return [t('voice.pasuk')];
   if (scr === 'hayom') return [t('voice.hayom')];
   if (scr === 'gallery') return [t('voice.gallery')];
+  if (scr === 'lot') return [txt($s('.bubble .txt')), t(S.lotStep === 'name' ? 'voice.lotName' : S.lotStep === 'date' ? 'voice.lotDate' : 'voice.lot')];
   if (scr !== 'world' && scr !== 'prologue') return [];
   let st = steps()[idx()]; if (!st) return [];
   if (typeof st === 'function') st = st(S);
