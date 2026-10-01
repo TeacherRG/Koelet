@@ -106,7 +106,7 @@ async function run(browser, base, sc) {
 
   const has = async s => (await page.$(s)) !== null;
   const enabled = async s => { const e = await page.$(s); return !!e && await e.isEnabled(); };
-  let steps = 0, ownUsed = false, i = 0;
+  let steps = 0, ownUsed = false, rechosen = false, i = 0;
   for (; i < 700; i++) {
     const screen = await page.evaluate(() => S.screen);
     const text = await page.evaluate(() => document.querySelector('#stage').innerText);
@@ -123,6 +123,14 @@ async function run(browser, base, sc) {
     if (await has('#camskip')) { seen.mirror = true; await snap('mirror'); await page.click('#camskip'); continue; }
     if (!ownUsed && await has('#ownok') && await has('.opts') && await enabled('#ownin')) { await page.fill('#ownin', ownFlow); await page.click('#ownok'); ownUsed = true; continue; }
     const opts = await page.$$('.opt:not([disabled])');
+    if (opts.length > 1 && !rechosen) {
+      // an accidental tap can be undone: the second option replaces the first, sparks are given once
+      rechosen = true; await opts[0].click(); const sp = await page.evaluate(() => S.sparks);
+      await opts[1].click();
+      const ok = await page.evaluate(sp => S.sparks === sp && document.querySelectorAll('.opt.picked').length === 1 && document.querySelectorAll('.opt')[1].classList.contains('picked'), sp);
+      if (!ok) add('a picked option cannot be changed (or sparks are given twice)');
+      continue;
+    }
     if (opts.length) { await opts[i % opts.length].click(); continue; }
     if (await has('#tap')) { await page.click('#tap'); await page.waitForTimeout(250); continue; }
     if (await has('#show')) { await page.click('#show'); continue; }

@@ -86,7 +86,7 @@ document.addEventListener('visibilitychange', () => {
    см. voice-key.js и tools/tts.mjs). Предложения, которых нет в audio/<язык>/index.json
    (имя героя, числа, новые тексты), говорит синтез речи браузера. */
 const Voice = {
-  seq: 0, idleMs: 60000, idleT: null, el: null, keys: null, keysLang: null, speaking: false, reading: false,
+  seq: 0, idleMs: 60000, gapMs: 500, idleT: null, el: null, keys: null, keysLang: null, speaking: false, reading: false,
   synthOk(){ try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'; } catch (e) { return false; } },
   can(){ return !!this.keys || this.synthOk(); },
   /* Список готовых фраз для текущего языка (один раз на язык). */
@@ -153,13 +153,17 @@ const Voice = {
   say(parts, {force = false, reading = false} = {}){
     this.load();
     if ((!Audio_.prefs.voice && !force) || !this.can() || !Audio_.unlocked) return Promise.resolve(false);
-    const sents = [].concat(parts).filter(Boolean).flatMap(p => VoiceKey.sentences(p));
+    const sents = [].concat(parts).filter(Boolean).flatMap((p, n) => VoiceKey.sentences(p).map(text => ({text, n})));
     if (!sents.length) return Promise.resolve(false);
-    /* подряд идущие предложения без файла — одной фразой, чтобы синтез звучал связно */
+    /* Заголовок и текст, фраза и подсказка — разные части: между ними пауза. Строка без точки
+       в конце (заголовок) тоже отделяется паузой, а для синтеза браузера получает точку. */
+    const open = s => !/[.!?…:;][»"“”)\]]*$/.test(s);
     const items = [];
-    for (const s of sents) {
+    for (const {text: s, n} of sents) {
       const url = this.clip(s), last = items[items.length - 1];
-      if (!url && last && !last.url) last.text += ' ' + s; else items.push({url, text: s});
+      const gap = !last ? 0 : last.n !== n || open(last.text) ? this.gapMs : 0;
+      /* подряд идущие предложения без файла — одной фразой, чтобы синтез звучал связно */
+      if (!url && last && !last.url && !gap) last.text += ' ' + s; else items.push({url, text: s, n, gap});
     }
     this.cancel(); const my = this.seq;
     this.speaking = true; this.reading = reading; clearTimeout(this.idleT); Music.duck(true);
@@ -167,9 +171,10 @@ const Voice = {
     return (async () => {
       let any = false;
       for (const it of items) {
+        if (it.gap && any) await new Promise(r => setTimeout(r, it.gap));
         if (my !== this.seq) return null;
         let ok = it.url ? await this._clip(it.url, my) : false;
-        if (!ok && my === this.seq) ok = await this._synth(it.text, my);
+        if (!ok && my === this.seq) ok = await this._synth(open(it.text) ? it.text + '.' : it.text, my);
         any = any || ok;
       }
       if (my !== this.seq) return null;

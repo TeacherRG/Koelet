@@ -428,6 +428,8 @@ function head(){
 }
 const letter=i=>(t('letters')[i]||String(i+1));
 function optHTML(o,i){return `<button class="opt" data-i="${i}"><span class="ic ${o.ic?'e':''}" aria-hidden="true">${o.ic?icon(o.ic):letter(i)}</span><span class="ot"><span>${esc(o.t)}</span>${o.s?`<small>${esc(o.s)}</small>`:''}</span></button>`}
+/* выбранный вариант подсвечен, остальные приглушены, но нажимаются — ответ можно поменять */
+function markPick(sel,b){stage.querySelectorAll(sel).forEach(x=>{x.classList.remove('picked','dim');x.classList.add(x===b?'picked':'dim');x.setAttribute('aria-pressed',x===b)})}
 function hintBtn(h){return h?`<button class="btn ghost small" data-hint>${t('hint.btn')}</button>`:''}
 function wireHint(h,container){
   const b=(container||stage).querySelector('[data-hint]');if(!b)return;
@@ -463,20 +465,28 @@ function rChoice(st){
     <div id="out"></div><div id="wil"></div>
     <div class="actions" id="act">${hintBtn(hint)}</div></section>`;
   wireHint(hint);
+  /* ответ можно поменять (случайное нажатие): счётчики прежнего ответа откатываются, искры — только за первый */
+  let prev=null;
+  const fx=(o,k)=>{
+    if(o.help)S.help+=k;
+    if(o.insight){S.insight+=k;if(/^mirror\d/.test(st.key||''))S.mi=(S.mi||0)+k}
+    if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+k;if(S.tools[o.tool]<=0)delete S.tools[o.tool]}
+  };
   const pick=(o,b)=>{
+    if(prev&&(prev===o||(prev.own&&o.own&&prev.t===o.t)))return;
     haptic('choice');
-    stage.querySelectorAll('.opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});
-    const ow=stage.querySelector('.own');if(ow){ow.querySelectorAll('input,button').forEach(x=>x.disabled=true);if(!o.own)ow.remove()}
+    markPick('.opt',b);
     if(st.key){S.ans[st.key]=o.v||o.t;if(st.key==='city')S.city=o.v}
-    if(o.help){S.help++;if(S.help>=3)unlock('friend')}
-    if(o.insight){S.insight++;if(/^mirror\d/.test(st.key||''))S.mi=(S.mi||0)+1}
+    if(prev)fx(prev,-1);fx(o,1);
+    if(o.help&&S.help>=3)unlock('friend');
     let extra='';
-    if(o.tool){S.tools[o.tool]=(S.tools[o.tool]||0)+1;const tool=TOOLS[o.tool];extra=`<p class="lit">${icon(tool[0])}<b>${t('choice.toolLit',{name:tool[1]})}</b></p>`}
-    addSparks(10,b);sfx.good();setMood('warm'); // искры одинаковые за любой ответ
+    if(o.tool){const tool=TOOLS[o.tool];extra=`<p class="lit">${icon(tool[0])}<b>${t('choice.toolLit',{name:tool[1]})}</b></p>`}
+    if(!prev)addSparks(10,b);else save();
+    prev=o;sfx.good();setMood('warm'); // искры одинаковые за любой ответ
     Voice.say([o.r,st.after,t('voice.continue')]);
     $('#out').innerHTML=`${sayHTML('hero',esc(o.t))}<div class="resp"><span class="who">${t('choice.what')}</span><p>${esc(o.r)}</p>${extra}${st.after?`<p class="muted">${esc(st.after)}</p>`:''}</div>`;
     const tb=stage.querySelector('.toolbox');if(tb)tb.outerHTML=toolbox();
-    const others=st.options.filter(x=>x!==o&&x.r!==o.r);
+    const others=st.options.filter(x=>x!==o&&x.r!==o.r);$('#wil').innerHTML='';
     $('#act').innerHTML=`${whatif&&others.length?`<button class="btn ghost small" id="wi">${t('choice.whatif')}</button>`:''}<button class="btn" id="nx">${t('btn.continueShort')}</button>`;
     const wi=$('#wi');if(wi)wi.onclick=()=>{sfx.soft();wi.remove();
       $('#wil').innerHTML=`<div class="whatif"><span class="kicker">${t('choice.others')}</span>${others.map(x=>`<div class="wi"><b>${x.ic?icon(x.ic)+' ':''}${esc(x.t)}</b><p>${esc(x.r)}</p></div>`).join('')}</div>`;
@@ -518,10 +528,11 @@ function rQuote(st){
     $('#tr').innerHTML=`<p style="font-size:1.1875rem;font-weight:500">${esc(st.tr??st.ru)}</p><p class="muted">${esc(st.plain)}</p>`;
     $('#qq').innerHTML=`${sayHTML(M,esc(st.q),'think')}<div class="opts" style="margin-top:12px">${st.options.map((o,i)=>optHTML({t:o},i)).join('')}</div><div id="out" style="margin-top:12px"></div>`;
     $('#act').innerHTML=hintBtn(DEF_HINT);wireHint(DEF_HINT);
+    let got=false;
     stage.querySelectorAll('#qq .opt').forEach(b=>b.onclick=()=>{
-      haptic('choice');
-      stage.querySelectorAll('#qq .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});
-      addSparks(10,b);sfx.good();
+      if(b.classList.contains('picked'))return;
+      haptic('choice');markPick('#qq .opt',b);
+      if(!got)addSparks(10,b);got=true;sfx.good();
       $('#out').innerHTML=`<div class="resp"><span class="who">${t('mentor.name')}</span><p>${esc(st.r)}</p></div>`;setMood('warm');
       $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.continueShort')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()};
     });
@@ -593,7 +604,8 @@ function gTreasure(){
   const done=()=>{if(!document.body.contains(ar))return;addSparks(25,ar);
     $('#out').innerHTML=`${sayHTML(M,t('treasure.full'),'think')}<div class="opts" style="margin-top:12px">${tl('treasure.opts').map((x,i)=>optHTML({t:x},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
     const RR=tl('treasure.resp');
-    stage.querySelectorAll('#out .opt').forEach(b=>b.onclick=()=>{haptic('choice');stage.querySelectorAll('#out .opt').forEach(x=>{x.disabled=true;x.classList.add(x===b?'picked':'dim')});addSparks(10,b);sfx.good();
+    let got=false;
+    stage.querySelectorAll('#out .opt').forEach(b=>b.onclick=()=>{if(b.classList.contains('picked'))return;haptic('choice');markPick('#out .opt',b);if(!got)addSparks(10,b);got=true;sfx.good();
       $('#o2').innerHTML=`<div class="resp"><span class="who">${t('choice.what')}</span><p>${esc(RR[+b.dataset.i])}</p></div>`;
       $('#act').innerHTML=`<button class="btn" id="nx">${t('btn.continueShort')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}});
     $('#out').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -709,6 +721,7 @@ function gPuzzle(){
     <div id="out"></div><div class="actions" id="act">${hintBtn(t('puzzle.hint'))}<button class="btn ghost small" id="autosolve">${t('puzzle.solve')}</button></div></section>`;
   wireHint(t('puzzle.hint'));
   const box=$('#jig');
+  box.addEventListener('mousedown',e=>e.preventDefault()); // мышь тянет деталь, а не выделяет текст страницы
   const reveal=idx=>{if(idx==null||shown.has(idx))return;shown.add(idx);const p=P[idx];sfx.good();
     $('#out').innerHTML=`<div class="resp"><span class="who">${esc(p[1])}</span><p>${esc(p[2])}</p></div>`;
     $('#jigcnt').textContent=t('puzzle.count',{n:shown.size})};
@@ -722,7 +735,8 @@ function gPuzzle(){
   const n=jigN();
   Promise.all([loadHeadbreaker(),jigsawImage(P,200)]).then(([,img])=>{
     if(!document.body.contains(box))return;
-    const W=Math.max(260,Math.floor(box.clientWidth)),H=Math.round(n>3?Math.min(W*1.3,640):Math.min(W*1.05,560));
+    /* поле целиком помещается в окно (на ноутбуке иначе низ уходит за край экрана) */
+    const W=Math.max(260,Math.floor(box.clientWidth)),H=Math.round(Math.min(n>3?Math.min(W*1.3,640):Math.min(W*1.05,560),Math.max(300,innerHeight-130)));
     const size=Math.floor(n>3?Math.min(W/7.2,H/7.2,80):Math.min(W/4.8,H/4.8,104));
     box.innerHTML='';box.style.height=H+'px';
     const cv=new headbreaker.Canvas('jig',{width:W,height:H,pieceSize:size,proximity:Math.round(size/5),borderFill:Math.round(size/10),
@@ -735,9 +749,20 @@ function gPuzzle(){
     cv.puzzle.pieces.forEach((pc,i)=>{const c=cells[i];
       pc.relocateTo(cl((c%n+.5)*cw+(Math.random()-.5)*Math.max(0,cw-2*rad),rad,W-rad),cl((Math.floor(c/n)+.5)*ch+(Math.random()-.5)*Math.max(0,ch-2*rad),rad,H-rad))});
     cv.attachSolvedValidator();
+    /* собранная группа двигается целиком: поднимаем её над остальными деталями и после броска
+       возвращаем в поле, если какая-то её часть уехала за край (иначе её не достать) */
+    const group=pc=>{const g=[pc];for(let k=0;k<g.length;k++)g[k].presentConnections.forEach(x=>{if(!g.includes(x))g.push(x)});return g};
+    const pieceOf=node=>cv.puzzle.pieces.find(pc=>{const f=cv.getFigure(pc);return f&&f.group===node});
+    const stg=cv.__konvaLayer__.getStage(),pad=Math.round(size*.3);
+    stg.on('dragmove',e=>{const pc=pieceOf(e.target);if(!pc)return;group(pc).forEach(x=>{if(x!==pc)cv.getFigure(x).group.moveToTop()});e.target.moveToTop()});
+    stg.on('dragend',e=>{const pc=pieceOf(e.target);if(!pc)return;const g=group(pc);
+      const l=Math.min(...g.map(x=>x.leftAnchor.x))-pad,r=Math.max(...g.map(x=>x.rightAnchor.x))+pad,
+        u=Math.min(...g.map(x=>x.upAnchor.y))-pad,d=Math.max(...g.map(x=>x.downAnchor.y))+pad;
+      const dx=l<0?-l:r>W?W-r:0,dy=u<0?-u:d>H?H-d:0;
+      if(dx||dy){g.forEach(x=>x.translate(Math.round(dx),Math.round(dy)));cv.redraw()}});
     cv.onConnect((a,_fa,b)=>{tone(560,.08);reveal(a.metadata.meaning);reveal(b.metadata.meaning)});
     cv.onValid(()=>{if(cv.valid)finish()});
-    cv.draw();
+    cv.draw();box.scrollIntoView({behavior:'smooth',block:'nearest'});
     $('#autosolve').onclick=()=>{cv.solve();
       const xs=cv.puzzle.pieces.map(pc=>pc.centralAnchor.x),ys=cv.puzzle.pieces.map(pc=>pc.centralAnchor.y);
       cv.puzzle.translate(Math.round(W/2-(Math.min(...xs)+Math.max(...xs))/2),Math.round(H/2-(Math.min(...ys)+Math.max(...ys))/2));
