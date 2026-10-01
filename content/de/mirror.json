@@ -184,6 +184,10 @@
       "game": "selfmirror"
     },
     {
+      "type": "mini",
+      "game": "pasuk"
+    },
+    {
       "type": "choice",
       "who": "mentor",
       "text": "Was hast du im Spiegelsaal bemerkt?",
