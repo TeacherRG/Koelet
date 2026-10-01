@@ -45,3 +45,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.```
+
+## Шрифты (`fonts/`)
+
+Unbounded, Onest и Frank Ruhl Libre — SIL Open Font License 1.1 (https://openfontlicense.org).
+Файлы woff2 взяты с Google Fonts и хранятся на сайте, чтобы браузер игрока не обращался к Google.

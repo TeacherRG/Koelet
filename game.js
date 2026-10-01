@@ -2,8 +2,36 @@
 const KEY='koelet-game-v1';
 const fresh=()=>({v:1,screen:'title',hero:{name:'',age:null,g:null,arch:0,look:0,outfit:0},w:0,s:0,ps:0,done:[0,0,0,0,0,0,0],sparks:0,ach:{},ans:{},qualities:[],lab:{can:[],like:[],need:[],help:[]},tools:{},help:0,insight:0,sound:false,phrase:null,own:{}});
 let S=fresh();
-function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&d.v===1)S=Object.assign(fresh(),d)}}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* Динамические стили. CSP разрешает стили только из styles.css (style-src 'self'), поэтому style="…" в
+   разметке браузер выбросит. Шаблоны пишут data-css="свойство:значение;…", а здесь значения ставятся через
+   el.style (CSSOM разрешён) — только известные свойства и значения без url(), так что вставленная
+   чужая разметка не сможет так ничего нарисовать. Срабатывает на любой новый элемент на странице. */
+const CSS_PROPS=/^(--[a-z]+|left|top|width|height|background|animation-delay|aspect-ratio|fill|stroke|stroke-width)$/;
+function applyCss(root){
+  const els=root.matches&&root.matches('[data-css]')?[root]:[];
+  if(root.querySelectorAll)els.push(...root.querySelectorAll('[data-css]'));
+  for(const el of els){
+    for(const d of el.getAttribute('data-css').split(';')){const i=d.indexOf(':');if(i<0)continue;
+      const k=d.slice(0,i).trim(),v=d.slice(i+1).trim();
+      if(CSS_PROPS.test(k)&&/^[-\w.%#(),\s\/]*$/.test(v)&&!/url|expression/i.test(v))el.style.setProperty(k,v)}
+    el.removeAttribute('data-css');
+  }
+}
+new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes)if(n.nodeType===1)applyCss(n)}).observe(document.documentElement,{childList:true,subtree:true});
+/* Фото для сертификата — только на время вкладки (sessionStorage): на общем или школьном компьютере
+   оно не остаётся после закрытия игры. Прогресс и ответы — в localStorage, без фото. */
+const PHOTO_KEY='koelet-photo';
+function load(){
+  try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&d.v===1){
+    if(d.photo){delete d.photo;delete d.photoOff;localStorage.setItem(KEY,JSON.stringify(d))} // фото из старых версий стираем
+    S=Object.assign(fresh(),d)}}}catch(e){}
+  try{const p=sessionStorage.getItem(PHOTO_KEY);if(p)S.photo=p}catch(e){}
+}
+let savedPhoto;
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S,(k,v)=>k==='photo'?undefined:v))}catch(e){}
+  if(S.photo!==savedPhoto){savedPhoto=S.photo;try{S.photo?sessionStorage.setItem(PHOTO_KEY,S.photo):sessionStorage.removeItem(PHOTO_KEY)}catch(e){}}
+}
 
 /* ================================================================
    HELPERS
@@ -43,7 +71,7 @@ function avatar(p){
   return `<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#dcebe2"/>${back}<path d="M16 100 Q18 69 50 67 Q82 69 84 100Z" fill="${out}"/><rect x="45" y="56" width="10" height="12" fill="${L.skin}"/><circle cx="50" cy="42" r="18" fill="${L.skin}"/>${hair}<circle cx="43" cy="44" r="2.2" fill="#1b1b1b"/><circle cx="57" cy="44" r="2.2" fill="#1b1b1b"/><path d="M44 51 Q50 56 56 51" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>${acc}</svg>`;
 }
 const PIECE='M12 12 H40 C38 2 62 2 60 12 H88 V40 C98 38 98 62 88 60 V88 H60 C62 78 38 78 40 88 H12 V60 C22 62 22 38 12 40 Z';
-const pieceSvg=(fill,stroke)=>`<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${PIECE}" style="fill:${fill};stroke:${stroke||'none'};stroke-width:3"/></svg>`;
+const pieceSvg=(fill,stroke)=>`<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${PIECE}" data-css="fill:${fill};stroke:${stroke||'none'};stroke-width:3"/></svg>`;
 
 function speaker(who,mood){
   if(who===M) return {name:t('mentor.name'),svg:mentorSvg(mood),m:1};
@@ -172,9 +200,9 @@ function showProfile(){
   const L=lvl(),into=L>=LEVELS.length?100:(S.sparks%130)/130*100;
   openSheet('profile',t('profile.title'),()=>`
     <div class="prof-top"><div class="prof-av">${avatar(S.hero)}</div><div class="prof-name"><b>${esc(heroName())}</b><span>${t('menu.level',{n:L})} · ${T(LEVELS[L-1])}</span></div></div>
-    <div class="menu-lvl"><div class="bar"><i style="width:${into}%"></i></div><small>${t('menu.stats',{sparks:S.sparks,pieces:S.done.filter(Boolean).length})}</small></div>
+    <div class="menu-lvl"><div class="bar"><i data-css="width:${into}%"></i></div><small>${t('menu.stats',{sparks:S.sparks,pieces:S.done.filter(Boolean).length})}</small></div>
     <div class="menu-sec"><span class="kicker">${t('ach.count',{n:Object.keys(S.ach).length})}</span>${achGrid()}</div>
-    <p class="muted" style="font-size:0.875rem">${t('ach.note')}</p>`);
+    <p class="muted fs-sm">${t('ach.note')}</p>`);
 }
 /* Main menu: navigation first, then sound and language, then info and support */
 function showMenu(){
@@ -242,29 +270,6 @@ function showAbout(){
     <h2 class="h2" id="about-h">${t('title.h1a')} ${t('title.h1b')}</h2><p class="about-made">${t('about.made',{link})}</p></div></div>
     <p>${t('about.text')}</p>
     ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}`);
-}
-/* ---------- Счётчик посещений на титульном экране ----------
-   Бесплатный сервис abacus без cookies: «ещё одно посещение» раз за вкладку, ничего об игроке.
-   До счётчика посещения не считались — берём за начало 99. Считается только на сайте
-   (не на localhost и не в тестах); если сервис недоступен, строка просто не появляется. */
-const VISITS_API='https://abacus.jasoncameron.dev';
-const VISITS_KEY='mylot-mychitas-app/visits';
-const VISITS_BASE=99;
-let visits=null;
-function countVisit(){
-  if(location.hostname!==new URL(APP_URL).hostname)return;
-  let seen=false;try{seen=!!sessionStorage.getItem('koelet-visit')}catch(e){}
-  fetch(`${VISITS_API}/${seen?'get':'hit'}/${VISITS_KEY}`,{credentials:'omit',referrerPolicy:'no-referrer'})
-    .then(r=>r.ok?r.json():null).then(j=>{
-      if(!j||!Number.isFinite(j.value))return;
-      try{sessionStorage.setItem('koelet-visit','1')}catch(e){}
-      visits=VISITS_BASE+j.value;showVisits();
-    }).catch(()=>{});
-}
-function showVisits(){
-  const el=document.getElementById('visits');
-  if(!el||visits==null)return;
-  el.textContent=t('visits.count',{n:visits.toLocaleString(langLocale())});el.hidden=false;
 }
 /* ---------- Провести урок онлайн: предложение автора проекта ---------- */
 const LESSON_EMAIL='office@mychitas.app';
@@ -375,9 +380,7 @@ function renderTitle(){
     <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
-    <p class="copy" id="visits" hidden></p>
   </section>`;
-  showVisits();
   $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
@@ -447,8 +450,8 @@ function renderCreate(){
     ${h.age?`<p class="agenote">${t({y:'create.noteY',t:'create.noteT',a:'create.noteA'}[h.age])}</p>`:''}
     ${req('f-g',2,t('create.address'),!h.g,t('create.needG'),seg('g','m',t('create.m'),t('create.mSub'),'smile')+seg('g','f',t('create.f'),t('create.fSub'),'smile'))}
     <div class="group"><h3>${t('create.role')}</h3><div class="archs">${ARCHS.map((a,i)=>`<button class="arch ${h.arch===i?'on':''}" data-arch="${i}">${avatar({look:h.look,outfit:h.outfit,arch:i})}<span>${esc(T(a.name))}</span></button>`).join('')}</div></div>
-    <div class="group"><h3>${t('create.looks')}</h3><div class="swatches">${LOOKS.map((l,i)=>`<button class="sw ${h.look===i?'on':''}" data-look="${i}" aria-label="${t('create.lookN',{n:i+1})}"><span style="background:linear-gradient(135deg,${l.hair} 50%,${l.skin} 50%)"></span></button>`).join('')}</div></div>
-    <div class="group"><h3>${t('create.outfit')}</h3><div class="swatches">${OUTFITS.map((o,i)=>`<button class="sw ${h.outfit===i?'on':''}" data-outfit="${i}" aria-label="${t('create.outfitN',{n:i+1})}"><span style="background:${o}"></span></button>`).join('')}</div></div>
+    <div class="group"><h3>${t('create.looks')}</h3><div class="swatches">${LOOKS.map((l,i)=>`<button class="sw ${h.look===i?'on':''}" data-look="${i}" aria-label="${t('create.lookN',{n:i+1})}"><span data-css="background:linear-gradient(135deg,${l.hair} 50%,${l.skin} 50%)"></span></button>`).join('')}</div></div>
+    <div class="group"><h3>${t('create.outfit')}</h3><div class="swatches">${OUTFITS.map((o,i)=>`<button class="sw ${h.outfit===i?'on':''}" data-outfit="${i}" aria-label="${t('create.outfitN',{n:i+1})}"><span data-css="background:${o}"></span></button>`).join('')}</div></div>
     <div class="actions"><button class="btn ${ok?'':'wait'}" id="ready">${t('create.ready')}</button>${ok?'':`<span class="need ${createTried?'bad':''}">${icon('info')}${t(!h.age&&!h.g?'create.need':!h.age?'create.needAge':'create.needG')}</span>`}</div>
   </section>`;
   const keep=()=>{const y=window.scrollY;renderCreate();window.scrollTo(0,y)};
@@ -544,7 +547,7 @@ function rChoice(st){
   const hint=st.hint||(st.neutral?DEF_HINT:null);
   const whatif=st.whatif!==false&&new Set(st.options.map(o=>o.r)).size>1;
   stage.innerHTML=`<section class="scene">${head()}${toolbox()}${sayHTML(st.who,esc(st.text),st.mood||'think')}
-    ${st.q?`<p class="h2" style="font-size:1.125rem">${esc(st.q)}</p>`:''}
+    ${st.q?`<p class="h2 fs-md">${esc(st.q)}</p>`:''}
     <div class="opts ${st.compact?'compact':''}" role="group">${st.options.map((o,i)=>optHTML(o,i)).join('')}</div>
     ${st.own?ownHTML(st.own):''}
     <div id="out"></div><div id="wil"></div>
@@ -593,7 +596,7 @@ function rMulti(st){
   const draw=()=>{
     stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,esc(st.text),'think')}
       <div class="chips">${st.options.map((o,i)=>`<button class="chip ${sel.includes(o)?'on':''}" data-i="${i}" aria-pressed="${sel.includes(o)}">${esc(o)}</button>`).join('')}</div>
-      <p class="muted" style="font-size:0.875rem">${t('multi.count',{n:sel.length,max:st.max})}</p>
+      <p class="muted fs-sm">${t('multi.count',{n:sel.length,max:st.max})}</p>
       ${ok?`<div class="own"><label for="ownin">${esc(st.own.label)}</label><input id="ownin" maxlength="40" autocomplete="off" placeholder="${esc(st.own.ph||'')}" value="${esc(S.own[ok]||'')}"><small>${esc(OWN_NOTE)}</small></div>`:''}
       <div class="actions">${hintBtn(st.hint)}<button class="btn" id="nx" ${sel.length<need()?'disabled':''}>${t('btn.choose')}</button></div></section>`;
     wireHint(st.hint);
@@ -610,8 +613,8 @@ function rQuote(st){
     <div id="qq"></div>
     <div class="actions" id="act"><button class="btn" id="show">${t('quote.show')}</button></div></section>`;
   $('#show').onclick=()=>{sfx.tap();
-    $('#tr').innerHTML=`<p style="font-size:1.1875rem;font-weight:500">${esc(st.tr??st.ru)}</p><p class="muted">${esc(st.plain)}</p>`;
-    $('#qq').innerHTML=`${sayHTML(M,esc(st.q),'think')}<div class="opts" style="margin-top:12px">${st.options.map((o,i)=>optHTML({t:o},i)).join('')}</div><div id="out" style="margin-top:12px"></div>`;
+    $('#tr').innerHTML=`<p class="fs-tr">${esc(st.tr??st.ru)}</p><p class="muted">${esc(st.plain)}</p>`;
+    $('#qq').innerHTML=`${sayHTML(M,esc(st.q),'think')}<div class="opts mt12">${st.options.map((o,i)=>optHTML({t:o},i)).join('')}</div><div class="mt12" id="out"></div>`;
     $('#act').innerHTML=hintBtn(DEF_HINT);wireHint(DEF_HINT);
     let got=false;
     stage.querySelectorAll('#qq .opt').forEach(b=>b.onclick=()=>{
@@ -625,9 +628,9 @@ function rQuote(st){
   };
 }
 function artHTML(a){
-  if(a==='solomon')return `<div style="display:grid;gap:8px">${tl('art.solomon').map(x=>[x]).map((r,i)=>`<div class="stat"><span>${r[0]}</span><div class="bar"><i style="animation-delay:${i*.15}s"></i></div></div>`).join('')}</div>`;
-  if(a==='brothers')return `<div style="display:flex;gap:12px;align-items:flex-end;justify-content:center"><div style="text-align:center"><div style="width:84px;height:84px;border-radius:24px;overflow:hidden">${avatar({look:0,outfit:0})}</div><small class="muted">${t('art.menashe')}</small></div><div style="text-align:center"><div style="width:70px;height:70px;border-radius:20px;overflow:hidden;margin:0 auto">${avatar({look:1,outfit:2})}</div><small class="muted">${t('art.efraim')}</small></div></div>`;
-  if(a==='map')return `<div style="display:flex;gap:14px;align-items:center"><div style="width:72px;height:72px;flex:none;border-radius:22px;overflow:hidden;border:2px solid var(--etrog)">${avatar(S.hero)}</div><div><span class="kicker">${esc(heroName())}</span><p class="muted" style="font-size:0.875rem">${t('art.mapNote')}</p></div></div>`;
+  if(a==='solomon')return `<div class="grid8">${tl('art.solomon').map(x=>[x]).map((r,i)=>`<div class="stat"><span>${r[0]}</span><div class="bar"><i data-css="animation-delay:${i*.15}s"></i></div></div>`).join('')}</div>`;
+  if(a==='brothers')return `<div class="art-bro"><div class="tc"><div class="av84">${avatar({look:0,outfit:0})}</div><small class="muted">${t('art.menashe')}</small></div><div class="tc"><div class="av70">${avatar({look:1,outfit:2})}</div><small class="muted">${t('art.efraim')}</small></div></div>`;
+  if(a==='map')return `<div class="art-map"><div class="av72">${avatar(S.hero)}</div><div><span class="kicker">${esc(heroName())}</span><p class="muted fs-sm">${t('art.mapNote')}</p></div></div>`;
   return '';
 }
 function rCard(st){
@@ -648,7 +651,7 @@ function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,mas
 
 function gBook(){
   const cols=['#6e2433','#2c5564','#5a4a78','#3f6b4a','#8a6a3f','#1d2b44','#7a5a2a'];
-  let shelves='';for(let s=0;s<3;s++){let sp='';for(let i=0;i<40;i++){sp+=`<span class="spine" style="width:${8+((i*7+s*3)%9)}px;height:${60+((i*13+s*11)%38)}%;background:${cols[(i+s*2)%cols.length]}"></span>`}shelves+=`<div class="shelf">${sp}</div>`}
+  let shelves='';for(let s=0;s<3;s++){let sp='';for(let i=0;i<40;i++){sp+=`<span class="spine" data-css="width:${8+((i*7+s*3)%9)}px;height:${60+((i*13+s*11)%38)}%;background:${cols[(i+s*2)%cols.length]}"></span>`}shelves+=`<div class="shelf">${sp}</div>`}
   stage.innerHTML=`<section class="scene">${head()}
     <div class="library"><div class="shelves" aria-hidden="true">${shelves}</div><div class="lamp"></div>
       <button class="bookwrap" id="book" aria-label="${t('book.label')}"><div class="book-pages"><span class="glow heb">חֵלֶק ?</span></div><div class="book-cover"><span class="heb">קֹהֶלֶת</span><span class="lat">${t('book.cover')}</span></div><div class="letters" id="letters"></div></button>
@@ -657,7 +660,7 @@ function gBook(){
     <div class="actions" id="act"><button class="btn" id="tap">${t('book.tap')}</button></div></section>`;
   const open=()=>{
     const b=$('#book');if(b.classList.contains('open'))return;b.classList.add('open');sfx.ach();
-    const L='אבגדהוזחטיכלמנסעפצקרשת';let h='';for(let i=0;i<16;i++){const dx=(Math.random()*260-130)|0,dy=-(60+Math.random()*140)|0;h+=`<span style="left:${40+Math.random()*40}%;top:45%;--dx:${dx}px;--dy:${dy}px;animation-delay:${.5+i*.08}s">${L[i%L.length]}</span>`}
+    const L='אבגדהוזחטיכלמנסעפצקרשת';let h='';for(let i=0;i<16;i++){const dx=(Math.random()*260-130)|0,dy=-(60+Math.random()*140)|0;h+=`<span data-css="left:${40+Math.random()*40}%;top:45%;--dx:${dx}px;--dy:${dy}px;animation-delay:${.5+i*.08}s">${L[i%L.length]}</span>`}
     $('#letters').innerHTML=h;
     $('#bt').textContent=t('book.after');
     addSparks(10,b);
@@ -670,8 +673,8 @@ function gTreasure(){
   const c=CITY[S.city||'wealth'];let got=0,inner=20;const N=10;
   stage.innerHTML=`<section class="scene">${head()}
     ${sayHTML(M,t('treasure.say',{what:c.what}),'joy')}
-    <div class="meters"><div class="meter"><span>${t('treasure.got',{what:c.what})}</span><b id="m1">0</b><div class="bar"><i id="b1" style="width:0%"></i></div></div>
-    <div class="meter in"><span>${t('treasure.enough')}</span><b id="m2">20%</b><div class="bar"><i id="b2" style="width:20%"></i></div></div></div>
+    <div class="meters"><div class="meter"><span>${t('treasure.got',{what:c.what})}</span><b id="m1">0</b><div class="bar"><i class="w0" id="b1"></i></div></div>
+    <div class="meter in"><span>${t('treasure.enough')}</span><b id="m2">20%</b><div class="bar"><i class="w20" id="b2"></i></div></div></div>
     <div class="arena" id="ar"></div><div id="out"></div><div class="actions" id="act">${hintBtn(t('treasure.hint'))}</div></section>`;
   wireHint(t('treasure.hint'));
   const ar=$('#ar');
@@ -687,7 +690,7 @@ function gTreasure(){
     };ar.appendChild(b);
   };
   const done=()=>{if(!document.body.contains(ar))return;addSparks(25,ar);
-    $('#out').innerHTML=`${sayHTML(M,t('treasure.full'),'think')}<div class="opts" style="margin-top:12px">${tl('treasure.opts').map((x,i)=>optHTML({t:x},i)).join('')}</div><div id="o2" style="margin-top:12px"></div>`;
+    $('#out').innerHTML=`${sayHTML(M,t('treasure.full'),'think')}<div class="opts mt12">${tl('treasure.opts').map((x,i)=>optHTML({t:x},i)).join('')}</div><div class="mt12" id="o2"></div>`;
     const RR=tl('treasure.resp');
     let got=false;
     stage.querySelectorAll('#out .opt').forEach(b=>b.onclick=()=>{if(b.classList.contains('picked'))return;haptic('choice');markPick('#out .opt',b);if(!got)addSparks(10,b);got=true;sfx.good();
@@ -764,7 +767,7 @@ function gFind(){
   stage.querySelectorAll('.tile').forEach(b=>b.onclick=()=>{
     if(b.classList.contains('hit'))return;
     if(b.dataset.t==='1'){b.classList.add('hit');found++;tone(600+found*50,.12);$('#cnt').textContent=t('find.count',{n:found});
-      if(found===8){addSparks(25,b);sfx.ach();$('#cnt').innerHTML=`<b style="color:var(--etrog)">${t('find.done')}</b>`;$('#act').innerHTML=`<button class="btn" id="nx">${t('find.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}}
+      if(found===8){addSparks(25,b);sfx.ach();$('#cnt').innerHTML=`<b class="c-etrog">${t('find.done')}</b>`;$('#act').innerHTML=`<button class="btn" id="nx">${t('find.next')}</button>`;$('#nx').onclick=()=>{sfx.tap();next()}}}
     else{b.classList.remove('no');void b.offsetWidth;b.classList.add('no');sfx.soft()}
   });
 }
@@ -802,7 +805,7 @@ function gPuzzle(){
   const P=tl('puzzle.pieces');const shown=new Set();let done=false;
   stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t(adult()?'puzzle.sayA':'puzzle.say'),'point')}
     <div class="jig" id="jig" aria-label="${esc(t('puzzle.label'))}"><p class="muted jig-wait">${t('puzzle.loading')}</p></div>
-    <p class="muted" id="jigcnt" style="font-size:0.875rem">${t('puzzle.count',{n:0})}</p>
+    <p class="muted fs-sm" id="jigcnt">${t('puzzle.count',{n:0})}</p>
     <div id="out"></div><div class="actions" id="act">${hintBtn(t('puzzle.hint'))}<button class="btn ghost small" id="autosolve">${t('puzzle.solve')}</button></div></section>`;
   wireHint(t('puzzle.hint'));
   const box=$('#jig');
@@ -860,7 +863,7 @@ function gPuzzle(){
 let camStream=null;
 function stopCamera(){if(camStream){camStream.getTracks().forEach(tr=>tr.stop());camStream=null}}
 window.addEventListener('pagehide',stopCamera);
-// фото для сертификата — только по кнопке, квадрат 400 px в localStorage, никуда не отправляется
+// фото для сертификата — только по кнопке, квадрат 400 px только на время вкладки (sessionStorage, см. save()), никуда не отправляется
 function snapPhoto(v){
   if(!v||!v.videoWidth)return null;
   const z=Math.min(v.videoWidth,v.videoHeight),N=400,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');
@@ -925,7 +928,7 @@ function gSpecies(){
 }
 
 function gSky(){
-  let stars='';for(let i=0;i<24;i++)stars+=`<span class="star" style="left:${(i*37)%100}%;top:${(i*23)%60}%"></span>`;
+  let stars='';for(let i=0;i<24;i++)stars+=`<span class="star" data-css="left:${(i*37)%100}%;top:${(i*23)%60}%"></span>`;
   stage.innerHTML=`<section class="scene">${head()}<article class="card"><span class="kicker">${t('sky.kicker')}</span><h2 class="h2">${t('sky.title')}</h2>
     <p>${esc(tl('sky.text'))}</p>
     <div class="sky" id="sky">${stars}<div class="sun"></div><div class="moon"></div><div class="ground"></div></div>
@@ -983,16 +986,16 @@ function strengthMap(s){
   if(L.can.length)parts.push(`<p>${t('sm.can',{list:list(L.can)})}</p>`);
   if(L.like.length)parts.push(`<p>${t('sm.like',{list:list(L.like)})}</p>`);
   if(L.need.length)parts.push(`<p>${t('sm.need',{list:list(L.need)})}${L.help.length?t('sm.help',{list:list(L.help)}):''}.</p>`);
-  parts.push(`<p style="font-size:1.1875rem;font-weight:600;color:var(--etrog)">${t('sm.share',{what:c?c[1]:t('sm.default')})}</p>`);
+  parts.push(`<p class="fs-share">${t('sm.share',{what:c?c[1]:t('sm.default')})}</p>`);
   parts.push(`<p>${t('sm.gift')}</p>`);
   if(s.ans.flow)parts.push(`<p class="muted">${t('sm.flow',{flow:esc(s.ans.flow)})}</p>`);
-  parts.push(`<p class="muted" style="font-size:0.875rem">${t('sm.rabbi')}</p>`);
+  parts.push(`<p class="muted fs-sm">${t('sm.rabbi')}</p>`);
   return parts.join('');
 }
 
 function gFinal(){
   stage.innerHTML=`<section class="scene">${head()}${sayHTML(M,t('final.say'),'warm')}
-    <div class="bigboard" id="bb">${BOARD.map((b,i)=>b[1]?`<div class="bp" style="background:${b[1]};animation-delay:${i*.06}s">${b[0]}</div>`:`<div class="bp me" id="me">${esc(heroName())}?</div>`).join('')}</div>
+    <div class="bigboard" id="bb">${BOARD.map((b,i)=>b[1]?`<div class="bp" data-css="background:${b[1]};animation-delay:${i*.06}s">${b[0]}</div>`:`<div class="bp me" id="me">${esc(heroName())}?</div>`).join('')}</div>
     <div class="actions" id="act"><button class="btn" id="put">${t('final.put')}</button></div></section>`;
   $('#put').onclick=()=>{const me=$('#me');me.classList.add('in');me.innerHTML=avatar(S.hero);sfx.ach();
     setTimeout(()=>{const bb=$('#bb');if(bb)bb.classList.add('glow')},700);addSparks(30,me);
@@ -1012,7 +1015,7 @@ function completeWorld(){
 function renderDone(){
   const n=S.done.filter(Boolean).length;
   stage.innerHTML=`<section class="scene"><div class="card reveal"><span class="kicker">${t('done.kicker',{n:S.w+1})}</span>
-    <div class="reveal-m">${mentorSvg('joy')}</div><div style="width:90px;animation:pop .6s ease both">${pieceSvg('var(--gold)')}</div>
+    <div class="reveal-m">${mentorSvg('joy')}</div><div class="done-piece">${pieceSvg('var(--gold)')}</div>
     <p class="h2">${t('done.title',{name:esc(WORLDS[S.w].name)})}</p><p class="muted">${t('done.sub',{n})}</p></div>
     <div class="actions"><button class="btn" id="nx">${t('reveal.btn')}</button></div></section>`;
   $('#nx').onclick=()=>{sfx.tap();go('map')};
@@ -1032,10 +1035,10 @@ function renderMap(){
   stage.innerHTML=`<section class="scene">
     <span class="kicker">${t('map.kicker')}</span><h2 class="h2">${t('map.title')}</h2>
     <div class="progress-wrap"><div class="pieces">${S.done.map(d=>pieceSvg(d?'var(--gold)':'none',d?'':'#9fb5aa')).join('')}</div>
-    <div class="bar" style="height:10px"><i style="width:${S.done.filter(Boolean).length/7*100}%"></i></div></div>
-    <div class="tmap" style="height:${Hh}px">
+    <div class="bar bar10"><i data-css="width:${S.done.filter(Boolean).length/7*100}%"></i></div></div>
+    <div class="tmap" data-css="height:${Hh}px">
       <svg class="tmap-road" viewBox="0 0 100 ${Hh}" preserveAspectRatio="none" aria-hidden="true">${road.replace(/class="road[^"]*"/g,'class="road-bed"')}${road}</svg>
-      ${nodes.map((n,k)=>`<button class="mnode ${n.state} ${k%2?'r':'l'}" style="left:${X(k)}%;top:${Y(k)}px;--c:${THEMES[n.theme].accent}" ${n.k==='pro'?'id="pro"':`data-w="${n.k}"`} ${n.state==='lock'?'disabled':''} aria-label="${esc(n.name)}. ${status[n.state]}">
+      ${nodes.map((n,k)=>`<button class="mnode ${n.state} ${k%2?'r':'l'}" data-css="left:${X(k)}%;top:${Y(k)}px;--c:${THEMES[n.theme].accent}" ${n.k==='pro'?'id="pro"':`data-w="${n.k}"`} ${n.state==='lock'?'disabled':''} aria-label="${esc(n.name)}. ${status[n.state]}">
         <span class="isle" aria-hidden="true"></span>
         <span class="disc" aria-hidden="true">${icon(n.state==='lock'?'lock':n.ic)}${n.state==='done'?`<span class="badge">${icon('check')}</span>`:''}</span>
         <span class="mlabel"><span class="st">${n.k==='pro'?(n.state==='done'?t('map.proDone'):t('map.proStart')):status[n.state]}</span><span class="nm">${esc(n.name)}</span><span class="ds">${esc(n.desc)}</span></span>
@@ -1160,7 +1163,7 @@ function renderFinal(){
   const tab=S._tab||'cert';
   const tabs=[['cert',t('final.tabCert'),'scroll'],['path',t('final.tabPath'),'map'],['ach',t('final.tabAch'),'medal']];
   stage.innerHTML=`<section class="scene final-grid">
-    <div class="final-hero"><div class="final-m">${mentorSvg('joy')}</div><div><span class="kicker">${t('final.kicker',{name:esc(heroName())})}</span><h1 class="h1">${t('final.h1a')} <span style="color:var(--pome)">${t('final.h1b')}</span></h1>
+    <div class="final-hero"><div class="final-m">${mentorSvg('joy')}</div><div><span class="kicker">${t('final.kicker',{name:esc(heroName())})}</span><h1 class="h1">${t('final.h1a')} <span class="c-pome">${t('final.h1b')}</span></h1>
     <p class="lead">${t('final.lead')}</p></div></div>
     <div class="tabs" role="tablist" aria-label="${t('final.tabs')}">${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" role="tab" id="tab-${t[0]}" aria-selected="${tab===t[0]}" aria-controls="tabp" data-tab="${t[0]}">${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</div>
     <div id="tabp" role="tabpanel" aria-labelledby="tab-${tab}" class="final-grid">${({cert:finalCert,path:finalPath,ach:finalAch})[tab]()}</div>
@@ -1182,15 +1185,15 @@ function renderFinal(){
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
 }
 function finalCert(){
-  return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted" style="font-size:0.875rem">${fmtDate(S.finished)}</span></div>
+  return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted fs-sm">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">${t('cert.nameLabel')}</label><input id="certname" maxlength="24" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(S.hero.name)}"></div>
-      ${S.photo?`<div class="cert-photo"><img src="${S.photo}" alt=""><label class="cert-pt"><input type="checkbox" id="photoon" ${S.photoOff?'':'checked'}> <span>${t('cert.photoOn')}</span></label><button class="btn ghost small" id="photodel">${t('cert.photoDel')}</button></div>`:`<p class="muted" style="font-size:0.875rem">${icon('mirror')} ${t('cert.photoHint')}</p>`}
-      ${(S.hebName||'').trim()?'':`<p class="muted" style="font-size:0.875rem">${icon('scroll')} ${t('cert.verseHint')} <button class="linkbtn" id="certverse">${t('pasuk.open')}</button></p>`}
-      ${bdayHeb()?'':`<p class="muted" style="font-size:0.875rem">${icon('candles')} ${t('cert.hayomHint')} <button class="linkbtn" id="certhayom">${t('hy.open')}</button></p>`}
+      ${S.photo?`<div class="cert-photo"><img src="${S.photo}" alt=""><label class="cert-pt"><input type="checkbox" id="photoon" ${S.photoOff?'':'checked'}> <span>${t('cert.photoOn')}</span></label><button class="btn ghost small" id="photodel">${t('cert.photoDel')}</button></div>`:`<p class="muted fs-sm">${icon('mirror')} ${t('cert.photoHint')}</p>`}
+      ${(S.hebName||'').trim()?'':`<p class="muted fs-sm">${icon('scroll')} ${t('cert.verseHint')} <button class="linkbtn" id="certverse">${t('pasuk.open')}</button></p>`}
+      ${bdayHeb()?'':`<p class="muted fs-sm">${icon('candles')} ${t('cert.hayomHint')} <button class="linkbtn" id="certhayom">${t('hy.open')}</button></p>`}
       <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
       <div class="cert-frame" id="cert2" hidden></div>
       <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a><a class="btn ghost" id="dl2" download="${t('sheet.file')}" href="#" hidden>${t('sheet.download')}</a></div>
-      <p class="muted" style="font-size:0.875rem" id="printnote">${t('cert.note')}</p></article>`;
+      <p class="muted fs-sm" id="printnote">${t('cert.note')}</p></article>`;
 }
 function wireCert(){
   let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate(),u2=await drawPersonalSheet();if(my!==tok||!$('#cert'))return;
@@ -1209,7 +1212,7 @@ function wireCert(){
     try{shabPrintDone();const url=await drawCertificate(2),u2=await drawPersonalSheet(2);const pr=$('#print-area');
       pr.innerHTML=`<img src="${url}" alt="">${u2?`<img src="${u2}" alt="">`:''}`;
       await Promise.all([...pr.querySelectorAll('img')].map(im=>new Promise(r=>{if(im.complete)r();else{im.onload=r;im.onerror=r}})));
-      window.print();
+      applyCss(document.body);window.print();
     }catch(e){$('#printnote').textContent=t('cert.noPrint')}
     b.disabled=false};
 }
@@ -1217,11 +1220,11 @@ function finalPath(){
   const strengths=strengthsList(),rep=worldReport();
   return `<div class="duo">
       <div class="card"><span class="kicker">${t('path.gifts')}</span><div class="strengths">${strengths.map(x=>`<span>${esc(x)}</span>`).join('')||`<span>${t('path.none')}</span>`}</div></div>
-      <div class="card"><span class="kicker">${t('path.step')}</span><p class="h2" style="font-size:1.25rem">${esc(S.ans.weekly||t('path.stepDefault'))}</p><p class="muted">${t('path.stepNote')}</p></div>
+      <div class="card"><span class="kicker">${t('path.step')}</span><p class="h2 fs-lg">${esc(S.ans.weekly||t('path.stepDefault'))}</p><p class="muted">${t('path.stepNote')}</p></div>
     </div>
     <div class="card"><span class="kicker">${t('path.phrase')}</span><p class="phrase" id="ph">${esc(T(PHRASES[S.phrase]))}</p><div class="actions"><button class="btn ghost small" id="nph">${t('path.otherPhrase')}</button><button class="btn ghost small" id="cp">${t('path.copy')}</button></div></div>
     <section class="report"><div><span class="kicker">${t('path.report')}</span><h2 class="h2">${t('path.reportTitle')}</h2>
-      <p class="muted" style="font-size:0.9375rem">${t('path.dates',{a:fmtDate(S.started),b:fmtDate(S.finished)})}</p></div>
+      <p class="muted fs-15">${t('path.dates',{a:fmtDate(S.started),b:fmtDate(S.finished)})}</p></div>
       <div class="rgrid">${rep.map((r,i)=>`<article class="rcard"><div class="rtop"><span class="rnum">${i+1}</span><b>${esc(r[0])}</b></div><p>${esc(r[1])}</p><p class="disc"><span>${t('path.discovery')}</span>${esc(r[2])}</p></article>`).join('')}</div>
     </section>
     <div class="card"><span class="kicker">${t('path.solve')}</span><p>${t('path.solveText')}</p></div>
@@ -1240,7 +1243,7 @@ function finalAch(){
       <div class="statcard"><span class="k">${t('stat.pieces')}</span><b>${S.done.filter(Boolean).length}/7</b></div>
       <div class="statcard"><span class="k">${t('stat.ach')}</span><b>${Object.keys(S.ach).length}/6</b></div>
     </div>
-    <div class="card"><span class="kicker">${t('ach.collection')}</span>${achGrid()}<p class="muted" style="font-size:0.875rem">${t('ach.note')}</p></div>`;
+    <div class="card"><span class="kicker">${t('ach.collection')}</span>${achGrid()}<p class="muted fs-sm">${t('ach.note')}</p></div>`;
 }
 function selectText(el){try{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(e){}}
 
@@ -1269,7 +1272,6 @@ function start(data){
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});
-  countVisit();
 }
 window.claude?.hot?.snapshot?.(()=>({state:S}));
 /* тексты могут прийти раньше, чем выполнены shabbat.js и pasuk.js — ждём и их */

@@ -2,9 +2,11 @@
 <html lang="ru">
 <meta charset="utf-8">
 <!-- Безопасность: GitHub Pages не даёт задать HTTP-заголовки, поэтому политика — в meta.
-     connect-src: свои файлы + счётчик посещений (game.js, countVisit). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' https://abacus.jasoncameron.dev; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
-<meta name="referrer" content="strict-origin-when-cross-origin">
+     Все файлы, включая шрифты (fonts/), — только с этого сайта; внешних запросов нет.
+     защита от встраивания в чужой iframe — frame-guard.js (frame-ancestors в meta не работает). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<script src="frame-guard.js"></script>
+<meta name="referrer" content="no-referrer">
 <title>Тайна Коэлета</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -30,9 +32,7 @@
 <meta property="og:locale:alternate" content="de_DE">
 <meta property="og:locale:alternate" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Onest:wght@400;500;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="styles.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"Тайна Коэлета","alternateName":["Таємниця Коелета","Das Geheimnis von Kohelet","The Secret of Kohelet"],"url":"https://mylot.mychitas.app/","image":"https://mylot.mychitas.app/og-image.png","description":"Интерактивное приключение для детей 8–15 лет и для взрослых (16+) по уроку раввина Шнеора Ашкенази о книге Коэлет.","applicationCategory":"EducationalApplication","genre":"Educational game","operatingSystem":"Any (web browser)","inLanguage":["ru","uk","de","en"],"isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"audience":{"@type":"PeopleAudience","suggestedMinAge":8},"publisher":{"@type":"Organization","name":"mychitas.app","url":"https://mychitas.app"}}

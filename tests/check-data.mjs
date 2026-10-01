@@ -4,7 +4,8 @@
 //  - different structure (keys, list lengths, step order);
 //  - changed technical values (type, key, ic, game, who: "mentor", Hebrew...);
 //  - {{placeholders}} and {boy|girl} forms that don't match or aren't closed;
-//  - wrong alphabet (Cyrillic in German, Russian-only letters in Ukrainian).
+//  - wrong alphabet (Cyrillic in German, Russian-only letters in Ukrainian);
+//  - inline style="…" in texts (the CSP blocks it).
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 
@@ -29,6 +30,8 @@ async function load(path) {
 }
 const placeholders = s => (s.match(/\{\{\w+\}\}/g) || []).sort().join(' ');
 function checkString(where, s, lang) {
+  // the CSP allows styles only from styles.css: an inline style in a text is dropped by the browser
+  if (/\sstyle\s*=|<style/i.test(s)) err(where, `inline style in "${s.slice(0, 60)}" — use a class from styles.css`);
   const plain = s.replace(/\{\{\w+\}\}/g, '');
   const opens = (plain.match(/\{/g) || []).length, closes = (plain.match(/\}/g) || []).length;
   if (opens !== closes) err(where, `unbalanced { } in "${s.slice(0, 60)}"`);
@@ -54,7 +57,7 @@ function compare(where, ref, val, lang, key) {
       if (ref !== val) err(where, `technical value changed: "${ref}" → "${val}"`);
     } else {
       if (placeholders(ref) !== placeholders(val)) err(where, `placeholders differ: "${placeholders(ref)}" vs "${placeholders(val)}"`);
-      if (lang !== REF) checkString(where, val, lang);
+      checkString(where, val, lang);
     }
   }
 }
