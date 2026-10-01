@@ -11,8 +11,9 @@
 //   npm pack morphhb@2.0.2 && tar xzf morphhb-2.0.2.tgz      # once, anywhere outside the repo
 //   node tools/build-pesukim.mjs path/to/package/wlc
 //
-// Output: data/pesukim.json — for every pair of letters one personal verse (from the Torah when it has a
-// fitting one: short and bright; otherwise from the rest of Tanach) and for every name one verse with it.
+// Output: data/pesukim/index.json (book names, name → a verse with it) and data/pesukim/<0..21>.json, one per
+// first letter: pair → its verses, the personal one first (from the Torah when it has a fitting one: short and
+// bright; otherwise from the rest of Tanach), then all the others.
 // Divine Names are written the way books for learning write them (ה׳, אלקים…).
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {join, dirname} from 'node:path';
@@ -131,13 +132,15 @@ const score = e => { const i = inf(e);
 const clean = e => { const i = inf(e); return i.ok && !i.edge && i.mood < 3; };
 const best = l => l.slice().sort((x, y) => score(x) - score(y))[0];
 const row = e => [e.b, e.c, e.v, e.text];
-/* from the Torah (Chumash) when the pair has a fitting verse there, otherwise from the rest of Tanach */
+/* the personal verse first: from the Torah (Chumash) when the pair has a fitting verse there, otherwise
+   from the rest of Tanach; then all the other verses of the pair, the short, bright ones first */
 const pairs = {};
 let fromTorah = 0;
 for (const k in list) {
   const torah = list[k].filter(e => BOOKS[e.b][2] === 0 && clean(e));
   if (torah.length) fromTorah++;
-  pairs[k] = row(best(torah.length ? torah : list[k].filter(clean).length ? list[k].filter(clean) : list[k]));
+  const first = best(torah.length ? torah : list[k].filter(clean).length ? list[k].filter(clean) : list[k]);
+  pairs[k] = [first, ...list[k].filter(e => e !== first).sort((x, y) => score(x) - score(y))].map(row);
 }
 /* a verse with the name: only verses of the list */
 const byRef = {};
@@ -147,11 +150,18 @@ for (const [nm, refs] of names) {
   const cand = refs.map(r => byRef[r]).filter(Boolean).filter(e => inf(e).ok);
   if (cand.length) nameIdx[nm] = row(best(cand.filter(e => BOOKS[e.b][2] === 0).length ? cand.filter(e => BOOKS[e.b][2] === 0) : cand));
 }
-const data = {src: 'Torat Emet, «פסוק המתחיל ומסתיים באות», https://www.toratemetfreeware.com/online/f_00720_all.html',
-  books: BOOKS.map(b => b[0]), pairs, names: nameIdx};
-const json = JSON.stringify(data);
-mkdirSync(join(ROOT, 'data'), {recursive: true});
-writeFileSync(join(ROOT, 'data', 'pesukim.json'), json + '\n');
+const dir = join(ROOT, 'data', 'pesukim');
+mkdirSync(dir, {recursive: true});
+const json = JSON.stringify({src: 'Torat Emet, «פסוק המתחיל ומסתיים באות», https://www.toratemetfreeware.com/online/f_00720_all.html',
+  books: BOOKS.map(b => b[0]), names: nameIdx});
+writeFileSync(join(dir, 'index.json'), json + '\n');
+let bytes = json.length;
+AB.forEach((a, i) => {
+  const out = {};
+  for (const b of AB) if (pairs[a + b]) out[a + b] = pairs[a + b];
+  const j = JSON.stringify(out); bytes += j.length;
+  writeFileSync(join(dir, i + '.json'), j + '\n');
+});
 const missing = AB.flatMap(a => AB.filter(b => !list[a + b]).map(b => a + b));
 console.log(`${total} verses in ${Object.keys(list).length} pairs (${wrong} skipped: letters do not match the pair); ` +
-  `${fromTorah} pairs with a verse from the Torah; ${missing.length} pairs without a verse; ${Object.keys(nameIdx).length} names; ${(json.length / 1024).toFixed(0)} KB`);
+  `${fromTorah} pairs with a verse from the Torah; ${missing.length} pairs without a verse; ${Object.keys(nameIdx).length} names; ${(bytes / 1024).toFixed(0)} KB`);

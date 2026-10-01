@@ -1,7 +1,8 @@
 /* «Твой стих в Танахе»: стих, который начинается на первую букву имени на иврите и кончается на последнюю,
    и стих, где встречается само имя. Обычай — говорить его в конце Амиды, перед вторым «יהיו לרצון».
-   Стихи — из традиционного списка Torat Emet «פסוק המתחיל ומסתיים באות»: на каждую пару букв один личный стих,
-   по возможности из Торы (tools/build-pesukim.mjs → data/pesukim.json, грузится только на этом экране). Тексты — pasuk.* в locales. */
+   Стихи — из традиционного списка Torat Emet «פסוק המתחיל ומסתיים באות»: на каждую пару букв сначала личный стих
+   (по возможности из Торы), остальные — в выпадающем блоке. tools/build-pesukim.mjs → data/pesukim/: index.json
+   (книги, имена) и по файлу на первую букву; грузятся только на этом экране. Тексты — pasuk.* в locales. */
 const HEB_AB=[...'אבגדהוזחטיכלמנסעפצקרשת'];
 const HEB_FINAL={'כ':'ך','מ':'ם','נ':'ן','פ':'ף','צ':'ץ'};
 const HEB_BASE={'ך':'כ','ם':'מ','ן':'נ','ף':'פ','ץ':'צ'};
@@ -61,17 +62,25 @@ function hebGuess(name){
   return hebFinals(out.replace(/(.)\1/g,'$1').replace(/יא$/,'יה'));
 }
 
-let PESUKIM=null,pesukimLoad=null;
-function loadPesukim(){
-  if(!pesukimLoad)pesukimLoad=fetch('data/pesukim.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
-    /* имена без «лишних» י и ו: אהרון найдёт אהרן */
-    d.loose={};for(const n in d.names){const k=nameKey(n);if(!(k in d.loose))d.loose[k]=d.names[n]}
-    return PESUKIM=d}).catch(e=>{pesukimLoad=null;throw e});
-  return pesukimLoad;
+let PESUKIM=null;const PAIRS={},pesukimLoad={};
+function loadOnce(k,then){
+  if(!pesukimLoad[k])pesukimLoad[k]=fetch('data/pesukim/'+k+'.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()})
+    .then(then).catch(e=>{delete pesukimLoad[k];throw e});
+  return pesukimLoad[k];
+}
+/* справочник и стихи на нужные первые буквы */
+function loadPesukim(firsts){
+  return Promise.all([loadOnce('index',d=>{
+      /* имена без «лишних» י и ו: אהרון найдёт אהרן */
+      d.loose={};for(const n in d.names){const k=nameKey(n);if(!(k in d.loose))d.loose[k]=d.names[n]}
+      PESUKIM=d}),
+    ...firsts.map(i=>loadOnce(i,d=>{PAIRS[i]=d}))]);
 }
 const baseL=c=>HEB_BASE[c]||c;
 const nameKey=n=>[...n].map(baseL).join('').replace(/(?!^)[וי]/g,'');
-const pairVerse=n=>PESUKIM.pairs[baseL(n[0])+baseL(n.at(-1))]||null;
+const firstOf=n=>HEB_AB.indexOf(baseL(n[0]));
+/* стихи пары: первый — личный */
+const pairVerses=n=>(PAIRS[firstOf(n)]||{})[baseL(n[0])+baseL(n.at(-1))]||[];
 function nameVerse(n){return PESUKIM.names[hebFinals(n)]||PESUKIM.loose[nameKey(n)]||null}
 
 function verseHTML(v,first){
@@ -116,14 +125,16 @@ function showPasuk(){
   const box=$('#pares');if(!box)return;
   const names=hebFinals(S.hebName||'').trim().split(' ').filter(n=>n.length>=2).slice(0,3);
   if(!names.length){box.innerHTML=`<p class="muted">${t('pasuk.empty')}</p>`;return}
-  if(!PESUKIM){box.innerHTML=`<p class="muted">${t('pasuk.loading')}</p>`;
-    loadPesukim().then(showPasuk).catch(()=>{const b=$('#pares');if(b)b.innerHTML=`<p class="muted">${t('pasuk.error')}</p>`});return}
+  const need=[...new Set(names.map(firstOf))].filter(i=>!PAIRS[i]);
+  if(!PESUKIM||need.length){box.innerHTML=`<p class="muted">${t('pasuk.loading')}</p>`;
+    loadPesukim(need).then(showPasuk).catch(()=>{const b=$('#pares');if(b)b.innerHTML=`<p class="muted">${t('pasuk.error')}</p>`});return}
   box.innerHTML=names.map(n=>{
-    const pv=pairVerse(n),nv=nameVerse(n);
+    const [pv,...more]=pairVerses(n),nv=nameVerse(n);
     return `<div class="pasuk-card">
       <div class="pasuk-name"><span class="heb" lang="he">${esc(n)}</span><span class="pasuk-ls">${letterChip(n[0])}<i aria-hidden="true">…</i>${letterChip(n.at(-1))}</span></div>
       <p class="pasuk-what">${t('pasuk.what',{a:esc(tl('pasuk.letters')[HEB_AB.indexOf(baseL(n[0]))]),b:esc(tl('pasuk.letters')[HEB_AB.indexOf(baseL(n.at(-1)))])})}</p>
       ${pv?verseHTML(pv,true):`<p class="muted">${t('pasuk.none')}</p>`}
+      ${more.length?`<details class="pasuk-more"><summary>${t('pasuk.more',{n:more.length})}</summary><ol>${more.map(v=>`<li><span class="heb" lang="he" dir="rtl">${esc(v[3])}</span><small>${verseRef(v)}</small></li>`).join('')}</ol></details>`:''}
       ${nv?`<h3 class="pasuk-h">${t('pasuk.withName')}</h3>${verseHTML(nv)}`:''}
     </div>`}).join('');
 }
