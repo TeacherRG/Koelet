@@ -671,6 +671,32 @@ a.btn{text-decoration:none}
 .pp-scale{display:block;width:188mm;height:270mm;transform:scale(var(--s,.1351));transform-origin:0 0;pointer-events:none}
 .pp-fit{--s:.4;width:100%;aspect-ratio:188/270;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:6px}
 
+/* ---------- Твой стих в Танахе ---------- */
+.pasuk-hint{margin:0;font-size:0.875rem}
+.pasuk-in{width:100%;min-height:56px;padding:8px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font-size:1.75rem;text-align:right}
+.pasuk-in:focus{outline:3px solid var(--gold);outline-offset:1px;border-color:var(--gold-edge)}
+.pasuk-kb{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px}
+.pasuk-kb button{min-height:44px;padding:0;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font-size:1.25rem;line-height:1}
+.pasuk-kb button:active{background:var(--etrog-soft)}
+.pasuk-kb .wide{grid-column:span 2;font-family:var(--body);font-size:1.125rem}
+.pasuk-card{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--panel);border:1.5px solid var(--line);box-shadow:var(--shadow)}
+.pasuk-card+.pasuk-card{margin-top:12px}
+.pasuk-name{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pasuk-name>.heb{font-size:2rem;font-weight:700;line-height:1.1}
+.pasuk-ls{display:flex;align-items:center;gap:8px;direction:rtl}
+.pasuk-ls i{color:var(--muted);font-style:normal}
+.pasuk-l{display:flex;flex-direction:column;align-items:center;min-width:52px;padding:4px 8px;border-radius:12px;background:var(--etrog-soft);direction:ltr}
+.pasuk-l b{font-size:1.625rem;line-height:1.1}
+.pasuk-l small{font-size:0.75rem;color:var(--muted)}
+.pasuk-what{margin:0;font-size:0.9375rem;color:var(--muted)}
+.pasuk-v{margin:0;display:flex;flex-direction:column;gap:6px}
+.pasuk-v blockquote{margin:0;padding:12px 16px;border-right:4px solid var(--gold);border-radius:12px;background:var(--panel-2);font-size:1.5rem;line-height:1.7;text-align:right}
+.pasuk-v mark{background:var(--etrog-soft);color:inherit;border-radius:4px;box-shadow:0 0 0 2px var(--gold)}
+.pasuk-v figcaption{font-size:0.8125rem;color:var(--muted)}
+.pasuk-card .btn{align-self:flex-start}
+.pasuk-h{margin:6px 0 0;font-family:var(--display);font-size:0.8125rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.pasuk-src{font-size:0.75rem;margin:0}
+
 /* ---------- Лист A4 (просмотр и печать) ---------- */
 .pp{width:188mm;height:270mm;box-sizing:border-box;padding:1mm 1mm 0;background:#fff;color:#17282e;font-family:var(--body);font-size:10.5pt;line-height:1.35;display:flex;flex-direction:column;gap:3mm;overflow:hidden;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .pp *{box-sizing:border-box}

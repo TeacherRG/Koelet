@@ -222,6 +222,16 @@ async function run(browser, base, sc) {
     await page.evaluate(() => shabPrintDone());
     await page.click('#shback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«К Шабату»: «Назад» did not return to the final screen');
+    // «Твой стих в Танахе» from the menu: a Hebrew name gives a verse for its letters, «Назад» returns
+    await page.click('#menubtn'); await page.click('[data-m="pasuk"]');
+    await page.evaluate(() => { const i = document.querySelector('#hebname'); i.value = 'משה'; i.dispatchEvent(new Event('input')); });
+    await page.waitForSelector('.pasuk-v', {timeout: 5000}).catch(() => {});
+    const pa = await page.evaluate(() => ({screen: S.screen, verses: document.querySelectorAll('.pasuk-v').length, text: [...document.querySelectorAll('#stage .lead, #stage .group h3, .pasuk-what, figcaption')].map(e => e.innerText).join('\n')}));
+    if (pa.screen !== 'pasuk' || pa.verses !== 2) add(`«Твой стих»: screen "${pa.screen}", ${pa.verses} verses instead of 2 for משה`);
+    for (const p of textProblems(pa.text, sc.lang)) add(`[pasuk] ${p}`);
+    await snap('pasuk');
+    await page.click('#paback');
+    if (await page.evaluate(() => S.screen) !== 'final') add('«Твой стих»: «Назад» did not return to the final screen');
   }
   await ctx.close();
   return {name, steps, problems: [...problems]};
