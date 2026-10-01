@@ -217,6 +217,7 @@ function guideParts(){
   if (scr === 'shabbat') return [t('voice.shabbat')];
   if (scr === 'pasuk') return [t('voice.pasuk')];
   if (scr === 'hayom') return [t('voice.hayom')];
+  if (scr === 'mine') return [t('voice.mine')];
   if (scr !== 'world' && scr !== 'prologue') return [];
   let st = steps()[idx()]; if (!st) return [];
   if (typeof st === 'function') st = st(S);

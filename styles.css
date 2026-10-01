@@ -444,12 +444,6 @@ body{transition:background-color .6s ease}
 .menu-list{display:flex;flex-direction:column;gap:8px}
 .mitem{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 14px;border-radius:16px;background:var(--panel);border:1.5px solid var(--line);font-weight:600;text-align:left}
 .mitem .ico{width:24px;height:24px;color:var(--accent)}
-.mgroup span{flex:1}
-.mchev{display:grid;place-items:center;transform:rotate(180deg);transition:transform .2s}
-.mchev.open{transform:none}
-.mchev .ico{width:20px;height:20px;color:var(--muted)}
-.msub{display:flex;flex-direction:column;gap:8px;padding-left:24px;border-left:3px solid var(--etrog-soft);margin-left:20px}
-.msub[hidden]{display:none}
 
 /* Карта: тропа с островами */
 .tmap{position:relative;margin:4px 0 8px}
@@ -722,6 +716,26 @@ a.btn{text-decoration:none}
 .pasuk-v mark{background:var(--etrog-soft);color:inherit;border-radius:4px;box-shadow:0 0 0 2px var(--gold)}
 .pasuk-v figcaption{font-size:0.8125rem;color:var(--muted)}
 .pasuk-src{font-size:0.75rem;margin:0}
+.pasuk-names{display:flex;flex-direction:column;gap:10px}
+.pasuk-nrow label{display:block;font-size:0.8125rem;color:var(--muted);margin-bottom:4px}
+.pasuk-nin{display:flex;gap:8px;align-items:center}
+.pasuk-nin .pasuk-in{flex:1}
+.pasuk-in.act{border-color:var(--gold-edge);box-shadow:0 0 0 3px var(--etrog-soft)}
+.pasuk-ndel{flex:none}
+#hebadd{align-self:flex-start}
+/* Твоя часть в Торе */
+.mine-cards{display:flex;flex-direction:column;gap:14px}
+.mine-card{display:flex;align-items:center;gap:16px;width:100%;min-height:120px;padding:20px;border-radius:22px;background:var(--panel);border:1.5px solid var(--line);box-shadow:var(--shadow);text-align:left;color:var(--ink);cursor:pointer;transition:transform .15s,border-color .15s}
+.mine-card:hover,.mine-card:focus-visible{border-color:var(--gold-edge);transform:translateY(-2px)}
+.mine-ic{flex:none;display:grid;place-items:center;width:64px;height:64px;border-radius:18px;background:var(--etrog-soft)}
+.mine-ic .ico{width:34px;height:34px;color:var(--accent)}
+.mine-tx{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.mine-tx b{font-family:var(--display);font-size:1.125rem;line-height:1.2}
+.mine-tx span{font-size:0.9375rem;color:var(--muted);line-height:1.4}
+.mine-tx small{font-size:0.9375rem;color:var(--leaf);font-weight:600}
+.mine-tx small .heb{font-size:1.25rem}
+.mine-go{flex:none;transform:rotate(90deg)}
+.mine-go .ico{width:26px;height:26px;color:var(--muted)}
 /* Твой день в «Айом-йом» */
 .hy-row{display:grid;grid-template-columns:1fr 2fr;gap:10px}
 .hayom select{width:100%;min-height:48px;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font:inherit}

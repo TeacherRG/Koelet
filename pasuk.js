@@ -92,23 +92,45 @@ function letterChip(c){const L=tl('pasuk.letters');return `<span class="pasuk-l"
 
 function openPasuk(){if(S.screen!=='pasuk')S.pasukFrom=S.screen;go('pasuk')}
 /* имя на иврите: поле и экранная клавиатура (раздел и шаг в «Зеркале») */
+/* имя на иврите: до трёх полей (у двойного и тройного имени у каждого имени свой стих) и экранная клавиатура.
+   Хранится в S.hebName строкой «имя1 имя2 имя3» — так её читают сертификат и шаг «Зеркала». */
+const HEB_MAX=3;
+let hebAct=0;   // поле, в которое пишет экранная клавиатура
+const hebNames=()=>{const a=(S.hebName||'').split(' ');return a.length?a:['']};
+const setHebNames=a=>{S.hebName=a.map(x=>hebFinals(hebOnly(x).replace(/ /g,''))).join(' ');save()};
 function hebNameHTML(){
   if(S.hebName==null)S.hebName=hebGuess(S.hero.name);
-  const kb=[...'אבגדהוזחטיכךלמםנןסעפףצץקרשת'];
-  return `<div class="group"><h3><label for="hebname">${t('pasuk.nameH')}</label></h3>
+  const kb=[...'אבגדהוזחטיכךלמםנןסעפףצץקרשת'],names=hebNames(),labels=tl('pasuk.nameN');
+  if(hebAct>=names.length)hebAct=names.length-1;
+  return `<div class="group"><h3>${t('pasuk.nameH')}</h3>
       <p class="muted pasuk-hint">${t('pasuk.nameHint')}</p>
-      <input id="hebname" class="pasuk-in heb" lang="he" dir="rtl" maxlength="24" autocomplete="off" spellcheck="false" value="${esc(S.hebName)}" placeholder="${esc(t('pasuk.namePh'))}">
+      <div class="pasuk-names">${names.map((n,i)=>`<div class="pasuk-nrow">
+        <label for="hebname${i}">${esc(labels[i]||'')}</label>
+        <div class="pasuk-nin"><input id="hebname${i}" data-ni="${i}" class="pasuk-in heb ${i===hebAct?'act':''}" lang="he" dir="rtl" maxlength="16" autocomplete="off" spellcheck="false" value="${esc(n)}" placeholder="${esc(t('pasuk.namePh'))}">
+        ${i?`<button class="iconbtn pasuk-ndel" data-ndel="${i}" aria-label="${esc(t('pasuk.delName'))}">✕</button>`:''}</div></div>`).join('')}</div>
+      ${names.length<HEB_MAX?`<button class="btn ghost small" id="hebadd">${icon('sparkle')}<span>${t('pasuk.addName')}</span></button>`:''}
       <div class="pasuk-kb" role="group" aria-label="${esc(t('pasuk.kb'))}" dir="rtl">${kb.map(c=>`<button class="heb" lang="he" data-k="${c}">${c}</button>`).join('')}
-        <button data-k=" " class="wide" aria-label="${esc(t('pasuk.space'))}">␣</button><button data-k="del" class="wide" aria-label="${esc(t('pasuk.del'))}">⌫</button></div>
+        <button data-k="del" class="wide" aria-label="${esc(t('pasuk.del'))}">⌫</button></div>
     </div>
     <div id="pares" aria-live="polite"></div>`;
 }
 function wireHebName(){
-  const inp=$('#hebname');
-  const set=v=>{S.hebName=hebOnly(v);inp.value=S.hebName;save();showPasuk()};
-  inp.oninput=()=>{const p=inp.selectionStart,v=hebFinals(hebOnly(inp.value));if(v!==inp.value){inp.value=v;inp.setSelectionRange(p,p)}S.hebName=v;save();showPasuk()};
-  stage.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{sfx.tap();const k=b.dataset.k;
-    set(k==='del'?S.hebName.slice(0,-1):hebFinals(S.hebName+k))});
+  const box=stage.querySelector('.pasuk-names').closest('.group');
+  const redraw=focus=>{box.outerHTML=hebNameHTML().replace(/<div id="pares"[^>]*><\/div>$/,'');wireHebName();
+    if(focus!=null){const f=$('#hebname'+focus);if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length)}}};
+  stage.querySelectorAll('[data-ni]').forEach(inp=>{
+    const i=+inp.dataset.ni;
+    inp.onfocus=()=>{hebAct=i;stage.querySelectorAll('[data-ni]').forEach(x=>x.classList.toggle('act',x===inp))};
+    inp.oninput=()=>{const p=inp.selectionStart,v=hebFinals(hebOnly(inp.value).replace(/ /g,''));if(v!==inp.value){inp.value=v;inp.setSelectionRange(p,p)}
+      const a=hebNames();a[i]=v;setHebNames(a);showPasuk()};
+  });
+  stage.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{sfx.tap();const k=b.dataset.k,a=hebNames(),i=Math.min(hebAct,a.length-1);
+    a[i]=k==='del'?a[i].slice(0,-1):hebFinals(a[i]+k);setHebNames(a);
+    const f=$('#hebname'+i);if(f)f.value=hebNames()[i]||'';showPasuk()});
+  stage.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=()=>{sfx.tap();const a=hebNames();a.splice(+b.dataset.ndel,1);hebAct=0;setHebNames(a);redraw(0);showPasuk()});
+  const add=$('#hebadd');if(add)add.onclick=()=>{sfx.tap();const a=hebNames();if(a.length>=HEB_MAX)return;
+    /* пустое поле держим строкой с пробелом в конце, пока в него ничего не написали */
+    S.hebName=a.join(' ')+' ';hebAct=a.length;save();redraw(hebAct)};
   showPasuk();
 }
 function renderPasuk(){
@@ -135,15 +157,41 @@ function gPasuk(){
   wireHebName();
 }
 /* личный стих для сертификата: первый стих пары первого имени; null, если имени нет или данные не загрузились */
-async function personalVerse(){
-  const n=hebFinals(S.hebName||'').trim().split(' ')[0]||'';
-  if(n.length<2)return null;
-  try{await loadPesukim([firstOf(n)])}catch(e){return null}
-  return pairVerses(n)[0]||null;
+/* личные стихи всех имён для сертификата: [{name, v}] (имена без стиха пропускаются) */
+async function personalVerses(){
+  const names=hebNames().map(hebFinals).filter(n=>n.length>=2).slice(0,HEB_MAX);
+  if(!names.length)return [];
+  try{await loadPesukim([...new Set(names.map(firstOf))])}catch(e){return []}
+  return names.map(n=>({name:n,v:pairVerses(n)[0]})).filter(x=>x.v);
+}
+async function personalVerse(){const a=await personalVerses();return a.length?a[0].v:null}
+
+/* ---------- «Твоя часть в Торе»: экран с двумя разделами — стих Торы по имени и «Айом-йом» по дню рождения ---------- */
+function openMine(){if(S.screen!=='mine')S.mineFrom=S.screen;go('mine')}
+function renderMine(){
+  const names=hebNames().filter(n=>n.length>=2),h=typeof bdayHeb==='function'?bdayHeb():null;
+  const card=(id,ic,title,text,status)=>`<button class="mine-card" id="${id}">
+      <span class="mine-ic">${icon(ic)}</span>
+      <span class="mine-tx"><b>${title}</b><span>${text}</span>${status?`<small>${status}</small>`:''}</span>
+      <span class="mine-go" aria-hidden="true">${icon('up')}</span></button>`;
+  stage.innerHTML=`<section class="scene mine">
+    <div><button class="btn ghost small" id="miback">${t('shab.back')}</button></div>
+    <span class="kicker">${icon('book')} ${t('mine.kicker')}</span>
+    <h2 class="h2">${t('menu.mine')}</h2>
+    <p class="lead">${t('mine.lead')}</p>
+    <div class="mine-cards">
+      ${card('mine-pasuk','scroll',t('menu.mineVerse'),t('mine.verse'),names.length?`<span class="heb" lang="he">${esc(names.join(' · '))}</span>`:'')}
+      ${card('mine-hayom','candles',t('menu.mineHayom'),t('mine.hayom'),h?esc(t('hy.date',{d:h.d,m:h.adar?t('hy.adar'):tl('hy.months')[h.m]})):'')}
+    </div>
+    <p class="shab-note">${icon('scroll')}<span>${t('mine.cert')}</span></p>
+  </section>`;
+  $('#miback').onclick=()=>{sfx.tap();go(S.mineFrom&&S.mineFrom!=='mine'?S.mineFrom:'title')};
+  $('#mine-pasuk').onclick=()=>{sfx.tap();openPasuk()};
+  $('#mine-hayom').onclick=()=>{sfx.tap();openHayom()};
 }
 function showPasuk(){
   const box=$('#pares');if(!box)return;
-  const names=hebFinals(S.hebName||'').trim().split(' ').filter(n=>n.length>=2).slice(0,3);
+  const names=hebNames().map(hebFinals).filter(n=>n.length>=2).slice(0,HEB_MAX);
   if(!names.length){box.innerHTML=`<p class="muted">${t('pasuk.empty')}</p>`;return}
   const need=[...new Set(names.map(firstOf))].filter(i=>!PAIRS[i]);
   if(!PESUKIM||need.length){box.innerHTML=`<p class="muted">${t('pasuk.loading')}</p>`;
