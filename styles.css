@@ -727,6 +727,20 @@ a.btn{text-decoration:none}
 .gal select{width:100%;min-height:48px;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font-size:1.125rem}
 .gal-seg{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
 .gal-seg.wrap{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+.gal-author{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.gal .gal-author{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.gal-author figure{margin:0;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.gal-author img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:var(--shadow);background:#03050a}
+/* админ: загрузка картин к стихам */
+.adm [data-v]{cursor:pointer;border-radius:14px}
+.adm [data-v]:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.adm [data-v]:hover>blockquote,.adm li[data-v]:hover{box-shadow:0 0 0 2px var(--gold-edge)}
+.adm .adm-on>blockquote,.adm li.adm-on{box-shadow:0 0 0 3px var(--gold)}
+.adm-up{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding:14px;border-radius:14px;background:var(--etrog-soft);border:1px dashed var(--gold-edge);cursor:default}
+.adm-up p{margin:0}
+.adm-file{align-self:flex-start;cursor:pointer}
+.adm-file.busy{opacity:.6;pointer-events:none}
+.adm-steps{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;font-size:0.9375rem}
 .gal-prev{display:flex;flex-direction:column;align-items:center;gap:12px}
 .gal-cv{display:block;width:100%;height:auto;border-radius:18px;box-shadow:var(--shadow);background:#03050a}
 .gal-cv.gal-phone{max-width:300px}

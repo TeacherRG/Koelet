@@ -120,6 +120,21 @@ for (const lang of langs) {
   }
 }
 
+// finished pictures for verses uploaded by the admin (gallery/verses.json: "book-chapter-verse" → files in gallery/)
+{
+  const vs = await load('gallery/verses.json');
+  for (const [key, list] of Object.entries(vs || {})) {
+    const where = `gallery/verses.json «${key}»`;
+    if (!/^\d{1,2}-\d{1,3}-\d{1,3}$/.test(key)) err(where, 'key must be "book-chapter-verse", e.g. "27-20-5"');
+    if (!Array.isArray(list) || !list.length) { err(where, 'needs a list of files'); continue; }
+    for (const f of list) {
+      if (!/^[\w.-]+\.(jpe?g|png|webp)$/i.test(f || '')) { err(where, `"${f}" — a latin file name .jpg, .png or .webp`); continue; }
+      try { const b = await readFile(ROOT + 'gallery/' + f); if (b.length > 4e6) err(where, `${f} is ${(b.length / 1e6).toFixed(1)} MB — over 4 MB`); }
+      catch (e) { err(where, `gallery/${f} is missing`); }
+    }
+  }
+}
+
 // the teacher's guide (docs/guide.ru.md) is generated from the Russian texts: rebuild it after text changes
 const {build} = await import('../tools/guide.mjs');
 let guide = '';

@@ -18,7 +18,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 
 | File | What it is |
 |---|---|
-| `index.html` | Page shell; loads `frame-guard.js` first, then in order: `i18n.js` → `game-data.js` → `art.js` → `voice-key.js` → `music.js` → `game.js` → `shabbat.js` → `pasuk.js` → `hayomyom.js` → `gallery.js` |
+| `index.html` | Page shell; loads `frame-guard.js` first, then in order: `i18n.js` → `game-data.js` → `art.js` → `voice-key.js` → `music.js` → `game.js` → `shabbat.js` → `pasuk.js` → `hayomyom.js` → `gallery.js` → `admin.js` |
 | `i18n.js` | Language module: `LANGS`, `t('key', {vars})`, `tl('key')`, language detection, `loadLang()`/`setLang()` |
 | `game-data.js` | Loads texts for the chosen language (falls back to Russian) |
 | `game.js` | Runtime: state `S` (localStorage `koelet-game-v1`), screens, step engine, mini-games, certificate |
@@ -28,7 +28,8 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 | `hayomyom.js` | «Твой день в „Айом-йом“»: день рождения (обычный — переводится в еврейский своим календарём `gregToHeb()`, с галочкой «после захода солнца», или еврейский) → запись книги Ребе «היום יום» на этот день |
 | `data/hayomyom.json` | Записи «היום יום» по дням (`"<месяц>-<день>"`, месяцы книги: תשרי…אלול, Адар I и II отдельно), все 383 дня. Генерируется `tools/build-hayomyom.mjs` из `tools/sources/hayomyom.pdf` и `tools/sources/hayomyom-elul.pdf` (нужен pdftotext), руками не править |
 | `gallery.js` | «Стих твоего имени — картина» (только 16+): личный стих пары букв как художественная работа — обои для телефона/компьютера и A4 для печати; фон рисуется кодом или берётся из `gallery/`, текст стиха — шрифтом из `data/pesukim` |
-| `gallery/` | Свои фоны автора без текста + `backgrounds.json` (список сюжетов); как добавить — `gallery/README.md` |
+| `gallery/` | Свои фоны автора без текста + `backgrounds.json` (список сюжетов; как добавить — `gallery/README.md`) и готовые картины к стихам от админа + `verses.json` (пишет `admin.js`) |
+| `admin.js` | Вход для админов по ключу GitHub и загрузка готовых картин к стихам в репозиторий (экран `admin`) |
 | `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Idle help after a minute of silence. Track and volume in localStorage `koelet-audio` |
 | `voice-key.js` | Shared by the game and `tools/tts.mjs`: splits text into sentences (paragraphs, `.!?…`), strips tags and Hebrew, `VoiceKey.key()` = hash of the normalized sentence |
 | `audio/<lang>/` | Ready-made Azure voice: one mp3 per sentence (`<key>.mp3`) + `index.json` (list of keys). Generated, never edit by hand |
@@ -110,6 +111,13 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - The author's own backgrounds (pictures **without text**): files in `gallery/` and a line in `gallery/backgrounds.json` (`{id, name:{ru,uk,de,en}, files:{phone,screen,print}, pairs?, band?, shade?, frame?}`), steps for the author in `gallery/README.md`. They come first in the scene list; only formats with a file are offered; `pairs` limits a background to those letter pairs. `galPhoto()` fills the sheet (cover) and shades the text band. `test:data` checks the file: ids, names in every language, files exist, size (at least half of `GAL_FMT`), ≤ 4 MB, pairs.
 - Texts `gal.*` (not spoken, in `SKIP_UI`; `art.*` is taken by the game content), only `voice.gallery`.
 
+## Вход для админов (картины к стихам)
+
+- «Вход для админов» on the title screen (`adminEntry()` in `admin.js`): the site has no server, so signing in = a personal **GitHub fine-grained token** (only the repository TeacherRG/Koelet, Contents: Read and write), checked against `api.github.com` and kept only in that browser (`localStorage` `koelet-admin`, never in `koelet-game-v1`). «Выйти из админки» erases it. When signed in, the menu has «Загрузить картины» and the title button opens the screen directly.
+- Screen `admin` (`renderAdmin()`) = the «Твой стих» screen (`hebNameHTML()`/`showPasuk()`); every verse carries `data-v="book-chapter-verse"` (`vAttr()` in `pasuk.js`), a tap on it opens the upload panel (file from the device, JPG/PNG/WebP; over 4 MB is shrunk to JPEG) with the pictures already there and «Удалить». Upload = two commits to `main` through the GitHub API: the file `gallery/v-<key>-<time>.<ext>` and its line in `gallery/verses.json` (`{"27-20-5": ["file", …]}`); GitHub Pages shows it in 1–2 minutes.
+- The pictures are finished works (the verse is already on them) and are shown **as is**: players 16+ see them in «Картина со стихом» under «Работа автора» with a download link (`galAuthor()` in `gallery.js`). Check the verse and vowels before uploading — the game does not.
+- CSP allows `connect-src https://api.github.com` only for this; players never send anything there (`test:play` fails on any request to another server outside the signed-in admin part, and plays the admin flow against a mocked GitHub). `about.privacy` says so. Texts `adm.*` (not spoken, in `SKIP_UI`). `test:data` checks `gallery/verses.json` (keys, files exist, ≤ 4 MB).
+
 ## About window
 
 - «О приложении» (`showAbout()` in `game.js`) opens from the menu and from the title footer: project link `PROJECT_URL` (https://mychitas.app), short description, rights to the lesson and the music, open-source libraries, privacy. Texts are `about.*` in the locales — update them when the lesson source, music or libraries change.
@@ -118,7 +126,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 ## Site, search and security
 
 - Hosted on GitHub Pages (`CNAME` → mylot.mychitas.app). Search: `robots.txt`, `sitemap.xml`, canonical/hreflang/JSON-LD in `index.html`. Each language has its own URL `?lang=uk|de|en` (`urlLang()` in `i18n.js`, wins over the saved choice); `setMeta()` sets description (`doc.desc`), og-tags and canonical for the language.
-- Security headers can't be set on Pages, so a Content-Security-Policy lives in a `<meta>` in `index.html`: everything only from the site itself (`'self'`), no external hosts at all (no counter, no Google Fonts), `style-src 'self'` without `'unsafe-inline'`, `<meta name="referrer" content="no-referrer">`. Keep it that way: a new external host is a privacy decision for a children's app, not just a CSP line.
+- Security headers can't be set on Pages, so a Content-Security-Policy lives in a `<meta>` in `index.html`: everything only from the site itself (`'self'`), no external hosts at all (no counter, no Google Fonts; the one exception is `connect-src https://api.github.com` for the signed-in admin, see above), `style-src 'self'` without `'unsafe-inline'`, `<meta name="referrer" content="no-referrer">`. Keep it that way: a new external host is a privacy decision for a children's app, not just a CSP line.
 - No `style="…"` in templates or texts (the CSP drops it; `test:data` rejects it in texts, `test:play` fails on CSP console errors). Static styles → a class in `styles.css`; dynamic values (widths, positions, colours) → `data-css="prop:value;…"`, applied by `applyCss()` in `game.js` via `el.style` (MutationObserver on the page; only whitelisted properties `CSS_PROPS`, no `url(`). Call `applyCss(document.body)` before `window.print()` in the same task.
 - Clickjacking: `frame-ancestors` does not work in a `<meta>` CSP, so `frame-guard.js` (first script in `<head>`) hides the page inside a foreign iframe and tries to reopen it as the whole window. Fonts are self-hosted in `fonts/` (`fonts.css`, OFL), no Google requests; the page makes no requests to other servers.
 - The certificate photo is kept only for the tab (`sessionStorage` `koelet-photo`, `save()`/`load()` in `game.js`), never in `koelet-game-v1`; old saved photos are erased on load. `about.privacy` must match what the code really sends.

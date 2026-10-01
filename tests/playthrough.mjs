@@ -64,6 +64,18 @@ async function run(browser, base, sc) {
   let framing = false; // the iframe check below aborts the framed page's requests on purpose
   page.on('requestfailed', r => { if (!framing && r.url().startsWith(base) && !/\/audio\/.*\.mp3$/.test(r.url())) add('failed to load ' + r.url().slice(base.length)); });
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) add('console error: ' + m.text()); });
+  // players never talk to other servers; GitHub only after the admin signs in (mocked below, nothing real is sent)
+  let adminOn = false;
+  const gh = [];
+  page.on('request', r => { const u = r.url(); if (!u.startsWith(base) && !u.startsWith('data:') && !u.startsWith('blob:') && !(adminOn && u.startsWith('https://api.github.com/'))) add('request to another server: ' + u.slice(0, 80)); });
+  await page.route('https://api.github.com/**', r => {
+    const req = r.request(), u = new URL(req.url()), m = req.method();
+    gh.push({m, path: u.pathname, body: req.postData()});
+    if (u.pathname === '/repos/TeacherRG/Koelet') return r.fulfill({json: {permissions: {push: true}}});
+    if (u.pathname === '/user') return r.fulfill({json: {login: 'tester'}});
+    if (m === 'GET') return r.fulfill({status: 404, json: {}});
+    return r.fulfill({status: 201, json: {}});
+  });
   await page.addInitScript(l => {
     try { localStorage.setItem('koelet-lang', l); localStorage.setItem('koelet-audio', JSON.stringify({music: false, voice: false})); } catch (e) {}   // an old «Без звука» must not stick
     // record everything the voice guide says (headless browsers have no audible voices)
@@ -315,6 +327,33 @@ async function run(browser, base, sc) {
       await page.click('#exstay');
       if (await page.$('#exitq') || await page.evaluate(() => S.screen) !== 'title' || !(await page.evaluate(() => history.state && history.state.koelet))) add('«Остаться» in the exit question did not keep the game');
     }
+  }
+  // «Вход для админов» on the title (one scenario per language): a GitHub key signs in, the upload screen is the verse
+  // screen, a tap on a verse shows the upload button; the picture and gallery/verses.json go to the repository (mocked)
+  if (sc.age === 't' && await page.evaluate(() => S.screen) === 'title') {
+    adminOn = true;
+    await page.click('#admbtn');
+    await page.fill('#admtok', 'github_pat_test');
+    await page.click('#admgo');
+    await page.waitForFunction(() => S.screen === 'admin', null, {timeout: 5000}).catch(() => add('admin: sign-in did not open the upload screen'));
+    const adm = await page.evaluate(() => ({key: (JSON.parse(localStorage.getItem('koelet-admin') || '{}')).token, inGame: localStorage.getItem(KEY).includes('github_pat')}));
+    if (adm.key !== 'github_pat_test' || adm.inGame) add('admin: the key must be kept in koelet-admin only, never in the saved game');
+    await page.evaluate(() => { const i = document.querySelector('#hebname'); i.value = 'משה'; i.dispatchEvent(new Event('input')); });
+    await page.waitForSelector('#pares [data-v]', {timeout: 5000}).catch(() => {});
+    await page.click('#pares [data-v] blockquote');
+    await page.waitForSelector('.adm-up input[type=file]', {state: 'attached', timeout: 3000}).catch(() => add('admin: no upload button after a tap on the verse'));
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64');
+    await page.setInputFiles('.adm-up input[type=file]', {name: 'art.png', mimeType: 'image/png', buffer: png}).catch(() => {});
+    await page.waitForFunction(t => (document.querySelector('.adm-st') || {}).textContent === t, await page.evaluate(() => t('adm.done')), {timeout: 5000}).catch(() => add('admin: upload did not finish: ' + gh.map(x => x.m + ' ' + x.path).join(', ')));
+    const puts = gh.filter(x => x.m === 'PUT');
+    const img = puts.find(x => /\/contents\/gallery\/v-\d+-\d+-\d+-\w+\.png$/.test(x.path)), list = puts.find(x => x.path.endsWith('/contents/gallery/verses.json'));
+    let map = {}; try { map = JSON.parse(Buffer.from(JSON.parse(list.body).content, 'base64').toString('utf8')); } catch (e) {}
+    const key = img && img.path.match(/v-(\d+-\d+-\d+)-/)[1];
+    if (!img || !list || !(map[key] || []).some(f => img.path.endsWith(f))) add('admin: the picture or its line in gallery/verses.json was not sent');
+    if (await page.evaluate(() => (document.querySelector('#stage').innerText.match(/\badm\.\w+/) || [''])[0])) add('admin: raw locale key on the screen');
+    await page.click('#admout');
+    if (await page.evaluate(() => isAdmin() || !!localStorage.getItem('koelet-admin') || S.screen !== 'title')) add('admin: «Выйти из админки» did not erase the key');
+    adminOn = false;
   }
   // the certificate photo lives only for the tab (sessionStorage), never in the saved game
   const ph = await page.evaluate(() => { S.photo = 'data:image/jpeg;base64,AAAA'; save();

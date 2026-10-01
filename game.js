@@ -92,7 +92,7 @@ function themeKey(){
   if(s==='world'||s==='done')return WORLD_THEME[S.w]||'base';
   if(s==='map')return 'map';
   if(s==='final')return 'sukkah';
-  if(s==='shabbat'||s==='pasuk'||s==='hayom'||s==='gallery')return 'library';
+  if(s==='shabbat'||s==='pasuk'||s==='hayom'||s==='gallery'||s==='admin')return 'library';
   return 'base';
 }
 function applyTheme(){
@@ -166,7 +166,7 @@ function toast(ic,title,sub){
 }
 function hud(){
   const h=$('#hud');
-  const show=!['title','create','welcome','shabbat','pasuk','hayom','gallery'].includes(S.screen);
+  const show=!['title','create','welcome','shabbat','pasuk','hayom','gallery','admin'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
   h.innerHTML=`<button class="hero-chip" id="herobtn" aria-haspopup="dialog" title="${t('hud.profile')}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b><span class="sr-only">${t('hud.profile')}</span></button>
@@ -213,6 +213,7 @@ function showMenu(){
       ${S.screen!=='map'?`<button class="mitem" data-m="map">${icon('map')}<span>${t('menu.map')}</span></button>`:''}
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
       <button class="mitem" data-m="shab">${icon('candles')}<span>${t('shab.open')}</span></button>
+      ${isAdmin()?`<button class="mitem" data-m="admin">${icon('key')}<span>${t('adm.menu')}</span></button>`:''}
       <button class="mitem mgroup" data-m="mine" aria-expanded="${mine}" aria-controls="msub-mine">${icon('book')}<span>${t('menu.mine')}</span><i class="mchev ${mine?'open':''}" aria-hidden="true">${icon('up')}</i></button>
       <div class="msub" id="msub-mine" ${mine?'':'hidden'}>
         <button class="mitem" data-m="pasuk">${icon('scroll')}<span>${t('menu.mineVerse')}</span></button>
@@ -234,7 +235,7 @@ function showMenu(){
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
       if(k==='mine'){mine=!mine;sfx.tap();draw();return}
       if(k==='langs'){langDdOpen=!langDdOpen;sfx.tap();draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom();if(k==='gallery')openGallery()});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom();if(k==='gallery')openGallery();if(k==='admin')openAdmin()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
@@ -309,7 +310,7 @@ function go(screen,skipPrologue){
 function render(){
   stopReading();stopCamera();applyTheme();hud();donateBtn();
   Voice.cancel();
-  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk,hayom:renderHayom,gallery:renderGallery}[S.screen]||renderTitle)();
+  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk,hayom:renderHayom,gallery:renderGallery,admin:renderAdmin}[S.screen]||renderTitle)();
   backBar();armBack();
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
@@ -328,6 +329,7 @@ function backTarget(){
   if(s==='pasuk')return S.pasukFrom&&S.pasukFrom!=='pasuk'?S.pasukFrom:'title';
   if(s==='hayom')return S.hayomFrom&&S.hayomFrom!=='hayom'?S.hayomFrom:'title';
   if(s==='gallery')return S.galFrom&&S.galFrom!=='gallery'?S.galFrom:'title';
+  if(s==='admin')return S.admFrom&&S.admFrom!=='admin'?S.admFrom:'title';
   return null;
 }
 function goBack(){
@@ -388,10 +390,12 @@ function renderTitle(){
     <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
     ${adult()?`<button class="linkbtn shablink" id="galbtn">${icon('palette')} ${t('gal.open')}</button>`:''}
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
+    <p class="foot"><button class="linkbtn" id="admbtn">${icon('key')} ${t(isAdmin()?'adm.menu':'adm.open')}</button></p>
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
   </section>`;
   $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
+  $('#admbtn').onclick=adminEntry;
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
   $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
   $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
@@ -1280,7 +1284,7 @@ stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)
 function start(data){
   load();
   if(data&&data.state&&data.state.v===1)S=Object.assign(fresh(),data.state);
-  if(['shabbat','pasuk','hayom','gallery'].includes(S.screen))S.screen='title';
+  if(['shabbat','pasuk','hayom','gallery','admin'].includes(S.screen))S.screen='title';
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});

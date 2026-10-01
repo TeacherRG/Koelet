@@ -19,11 +19,22 @@ function openGallery(){
   galLoadOwn().then(()=>go('gallery'));
 }
 /* свои фоны: {id, name:{ru,uk,de,en}, files:{phone,screen,print}, pairs?, band?, shade?, frame?} */
-let GAL_OWN=null,galOwnLoad=null;
+let GAL_OWN=null,galOwnLoad=null,GAL_VERSES={};
+const galJson=f=>fetch('gallery/'+f,{cache:'no-cache'}).then(r=>r.ok?r.json():{}).catch(()=>({}));
 function galLoadOwn(){
-  if(!galOwnLoad)galOwnLoad=fetch('gallery/backgrounds.json').then(r=>r.ok?r.json():{}).catch(()=>({}))
-    .then(d=>GAL_OWN=((d&&d.scenes)||[]).filter(s=>s&&s.id&&s.files&&!GAL_STYLES.includes(s.id)));
+  if(!galOwnLoad)galOwnLoad=Promise.all([galJson('backgrounds.json'),galJson('verses.json')]).then(([d,v])=>{
+    GAL_OWN=((d&&d.scenes)||[]).filter(s=>s&&s.id&&s.files&&!GAL_STYLES.includes(s.id));
+    GAL_VERSES=v&&typeof v==='object'?v:{}});
   return galOwnLoad;
+}
+/* готовые картины автора к этому стиху (загружает админ, admin.js) — показываем как есть, с кнопкой «Скачать» */
+function galAuthor(v){
+  const box=$('#galauthor');if(!box)return;
+  const key=`${v[0]}-${v[1]}-${v[2]}`,list=(GAL_VERSES[key]||[]).filter(f=>/^[\w.-]+$/.test(f));
+  const ref=`${tl('pasuk.books')[v[0]]||''} ${v[1]}:${v[2]}`;
+  box.innerHTML=list.length?`<div class="group"><h3>${t('gal.authorH')}</h3><p class="muted pasuk-hint">${t('gal.authorNote')}</p>
+    <div class="gal-author">${list.map(f=>`<figure><img src="gallery/${esc(f)}" alt="${esc(t('gal.alt',{ref}))}" loading="lazy">
+      <a class="btn ghost small" href="gallery/${esc(f)}" download="mylot-${esc(f)}">${icon('next')}<span>${t('gal.download')}</span></a></figure>`).join('')}</div></div>`:'';
 }
 const galOwn=id=>(GAL_OWN||[]).find(s=>s.id===id);
 /* сюжеты для пары: сначала свои (если фон подходит к этой паре букв), потом нарисованные кодом */
@@ -59,6 +70,7 @@ function renderGallery(){
         :`<p class="muted pasuk-hint">${t('gal.notMine')} <button class="linkbtn" id="galmine">${t('gal.mine')} <span class="heb" lang="he">${esc(n)}</span></button></p>`)
         :`<p class="muted pasuk-hint">${t('gal.noName')} <button class="linkbtn" id="galpasuk">${t('pasuk.open')}</button></p>`}
     </div>
+    <div id="galauthor"></div>
     <div class="group"><h3 id="gst-l">${t('gal.styleH')}</h3>${segs('gst',styles,g.style,galStyleName,styles.length>3?'wrap':'')}</div>
     <div class="group"><h3 id="gfmt-l">${t('gal.fmtH')}</h3>${segs('gfmt',fmts,g.fmt,k=>t('gal.fmt.'+k))}
       <p class="muted pasuk-hint">${t('gal.size.'+g.fmt)}</p></div>
@@ -92,7 +104,8 @@ async function galPreview(){
   const my=++galTok,g=galState(),box=$('#galprev');
   let v;try{v=await galVerse(g)}catch(e){if(my===galTok&&box)box.innerHTML=`<p class="muted">${t('pasuk.error')}</p>`;return}
   if(my!==galTok||!$('#galprev'))return;
-  if(!v){box.innerHTML=`<p class="muted">${t('pasuk.none')}</p>`;return}
+  if(!v){box.innerHTML=`<p class="muted">${t('pasuk.none')}</p>`;$('#galauthor').innerHTML='';return}
+  galAuthor(v);
   const [W,H]=GAL_FMT[g.fmt],w=GAL_PREV[g.fmt];
   let c;try{c=await galDraw(g,v,w,Math.round(w*H/W),g.fmt)}catch(e){if(my===galTok&&$('#galprev'))box.innerHTML=`<p class="muted">${t('gal.imgError')}</p>`;return}
   if(my!==galTok||!$('#galprev'))return;

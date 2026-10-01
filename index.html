@@ -3,8 +3,9 @@
 <meta charset="utf-8">
 <!-- Безопасность: GitHub Pages не даёт задать HTTP-заголовки, поэтому политика — в meta.
      Все файлы, включая шрифты (fonts/), — только с этого сайта; внешних запросов нет.
+     api.github.com — только для вошедшего админа (admin.js: загрузка картин к стихам); у игроков запросов туда нет.
      защита от встраивания в чужой iframe — frame-guard.js (frame-ancestors в meta не работает). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <script src="frame-guard.js"></script>
 <meta name="referrer" content="no-referrer">
 <title>Тайна Коэлета</title>
@@ -58,3 +59,4 @@
 <script src="pasuk.js"></script>
 <script src="hayomyom.js"></script>
 <script src="gallery.js"></script>
+<script src="admin.js"></script>
