@@ -235,6 +235,29 @@ function showAbout(){
     <p>${t('about.text')}</p>
     ${sec('about.lessonH','about.lesson')}${sec('about.musicH','about.music')}${sec('about.codeH','about.code')}${sec('about.privacyH','about.privacy')}`);
 }
+/* ---------- Счётчик посещений на титульном экране ----------
+   Бесплатный сервис abacus без cookies: «ещё одно посещение» раз за вкладку, ничего об игроке.
+   До счётчика посещения не считались — берём за начало 99. Считается только на сайте
+   (не на localhost и не в тестах); если сервис недоступен, строка просто не появляется. */
+const VISITS_API='https://abacus.jasoncameron.dev';
+const VISITS_KEY='mylot-mychitas-app/visits';
+const VISITS_BASE=99;
+let visits=null;
+function countVisit(){
+  if(location.hostname!==new URL(APP_URL).hostname)return;
+  let seen=false;try{seen=!!sessionStorage.getItem('koelet-visit')}catch(e){}
+  fetch(`${VISITS_API}/${seen?'get':'hit'}/${VISITS_KEY}`,{credentials:'omit',referrerPolicy:'no-referrer'})
+    .then(r=>r.ok?r.json():null).then(j=>{
+      if(!j||!Number.isFinite(j.value))return;
+      try{sessionStorage.setItem('koelet-visit','1')}catch(e){}
+      visits=VISITS_BASE+j.value;showVisits();
+    }).catch(()=>{});
+}
+function showVisits(){
+  const el=document.getElementById('visits');
+  if(!el||visits==null)return;
+  el.textContent=t('visits.count',{n:visits.toLocaleString(langLocale())});el.hidden=false;
+}
 /* ---------- Провести урок онлайн: предложение автора проекта ---------- */
 const LESSON_EMAIL='office@mychitas.app';
 function showLesson(){
@@ -286,7 +309,9 @@ function renderTitle(){
     <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
+    <p class="copy" id="visits" hidden></p>
   </section>`;
+  showVisits();
   $('#setbtn').onclick=()=>quickMenu();
   $('#aboutbtn').onclick=showAbout;
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
@@ -1070,9 +1095,12 @@ function start(data){
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});
+  countVisit();
 }
 window.claude?.hot?.snapshot?.(()=>({state:S}));
-window.GAME_DATA_READY.then(()=>{
+/* тексты могут прийти раньше, чем выполнены shabbat.js и pasuk.js — ждём и их */
+const DOM_READY=document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r,{once:true})):Promise.resolve();
+Promise.all([window.GAME_DATA_READY,DOM_READY]).then(()=>{
   window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 }).catch(()=>{
   const [h,p]=LOAD_ERROR[LANG]||LOAD_ERROR[DEFAULT_LANG];stage.innerHTML=`<section class="scene"><h1 class="h2">${h}</h1><p>${p}</p></section>`;
