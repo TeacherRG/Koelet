@@ -2,8 +2,20 @@
 const KEY='koelet-game-v1';
 const fresh=()=>({v:1,screen:'title',hero:{name:'',age:null,g:null,arch:0,look:0,outfit:0},w:0,s:0,ps:0,done:[0,0,0,0,0,0,0],sparks:0,ach:{},ans:{},qualities:[],lab:{can:[],like:[],need:[],help:[]},tools:{},help:0,insight:0,sound:false,phrase:null,own:{}});
 let S=fresh();
-function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&d.v===1)S=Object.assign(fresh(),d)}}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* Фото для сертификата — только на время вкладки (sessionStorage): на общем или школьном компьютере
+   оно не остаётся после закрытия игры. Прогресс и ответы — в localStorage, без фото. */
+const PHOTO_KEY='koelet-photo';
+function load(){
+  try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&d.v===1){
+    if(d.photo){delete d.photo;delete d.photoOff;localStorage.setItem(KEY,JSON.stringify(d))} // фото из старых версий стираем
+    S=Object.assign(fresh(),d)}}}catch(e){}
+  try{const p=sessionStorage.getItem(PHOTO_KEY);if(p)S.photo=p}catch(e){}
+}
+let savedPhoto;
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S,(k,v)=>k==='photo'?undefined:v))}catch(e){}
+  if(S.photo!==savedPhoto){savedPhoto=S.photo;try{S.photo?sessionStorage.setItem(PHOTO_KEY,S.photo):sessionStorage.removeItem(PHOTO_KEY)}catch(e){}}
+}
 
 /* ================================================================
    HELPERS
@@ -860,7 +872,7 @@ function gPuzzle(){
 let camStream=null;
 function stopCamera(){if(camStream){camStream.getTracks().forEach(tr=>tr.stop());camStream=null}}
 window.addEventListener('pagehide',stopCamera);
-// фото для сертификата — только по кнопке, квадрат 400 px в localStorage, никуда не отправляется
+// фото для сертификата — только по кнопке, квадрат 400 px только на время вкладки (sessionStorage, см. save()), никуда не отправляется
 function snapPhoto(v){
   if(!v||!v.videoWidth)return null;
   const z=Math.min(v.videoWidth,v.videoHeight),N=400,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');
