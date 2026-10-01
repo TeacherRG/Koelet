@@ -438,7 +438,6 @@
   "pasuk.empty": "Schreib deinen Namen auf Hebräisch – mindestens zwei Buchstaben.",
   "pasuk.what": "Dein Vers beginnt mit „{{a}}“ und endet mit „{{b}}“:",
   "pasuk.none": "Im Tanach gibt es keinen Vers mit diesem ersten und letzten Buchstaben. Prüf die Schreibweise des Namens oder sag einen Vers, in dem der Name selbst vorkommt.",
-  "pasuk.withName": "Ein Vers mit deinem Namen",
   "pasuk.cert": "Dein Vers steht am Ende des Weges auf dem persönlichen Blatt zur Urkunde.",
   "hy.open": "Dein Tag in „Hajom Jom“",
   "hy.kicker": "Zu deinem Geburtstag",

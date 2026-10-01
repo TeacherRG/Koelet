@@ -71,17 +71,13 @@ function loadOnce(k,then){
 /* справочник и стихи на нужные первые буквы */
 function loadPesukim(firsts){
   return Promise.all([loadOnce('index',d=>{
-      /* имена без «лишних» י и ו: אהרון найдёт אהרן */
-      d.loose={};for(const n in d.names){const k=nameKey(n);if(!(k in d.loose))d.loose[k]=d.names[n]}
       PESUKIM=d}),
     ...firsts.map(i=>loadOnce(i,d=>{PAIRS[i]=d}))]);
 }
 const baseL=c=>HEB_BASE[c]||c;
-const nameKey=n=>[...n].map(baseL).join('').replace(/(?!^)[וי]/g,'');
 const firstOf=n=>HEB_AB.indexOf(baseL(n[0]));
 /* стихи пары: первый — личный */
 const pairVerses=n=>(PAIRS[firstOf(n)]||{})[baseL(n[0])+baseL(n.at(-1))]||[];
-function nameVerse(n){return PESUKIM.names[hebFinals(n)]||PESUKIM.loose[nameKey(n)]||null}
 
 function verseHTML(v,first){
   /* первая и последняя буквы стиха — тем же цветом, что и буквы имени */
@@ -153,12 +149,11 @@ function showPasuk(){
   if(!PESUKIM||need.length){box.innerHTML=`<p class="muted">${t('pasuk.loading')}</p>`;
     loadPesukim(need).then(showPasuk).catch(()=>{const b=$('#pares');if(b)b.innerHTML=`<p class="muted">${t('pasuk.error')}</p>`});return}
   box.innerHTML=names.map(n=>{
-    const [pv,...more]=pairVerses(n),nv=nameVerse(n);
+    const [pv,...more]=pairVerses(n);
     return `<div class="pasuk-card">
       <div class="pasuk-name"><span class="heb" lang="he">${esc(n)}</span><span class="pasuk-ls">${letterChip(n[0])}<i aria-hidden="true">…</i>${letterChip(n.at(-1))}</span></div>
       <p class="pasuk-what">${t('pasuk.what',{a:esc(tl('pasuk.letters')[HEB_AB.indexOf(baseL(n[0]))]),b:esc(tl('pasuk.letters')[HEB_AB.indexOf(baseL(n.at(-1)))])})}</p>
       ${pv?verseHTML(pv,true):`<p class="muted">${t('pasuk.none')}</p>`}
       ${more.length?`<details class="pasuk-more"><summary>${t('pasuk.more',{n:more.length})}</summary><ol>${more.map(v=>`<li><span class="heb" lang="he" dir="rtl">${esc(v[3])}</span><small>${verseRef(v)}</small></li>`).join('')}</ol></details>`:''}
-      ${nv?`<h3 class="pasuk-h">${t('pasuk.withName')}</h3>${verseHTML(nv)}`:''}
     </div>`}).join('');
 }

@@ -267,7 +267,7 @@ async function run(browser, base, sc) {
     await page.evaluate(() => { const i = document.querySelector('#hebname'); i.value = 'משה'; i.dispatchEvent(new Event('input')); });
     await page.waitForSelector('.pasuk-v', {timeout: 5000}).catch(() => {});
     const pa = await page.evaluate(() => ({screen: S.screen, verses: document.querySelectorAll('.pasuk-v').length, text: [...document.querySelectorAll('#stage .lead, #stage .group h3, .pasuk-what, figcaption')].map(e => e.innerText).join('\n')}));
-    if (pa.screen !== 'pasuk' || pa.verses !== 2) add(`«Твой стих»: screen "${pa.screen}", ${pa.verses} verses instead of 2 for משה`);
+    if (pa.screen !== 'pasuk' || pa.verses !== 1) add(`«Твой стих»: screen "${pa.screen}", ${pa.verses} verses instead of 1 for משה (only the personal one, no «verse with the name»)`);
     for (const p of textProblems(pa.text, sc.lang)) add(`[pasuk] ${p}`);
     await snap('pasuk');
     await page.click('#paback');
