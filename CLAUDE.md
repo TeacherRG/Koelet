@@ -25,6 +25,8 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 | `shabbat.js` | «К Шабату»: экран выбора листов A4 и их вёрстка (настольная игра «Тропа Коэлета» с правилами, фишками и бумажным кубиком, 12 карточек вопросов по возрасту, «Найди пару», «Моя деталь пазла», семейный пазл). Печать через `#print-area`: лист 188×270 мм на именованной странице `@page shab` (A4 книжная), у сертификата своя `@page cert` (альбомная) |
 | `pasuk.js` | «Твой стих в Танахе»: имя на иврите (угадывается из имени героя по словарю `HEB_NAMES` или по звукам, правится экранной клавиатурой) → стих, который начинается на первую букву имени и кончается на последнюю, и стих, где встречается само имя |
 | `data/pesukim/` | Стихи для `pasuk.js`: `index.json` (названия книг, имя → стих) и `0..21.json` (по первой букве: пара → её стихи, первый — личный). Генерируется `tools/build-pesukim.mjs` из традиционного списка Torat Emet `tools/sources/toratemet-f_00720.mhtml`, руками не править |
+| `hayomyom.js` | «Твой день в „Айом-йом“»: день рождения (обычный — переводится в еврейский своим календарём `gregToHeb()`, с галочкой «после захода солнца», или еврейский) → запись книги Ребе «היום יום» на этот день |
+| `data/hayomyom.json` | Записи «היום יום» по дням (`"<месяц>-<день>"`, месяцы книги: תשרי…אלול, Адар I и II отдельно), все 383 дня. Генерируется `tools/build-hayomyom.mjs` из `tools/sources/hayomyom.pdf` и `tools/sources/hayomyom-elul.pdf` (нужен pdftotext), руками не править |
 | `music.js` | Music and voice guide: `Music` (background tracks, volume, ducking), `Voice.say()`, `guideScreen()` (spoken hint on every screen), `showGate()` (start screen), audio settings panel. Idle help after a minute of silence. Track and volume in localStorage `koelet-audio` |
 | `voice-key.js` | Shared by the game and `tools/tts.mjs`: splits text into sentences (paragraphs, `.!?…`), strips tags and Hebrew, `VoiceKey.key()` = hash of the normalized sentence |
 | `audio/<lang>/` | Ready-made Azure voice: one mp3 per sentence (`<key>.mp3`) + `index.json` (list of keys). Generated, never edit by hand |
@@ -60,7 +62,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 ## Steps and mini-games
 
 - A world is `{name, desc, steps:[…]}`; step types: `talk`, `choice`, `multi`, `quote`, `card`, `reveal`, `mini` (see `renderStep()` in `game.js`). Dynamic steps use `__dynamic` (`city-year`, `city-evening`, or `body: {"__dynamic": "strength-map"}`) and are built in `resolveDynamic()`.
-- Mini-games are registered in `rMini()`: `book`, `treasure`, `find`, `puzzle` (real jigsaw; 3×3 pieces, 5×5 for 16+), `selfmirror` (camera), `species`, `sky`, `hands`, `circles`, `final`; 16+ only: `maslow` (Solomon's experiments from Kohelet 2 on Maslow's pyramid, replaces `treasure` via `"game": {"__ag":1,…,"a":"maslow"}`) and `timeline` (history as a puzzle: events in order, the player's piece last).
+- Mini-games are registered in `rMini()`: `book`, `treasure`, `find`, `puzzle` (real jigsaw; 3×3 pieces, 5×5 for 16+), `selfmirror` (camera), `pasuk` (world «Зеркало», right after `selfmirror`: the hero's Hebrew name and personal verse, `gPasuk()` in `pasuk.js`), `species`, `sky`, `hands`, `circles`, `final`; 16+ only: `maslow` (Solomon's experiments from Kohelet 2 on Maslow's pyramid, replaces `treasure` via `"game": {"__ag":1,…,"a":"maslow"}`) and `timeline` (history as a puzzle: events in order, the player's piece last).
 - Adding a step shifts step indices of saved games — that is acceptable, but add it in all four languages at the same position.
 - Camera (`selfmirror`): starts only after the button, stops in `render()` / on `pagehide` via `stopCamera()`; always keep the no-camera path.
 
@@ -86,8 +88,17 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 ## «Твой стих в Танахе»
 
 - Screen `pasuk` (`renderPasuk()` in `pasuk.js`) opens from the title screen, the menu and the final screen; «Назад» returns to `S.pasukFrom`; HUD hidden; on reload the game starts from the title. The Hebrew name is `S.hebName` (stays on the device).
+- Also a step of the world «Зеркало» (mini `pasuk` after the camera mirror: «you saw yourself — your name has its own verse») and on the personal page of the certificate (see below; `personalVerse()`).
 - Custom (segula): at the end of the Amidah, before the second «יהיו לרצון», a verse that begins with the first letter of one's Hebrew name and ends with its last, or a verse with the name in it.
 - Data: the verses and their text come only from the traditional list «פסוק המתחיל ומסתיים באות» of Torat Emet (toratemetfreeware.com, saved as MHTML in `tools/sources/`), every verse of Tanach per pair, Jewish chapter/verse numbers. `node tools/build-pesukim.mjs <morphhb>/wlc` (see the header of the script); morphhb is used only as a word list (proper names, mood of a verse). Each pair gets **one** personal verse: from the Torah (Chumash) when the pair has a fitting one there (short, without dark words — Strong's numbers in `DARK`, not from chapters in `SKIP`), otherwise the best verse of the rest of Tanach. It is shown first; all the other verses of the pair are in a collapsed block «Другие стихи на эти буквы». Divine Names are written as in books for learning (ה׳, אלקים, קה, ש-די, א-דני). Texts `pasuk.*` are not spoken (in `SKIP_UI`), only `voice.pasuk`; book and letter names are `pasuk.books` / `pasuk.letters` in the locales.
+
+## «Твой день в „Айом-йом“»
+
+- Screen `hayom` (`renderHayom()` in `hayomyom.js`) opens from the title screen, the menu and the final screen; «Назад» returns to `S.hayomFrom`; HUD hidden. Optional: the birthday `S.bday` (`{mode:'g'|'h', g:'YYYY-MM-DD', sunset, hd, hm}`) stays on the device.
+- Calendar: `gregToHeb()` (R.D. days, molad, Rosh Hashana postponements; checked against known dates). After sunset → next day. Adar of a regular year is read as אדר ב of the book (Chabad custom). A day the book lacks (30 Cheshvan / 30 Kislev) → the nearest earlier day with a note.
+- Sources: `tools/sources/hayomyom.pdf` (the book, Tishrei–Av) and `tools/sources/hayomyom-elul.pdf` (Elul, a printout of Chabadpedia «היום יום/אלול»: two columns with edit links mixed in, cut by the «תבנית - שיחה» marker at the end of each day). `node tools/build-hayomyom.mjs` → one file `data/hayomyom.json` (~120 KB, loaded only by this section and the certificate).
+- Text is Hebrew only (as in the book), not spoken; `hy` is in `SKIP_UI`, only `voice.hayom` is spoken.
+- Full certificate = two landscape A4 pages. Page 1 is the certificate as it always was (`drawCertificate()`, photo if taken) — do not put the verse or «Айом-йом» there. Page 2 is the personal page (`drawPersonalSheet()`, only when there is a Hebrew name and/or a birthday): hero name + Hebrew name, panels «Мой стих в Танахе» (right) and «Мой день в „Айом-йом“» (left), or one wide panel; each with its Hebrew and local reference and a one-line note (`sheet.*`). The final screen shows both, downloads each and prints both (one page each); for each missing part it shows a hint with a link to the section.
 
 ## About window
 
@@ -107,6 +118,7 @@ Interactive adventure for children aged 8–15 and adults (16+) based on Rabbi S
 - Contrast WCAG AA; mobile first (375 px wide), one-line HUD, final screen in tabs.
 - HUD: the hero chip (top left) opens `showProfile()` — level, progress, achievements; the menu button (top right) opens `showMenu()` — navigation, sound switches, language, «О приложении», donate link. Both are bottom sheets built with `openSheet()` (title + ✕, Escape, tap outside).
 - Step arrows (`stepNav()` in `game.js`, inside `head()`): under the HUD, above the world banner of every prologue/world step. «Назад» goes one step back, «Вперёд» only up to the furthest step reached (`S.far`, a finished world is open entirely). A step revisited this way gives no sparks again (`addSparks()`). Labels `hud.back` / `hud.fwd` (not spoken).
+- «Назад» (`#backbar` under `#stage`, `backBar()`/`goBack()`/`backTarget()` in `game.js`) is at the bottom of every screen except the title: a step back inside a world or the prologue, from step 0 to the map, from the map to the title, from «К Шабату» / «Твой стих» to where they were opened. The phone's back button does the same (`armBack()` keeps one extra history entry; `popstate` first closes an open sheet or the quick menu). A new screen needs a line in `backTarget()`.
 - New world visuals: add a theme to `THEMES`/`WORLD_THEME` and a backdrop to `SCENES` in `art.js`.
 
 ## Git

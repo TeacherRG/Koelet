@@ -64,7 +64,7 @@ function themeKey(){
   if(s==='world'||s==='done')return WORLD_THEME[S.w]||'base';
   if(s==='map')return 'map';
   if(s==='final')return 'sukkah';
-  if(s==='shabbat'||s==='pasuk')return 'library';
+  if(s==='shabbat'||s==='pasuk'||s==='hayom')return 'library';
   return 'base';
 }
 function applyTheme(){
@@ -138,7 +138,7 @@ function toast(ic,title,sub){
 }
 function hud(){
   const h=$('#hud');
-  const show=!['title','create','welcome','shabbat','pasuk'].includes(S.screen);
+  const show=!['title','create','welcome','shabbat','pasuk','hayom'].includes(S.screen);
   h.hidden=!show;if(!show)return;
   const pieces=S.done.filter(Boolean).length;
   h.innerHTML=`<button class="hero-chip" id="herobtn" aria-haspopup="dialog" title="${t('hud.profile')}"><span class="hero-av">${avatar(S.hero)}</span><b>${esc(heroName())}</b><span class="sr-only">${t('hud.profile')}</span></button>
@@ -185,6 +185,7 @@ function showMenu(){
       <button class="mitem" data-m="home">${icon('home')}<span>${t('menu.home')}</span></button>
       <button class="mitem" data-m="shab">${icon('candles')}<span>${t('shab.open')}</span></button>
       <button class="mitem" data-m="pasuk">${icon('scroll')}<span>${t('pasuk.open')}</span></button>
+      <button class="mitem" data-m="hayom">${icon('candles')}<span>${t('hy.open')}</span></button>
     </nav>
     ${audioPanelHTML(false,{title:t('menu.soundH'),pre:sfxRow})}
     ${langPicker()}
@@ -198,7 +199,7 @@ function showMenu(){
     wireAudioPanel(m,draw);
     m.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;
       if(k==='snd'){S.sound=!S.sound;save();if(S.sound)checkSound().then(()=>sfx.good());else soundBar(false);draw();return}
-      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk()});
+      m.remove();if(k==='map')go('map');if(k==='home')go('title');if(k==='about')showAbout();if(k==='lesson')showLesson();if(k==='shab')openShabbat();if(k==='pasuk')openPasuk();if(k==='hayom')openHayom()});
   });
 }
 function achGrid(){return `<div class="achs">${Object.entries(ACHS).map(([k,a])=>`<div class="ach ${S.ach[k]?'':'lock'}"><span class="ic">${icon(S.ach[k]?a[0]:'lock')}</span><b>${esc(T(a[1]))}</b><small>${esc(T(a[2]))}</small></div>`).join('')}</div>`}
@@ -291,9 +292,48 @@ function go(screen,skipPrologue){
 function render(){
   stopReading();stopCamera();applyTheme();hud();donateBtn();
   Voice.cancel();
-  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk}[S.screen]||renderTitle)();
+  ({title:renderTitle,create:renderCreate,welcome:renderWelcome,prologue:renderStep,world:renderStep,map:renderMap,done:renderDone,final:renderFinal,shabbat:renderShabbat,pasuk:renderPasuk,hayom:renderHayom}[S.screen]||renderTitle)();
+  backBar();armBack();
   if(S.screen==='title'&&Audio_.greeted)Audio_.greeted=false;else guideScreen();
 }
+
+/* ---------- шаг назад: кнопка внизу каждого экрана и системная кнопка «назад» телефона ---------- */
+/* куда ведёт «назад» с текущего экрана; null — некуда (титульный экран) */
+function backTarget(){
+  const s=S.screen;
+  if(s==='world')return S.s>0?()=>{S.s=idx()-1}:'map';
+  if(s==='prologue')return S.ps>0?()=>{S.ps=idx()-1}:(S.mapSeen?'map':'welcome');
+  if(s==='done')return ()=>{S.screen='world';S.s=steps().length-1};
+  if(s==='final')return 'map';
+  if(s==='map'||s==='create')return 'title';
+  if(s==='welcome')return 'create';
+  if(s==='shabbat')return S.shabFrom&&S.shabFrom!=='shabbat'?S.shabFrom:'title';
+  if(s==='pasuk')return S.pasukFrom&&S.pasukFrom!=='pasuk'?S.pasukFrom:'title';
+  if(s==='hayom')return S.hayomFrom&&S.hayomFrom!=='hayom'?S.hayomFrom:'title';
+  return null;
+}
+function goBack(){
+  const to=backTarget();if(!to)return false;
+  sfx.tap();
+  if(typeof to==='string'){go(to);return true}
+  to();save();render();window.scrollTo({top:0,behavior:'smooth'});return true;
+}
+function backBar(){
+  const bar=$('#backbar');if(!bar)return;
+  bar.hidden=!backTarget();
+  bar.innerHTML=bar.hidden?'':`<button class="btn ghost small" id="stepback">${icon('up')}<span>${t('btn.back')}</span></button>`;
+  const b=$('#stepback');if(b)b.onclick=goBack;
+}
+/* системная «назад»: держим в истории одну лишнюю запись; нажатие снимает её — закрываем окно или делаем шаг назад
+   и ставим запись снова. На титульном экране записи нет, и следующее «назад» уходит из игры, как обычно. */
+function armBack(){
+  if(S.screen!=='title'&&!(history.state&&history.state.koelet))try{history.pushState({koelet:1},'')}catch(e){}
+}
+window.addEventListener('popstate',()=>{
+  const m=document.querySelector('.modal'),q=$('#qmenu');
+  if(m||q){if(m)m.remove();if(q)q.remove();armBack();return}
+  if(!goBack())armBack();
+});
 
 function renderTitle(){
   const cols=['#cfe3d6','#f3d9a0','#bcd6ea','#9fd0ae','#f2b8c2','#f2be3d','#d9cdea'];
@@ -309,6 +349,7 @@ function renderTitle(){
     <div id="conf"></div>
     <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
     <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
+    <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
     <p class="foot">${t('title.foot')} <button class="linkbtn" id="aboutbtn">${icon('info')} ${t('about.title')}</button></p>
     <p class="copy"><a href="${PROJECT_URL}" target="_blank" rel="noopener">©mychitas.app</a> 5787</p>
     <p class="copy" id="visits" hidden></p>
@@ -318,6 +359,7 @@ function renderTitle(){
   $('#aboutbtn').onclick=showAbout;
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
   $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
+  $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
   const st=$('#start');if(st)st.onclick=()=>{sfx.tap();go('create')};
   const c=$('#cont');if(c)c.onclick=()=>{sfx.tap();const saved=S._last||'map';go(saved)};
   const n=$('#newg');if(n)n.onclick=()=>{
@@ -579,7 +621,7 @@ function rReveal(st){
 }
 
 /* ---------- mini-games ---------- */
-function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,maslow:gMaslow,timeline:gTimeline,selfmirror:gSelfMirror,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
+function rMini(st){({book:gBook,treasure:gTreasure,find:gFind,puzzle:gPuzzle,maslow:gMaslow,timeline:gTimeline,selfmirror:gSelfMirror,pasuk:gPasuk,species:gSpecies,sky:gSky,hands:gHands,circles:gCircles,final:gFinal})[st.game]()}
 
 function gBook(){
   const cols=['#6e2433','#2c5564','#5a4a78','#3f6b4a','#8a6a3f','#1d2b44','#7a5a2a'];
@@ -953,7 +995,7 @@ function renderDone(){
   $('#nx').onclick=()=>{sfx.tap();go('map')};
 }
 function renderMap(){
-  S._last='map';
+  S._last='map';S.mapSeen=1;
   const firstOpen=S.done.findIndex(d=>!d);
   const prologueDone=S.ps>=PRO().length;
   /* узлы: пролог + 7 миров; тропа петляет слева направо */
@@ -1036,6 +1078,59 @@ async function drawCertificate(sc){
   x.fillStyle='#2f7d4a';x.font=`700 24px ${B}`;x.fillText(`${APP_URL.replace(/^https:\/\//,'')}   ·   ${COPYRIGHT}`,W/2,1058);
   return c.toDataURL('image/png');
 }
+/* ---------- личный лист: второй лист к сертификату — стих по имени и слово «Айом-йом» по дню рождения ---------- */
+/* null, если игрок не указал ни имени на иврите, ни дня рождения */
+async function drawPersonalSheet(sc){
+  const heb=hebFinals(S.hebName||'').trim(),pv=heb?await personalVerse():null,hy=await personalHayom();
+  if(!pv&&!hy)return null;
+  sc=sc||1;const W=1600,H=1130,c=document.createElement('canvas');c.width=W*sc;c.height=H*sc;const x=c.getContext('2d');x.scale(sc,sc);
+  try{await Promise.all(['700 60px Unbounded','500 30px Onest','500 40px "Frank Ruhl Libre"','700 60px "Frank Ruhl Libre"'].map(f=>document.fonts.load(f)))}catch(e){}
+  const D='Unbounded, "Trebuchet MS", sans-serif',B='Onest, "Segoe UI", sans-serif',HB='"Frank Ruhl Libre", serif';
+  const GOLD='#b8861b',INK='#1f2a2e',MUTE='#6b6656',LEAF='#2f7d4a';
+  // бумага, двойная золотая рамка, ромбы в углах
+  x.fillStyle='#fbf6ea';x.fillRect(0,0,W,H);
+  const g=x.createRadialGradient(W/2,H/2,200,W/2,H/2,900);g.addColorStop(0,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.strokeStyle=GOLD;x.lineWidth=4;x.strokeRect(44,44,W-88,H-88);x.lineWidth=1.2;x.strokeRect(58,58,W-116,H-116);
+  const diamond=(cx,cy,r,fill)=>{x.save();x.translate(cx,cy);x.rotate(Math.PI/4);x.fillStyle=fill;x.fillRect(-r,-r,2*r,2*r);x.restore()};
+  [[58,58],[W-58,58],[58,H-58],[W-58,H-58]].forEach(([a,b])=>{diamond(a,b,11,'#fbf6ea');x.save();x.translate(a,b);x.rotate(Math.PI/4);x.strokeStyle=GOLD;x.lineWidth=2;x.strokeRect(-11,-11,22,22);x.restore();diamond(a,b,4,GOLD)});
+  const rule=(y,half)=>{x.strokeStyle=GOLD;x.lineWidth=1.2;x.beginPath();x.moveTo(W/2-half,y);x.lineTo(W/2-14,y);x.moveTo(W/2+14,y);x.lineTo(W/2+half,y);x.stroke();diamond(W/2,y,5,GOLD)};
+  // шапка: подзаголовок, имя героя и имя на иврите
+  x.textAlign='center';x.fillStyle=GOLD;x.font=`500 22px ${B}`;x.fillText(t('sheet.kicker').toUpperCase().split('').join(' '),W/2,128);
+  let fs=60;x.font=`700 ${fs}px ${D}`;const nm=heroName();while(x.measureText(nm).width>900&&fs>32){fs-=4;x.font=`700 ${fs}px ${D}`}
+  x.fillStyle=LEAF;x.fillText(nm,W/2,210);
+  let top=250;
+  if(heb){x.save();x.direction='rtl';x.fillStyle=GOLD;x.font=`700 52px ${HB}`;x.fillText(heb,W/2,276);x.restore();top=306}
+  rule(top,330);
+  // панели
+  const panels=[];
+  if(pv)panels.push({title:t('cert.verse'),he:'פָּסוּק',text:pv[3],max:pv&&hy?40:58,ref:`${tl('pasuk.books')[pv[0]]||''} ${pv[1]}:${pv[2]}`,href:`${PESUKIM.books[pv[0]]} ${hebNum(pv[1])}, ${hebNum(pv[2])}`,note:t('sheet.verseNote')});
+  if(hy)panels.push({title:t('cert.hayom'),he:'הַיּוֹם יוֹם',text:hy.text.replace(/\n/g,' '),max:pv?30:38,ref:`${t('hy.cite')} · ${hyDate(hy)}`,href:`היום יום, ${hyHebDate(hy)}`,note:t('sheet.hayomNote')});
+  const two=panels.length>1,pw=two?620:1080,py=top+36,ph=H-120-py;
+  panels.forEach((p,k)=>{
+    const cx=two?(k?W/2-60-pw/2:W/2+60+pw/2):W/2;   // стих справа (иврит читают справа), «Айом-йом» слева
+    const l=cx-pw/2;
+    x.fillStyle='#fffdf8';x.strokeStyle='#e6d6ac';x.lineWidth=1.5;x.beginPath();x.roundRect(l,py,pw,ph,18);x.fill();x.stroke();
+    x.fillStyle=MUTE;x.font=`500 20px ${B}`;x.textAlign='center';x.fillText(p.title.toUpperCase().split('').join(' ').replace(/ {3}/g,'  '),cx,py+52);
+    x.save();x.direction='rtl';x.fillStyle=GOLD;x.font=`500 34px ${HB}`;x.fillText(p.he,cx,py+96);x.restore();
+    // текст: самый крупный кегль, при котором он помещается в панель
+    const tw=pw-90,aTop=py+130,aBot=py+ph-150;
+    x.save();x.direction='rtl';x.fillStyle=INK;let f=p.max,lines,lh;
+    for(;;){x.font=`500 ${f}px ${HB}`;lines=wrapLines(x,p.text,tw);lh=Math.round(f*1.55);if(lines.length*lh<=aBot-aTop||f<=20)break;f-=2}
+    const fit=Math.floor((aBot-aTop)/lh);
+    if(lines.length>fit){lines=lines.slice(0,fit);let last=lines[fit-1];while(last&&x.measureText(last+' …').width>tw)last=last.replace(/\s*\S+$/,'');lines[fit-1]=last+' …'}
+    const y0=aTop+((aBot-aTop)-lines.length*lh)/2+f;
+    lines.forEach((ln,i)=>x.fillText(ln,cx,y0+i*lh));x.restore();
+    // ссылка и пояснение
+    x.strokeStyle='#e6d6ac';x.lineWidth=1;x.beginPath();x.moveTo(cx-pw/2+60,py+ph-132);x.lineTo(cx+pw/2-60,py+ph-132);x.stroke();
+    x.save();x.direction='rtl';x.fillStyle=GOLD;x.font=`500 24px ${HB}`;x.fillText(p.href,cx,py+ph-98);x.restore();
+    x.fillStyle=MUTE;x.font=`400 19px ${B}`;x.fillText(p.ref,cx,py+ph-72);
+    x.font=`italic 400 17px ${B}`;const nl=wrapLines(x,p.note,pw-80).slice(0,2);nl.forEach((n,i)=>x.fillText(n,cx,py+ph-(nl.length>1?44:30)+i*22));
+  });
+  if(two){x.strokeStyle='#e6d6ac';x.lineWidth=1;x.beginPath();x.moveTo(W/2,py+30);x.lineTo(W/2,py+ph-30);x.stroke();diamond(W/2,py+ph/2,5,GOLD)}
+  // подвал
+  x.textAlign='center';x.fillStyle=LEAF;x.font=`700 22px ${B}`;x.fillText(`${APP_URL.replace(/^https:\/\//,'')}   ·   ${COPYRIGHT}`,W/2,H-74);
+  return c.toDataURL('image/png');
+}
 function renderFinal(){
   S._last='final';
   if(S.phrase===null){S.phrase=S.insight>=3?0:S.help>=3?2:1;save()}
@@ -1050,6 +1145,7 @@ function renderFinal(){
     <div id="conf"></div>
     <button class="linkbtn shablink" id="shabbtn">${icon('candles')} ${t('shab.open')}</button>
     <button class="linkbtn shablink" id="pasukbtn">${icon('scroll')} ${t('pasuk.open')}</button>
+    <button class="linkbtn shablink" id="hayombtn">${icon('candles')} ${t('hy.open')}</button>
     <p class="foot">${t('final.foot')}</p>
   </section>`;
   stage.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S._tab=b.dataset.tab;save();sfx.tap();renderFinal();const t=$('#tab-'+S._tab);if(t)t.focus()});
@@ -1058,6 +1154,7 @@ function renderFinal(){
   $('#map').onclick=()=>go('map');
   $('#shabbtn').onclick=()=>{sfx.tap();openShabbat()};
   $('#pasukbtn').onclick=()=>{sfx.tap();openPasuk()};
+  $('#hayombtn').onclick=()=>{sfx.tap();openHayom()};
   $('#again').onclick=()=>{$('#conf').innerHTML=`<div class="confirm"><p>${t('final.confirm')}</p><div class="actions"><button class="btn small" id="yes">${t('btn.yes')}</button><button class="btn ghost small" id="no">${t('btn.cancel')}</button></div></div>`;
     $('#yes').onclick=()=>{const snd=S.sound;S=fresh();S.sound=snd;save();go('create')};$('#no').onclick=()=>{$('#conf').innerHTML=''}};
 }
@@ -1065,21 +1162,30 @@ function finalCert(){
   return `<article class="card cert-card"><div class="cert-head"><span class="kicker">${t('cert.kicker')}</span><span class="muted" style="font-size:0.875rem">${fmtDate(S.finished)}</span></div>
       <div class="field"><label for="certname">${t('cert.nameLabel')}</label><input id="certname" maxlength="24" autocomplete="off" placeholder="${esc(t('hero.default'))}" value="${esc(S.hero.name)}"></div>
       ${S.photo?`<div class="cert-photo"><img src="${S.photo}" alt=""><label class="cert-pt"><input type="checkbox" id="photoon" ${S.photoOff?'':'checked'}> <span>${t('cert.photoOn')}</span></label><button class="btn ghost small" id="photodel">${t('cert.photoDel')}</button></div>`:`<p class="muted" style="font-size:0.875rem">${icon('mirror')} ${t('cert.photoHint')}</p>`}
+      ${(S.hebName||'').trim()?'':`<p class="muted" style="font-size:0.875rem">${icon('scroll')} ${t('cert.verseHint')} <button class="linkbtn" id="certverse">${t('pasuk.open')}</button></p>`}
+      ${bdayHeb()?'':`<p class="muted" style="font-size:0.875rem">${icon('candles')} ${t('cert.hayomHint')} <button class="linkbtn" id="certhayom">${t('hy.open')}</button></p>`}
       <div class="cert-frame" id="cert"><p class="muted">${t('cert.loading')}</p></div>
-      <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a></div>
+      <div class="cert-frame" id="cert2" hidden></div>
+      <div class="actions"><button class="btn" id="print">${icon('scroll')}<span>${t('cert.print')}</span></button><a class="btn ghost" id="dl" download="${t('cert.file')}" href="#">${t('cert.download')}</a><a class="btn ghost" id="dl2" download="${t('sheet.file')}" href="#" hidden>${t('sheet.download')}</a></div>
       <p class="muted" style="font-size:0.875rem" id="printnote">${t('cert.note')}</p></article>`;
 }
 function wireCert(){
-  let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate();if(my!==tok||!$('#cert'))return;
-    $('#cert').innerHTML=`<img src="${url}" alt="${t('cert.alt',{name:esc(heroName())})}">`;$('#dl').href=url};
+  let tok=0;const paint=async()=>{const my=++tok;const url=await drawCertificate(),u2=await drawPersonalSheet();if(my!==tok||!$('#cert'))return;
+    $('#cert').innerHTML=`<img src="${url}" alt="${t('cert.alt',{name:esc(heroName())})}">`;$('#dl').href=url;
+    const c2=$('#cert2'),d2=$('#dl2');c2.hidden=d2.hidden=!u2;
+    if(u2){c2.innerHTML=`<img src="${u2}" alt="${t('sheet.alt',{name:esc(heroName())})}">`;d2.href=u2}};
   paint();
   const pon=$('#photoon');if(pon)pon.onchange=()=>{S.photoOff=!pon.checked;save();paint()};
+  const cv=$('#certverse');if(cv)cv.onclick=()=>{sfx.tap();openPasuk()};
+  const ch=$('#certhayom');if(ch)ch.onclick=()=>{sfx.tap();openHayom()};
   const pdel=$('#photodel');if(pdel)pdel.onclick=()=>{delete S.photo;delete S.photoOff;save();sfx.tap();renderFinal()};
   let tm;$('#certname').oninput=e=>{S.hero.name=e.target.value;save();clearTimeout(tm);tm=setTimeout(paint,350)};
   $('#dl').onclick=e=>{if($('#dl').getAttribute('href')==='#')e.preventDefault()};
+  $('#dl2').onclick=e=>{if($('#dl2').getAttribute('href')==='#')e.preventDefault()};
   $('#print').onclick=async()=>{const b=$('#print');b.disabled=true;
-    try{shabPrintDone();const url=await drawCertificate(2);const pr=$('#print-area');pr.innerHTML=`<img src="${url}" alt="">`;
-      await new Promise(r=>{const im=pr.querySelector('img');if(im.complete)r();else{im.onload=r;im.onerror=r}});
+    try{shabPrintDone();const url=await drawCertificate(2),u2=await drawPersonalSheet(2);const pr=$('#print-area');
+      pr.innerHTML=`<img src="${url}" alt="">${u2?`<img src="${u2}" alt="">`:''}`;
+      await Promise.all([...pr.querySelectorAll('img')].map(im=>new Promise(r=>{if(im.complete)r();else{im.onload=r;im.onerror=r}})));
       window.print();
     }catch(e){$('#printnote').textContent=t('cert.noPrint')}
     b.disabled=false};
@@ -1136,7 +1242,7 @@ stage.addEventListener('click',e=>{const b=e.target.closest('[data-read]');if(b)
 function start(data){
   load();
   if(data&&data.state&&data.state.v===1)S=Object.assign(fresh(),data.state);
-  if(S.screen==='shabbat'||S.screen==='pasuk')S.screen='title';
+  if(['shabbat','pasuk','hayom'].includes(S.screen))S.screen='title';
   if(S.screen!=='title'&&S.screen!=='create'){S._last=S.screen;S.screen='title'}
   render();
   showGate(()=>{});

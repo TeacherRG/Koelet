@@ -118,6 +118,18 @@ async function run(browser, base, sc) {
       await page.click('[data-nav="-1"]'); const back = await page.evaluate(() => S.s);
       const fwdOn = await enabled('[data-nav="1"]'); await page.click('[data-nav="1"]');
       if (back !== at - 1 || !fwdOn || await page.evaluate(() => S.s) !== at) add('step arrows do not go back and forward');
+    }
+    if (!seen.back && screen === 'world' && await page.evaluate(() => S.s) >= 3) {
+      // «Назад» at the bottom and the phone's back button: one step back each
+      seen.back = true;
+      const s0 = await page.evaluate(() => S.s);
+      if (!(await has('#stepback'))) add('no «Назад» button at the bottom of a step');
+      else {
+        await page.click('#stepback');
+        if (await page.evaluate(() => S.s) !== s0 - 1) add(`«Назад» did not go one step back (${s0} → ${await page.evaluate(() => S.s)})`);
+        await page.goBack();
+        await page.waitForFunction(n => S.s === n, s0 - 2, {timeout: 3000}).catch(() => add('the phone\'s back button did not go one step back'));
+      }
       continue;
     }
     if (!(await has('.whatif')) && await has('#wi')) { await page.click('#wi'); continue; }
@@ -260,6 +272,23 @@ async function run(browser, base, sc) {
     await snap('pasuk');
     await page.click('#paback');
     if (await page.evaluate(() => S.screen) !== 'final') add('«Твой стих»: «Назад» did not return to the final screen');
+    // «Твой день в „Айом-йом“» from the menu: a birthday gives an entry of the book; the full certificate draws
+    await page.click('#menubtn'); await page.click('[data-m="hayom"]');
+    await page.fill('#hyg', '2012-03-14'); await page.dispatchEvent('#hyg', 'change');
+    await page.waitForSelector('.hy-v', {timeout: 5000}).catch(() => {});
+    const hy = await page.evaluate(() => ({screen: S.screen, ok: !!document.querySelector('.hy-v'), date: (document.querySelector('.hy-loc') || {}).innerText || '', text: [...document.querySelectorAll('#stage .lead, #stage .group h3, #stage label, .hy-loc, figcaption')].map(e => e.innerText).join('\n')}));
+    if (hy.screen !== 'hayom' || !hy.ok || !/20/.test(hy.date)) add(`«Айом-йом»: screen "${hy.screen}", entry ${hy.ok}, date "${hy.date}" (14.03.2012 = 20 Adar)`);
+    for (const p of textProblems(hy.text, sc.lang)) add(`[hayom] ${p}`);
+    await snap('hayom');
+    await page.click('#hyback');
+    if (await page.evaluate(() => S.screen) !== 'final') add('«Айом-йом»: «Назад» did not return to the final screen');
+    // the certificate itself stays as it was; the verse and «Айом-йом» go to the second, personal page
+    if (!(await page.evaluate(async () => { const u = await drawPersonalSheet(); return !!u && u.length > 1000 && !!(await personalHayom()) && !!(await personalVerse()); }))) add('the personal page (verse and «Айом-йом») did not draw');
+    // final → «Назад» → map, and the map's «Назад» → title (no «Назад» there)
+    await page.click('#stepback');
+    if (await page.evaluate(() => S.screen) !== 'map') add('«Назад» on the final screen did not open the map');
+    await page.click('#stepback');
+    if (await page.evaluate(() => S.screen) !== 'title' || await page.evaluate(() => !document.querySelector('#backbar').hidden)) add('«Назад» on the map did not open the title screen, or the title has a «Назад» button');
   }
   await ctx.close();
   return {name, steps, problems: [...problems]};

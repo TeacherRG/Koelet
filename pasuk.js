@@ -95,31 +95,55 @@ const verseRef=v=>`${esc(tl('pasuk.books')[v[0]]||'')} ${v[1]}:${v[2]} · <span 
 function letterChip(c){const L=tl('pasuk.letters');return `<span class="pasuk-l"><b class="heb" lang="he">${c}</b><small>${esc(L[HEB_AB.indexOf(baseL(c))]||'')}</small></span>`}
 
 function openPasuk(){if(S.screen!=='pasuk')S.pasukFrom=S.screen;go('pasuk')}
-function renderPasuk(){
+/* имя на иврите: поле и экранная клавиатура (раздел и шаг в «Зеркале») */
+function hebNameHTML(){
   if(S.hebName==null)S.hebName=hebGuess(S.hero.name);
   const kb=[...'אבגדהוזחטיכךלמםנןסעפףצץקרשת'];
+  return `<div class="group"><h3><label for="hebname">${t('pasuk.nameH')}</label></h3>
+      <p class="muted pasuk-hint">${t('pasuk.nameHint')}</p>
+      <input id="hebname" class="pasuk-in heb" lang="he" dir="rtl" maxlength="24" autocomplete="off" spellcheck="false" value="${esc(S.hebName)}" placeholder="${esc(t('pasuk.namePh'))}">
+      <div class="pasuk-kb" role="group" aria-label="${esc(t('pasuk.kb'))}" dir="rtl">${kb.map(c=>`<button class="heb" lang="he" data-k="${c}">${c}</button>`).join('')}
+        <button data-k=" " class="wide" aria-label="${esc(t('pasuk.space'))}">␣</button><button data-k="del" class="wide" aria-label="${esc(t('pasuk.del'))}">⌫</button></div>
+    </div>
+    <div id="pares" aria-live="polite"></div>`;
+}
+function wireHebName(){
+  const inp=$('#hebname');
+  const set=v=>{S.hebName=hebOnly(v);inp.value=S.hebName;save();showPasuk()};
+  inp.oninput=()=>{const p=inp.selectionStart,v=hebFinals(hebOnly(inp.value));if(v!==inp.value){inp.value=v;inp.setSelectionRange(p,p)}S.hebName=v;save();showPasuk()};
+  stage.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{sfx.tap();const k=b.dataset.k;
+    set(k==='del'?S.hebName.slice(0,-1):hebFinals(S.hebName+k))});
+  showPasuk();
+}
+function renderPasuk(){
   stage.innerHTML=`<section class="scene pasuk">
     <div><button class="btn ghost small" id="paback">${t('shab.back')}</button></div>
     <span class="kicker">${icon('scroll')} ${t('pasuk.kicker')}</span>
     <h2 class="h2">${t('pasuk.title')}</h2>
     <p class="lead">${t('pasuk.lead')}</p>
     <p class="shab-note">${icon('info')}<span>${t('pasuk.custom')}</span></p>
-    <div class="group"><h3><label for="hebname">${t('pasuk.nameH')}</label></h3>
-      <p class="muted pasuk-hint">${t('pasuk.nameHint')}</p>
-      <input id="hebname" class="pasuk-in heb" lang="he" dir="rtl" maxlength="24" autocomplete="off" spellcheck="false" value="${esc(S.hebName)}" placeholder="${esc(t('pasuk.namePh'))}">
-      <div class="pasuk-kb" role="group" aria-label="${esc(t('pasuk.kb'))}" dir="rtl">${kb.map(c=>`<button class="heb" lang="he" data-k="${c}">${c}</button>`).join('')}
-        <button data-k=" " class="wide" aria-label="${esc(t('pasuk.space'))}">␣</button><button data-k="del" class="wide" aria-label="${esc(t('pasuk.del'))}">⌫</button></div>
-    </div>
-    <div id="pares" aria-live="polite"></div>
+    ${hebNameHTML()}
     <p class="muted pasuk-src">${t('pasuk.src')}</p>
   </section>`;
-  const inp=$('#hebname');
-  const set=v=>{S.hebName=hebOnly(v);inp.value=S.hebName;save();showPasuk()};
-  inp.oninput=()=>{const p=inp.selectionStart,v=hebFinals(hebOnly(inp.value));if(v!==inp.value){inp.value=v;inp.setSelectionRange(p,p)}S.hebName=v;save();showPasuk()};
-  stage.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{sfx.tap();const k=b.dataset.k;
-    set(k==='del'?S.hebName.slice(0,-1):hebFinals(S.hebName+k))});
   $('#paback').onclick=()=>{sfx.tap();go(S.pasukFrom&&S.pasukFrom!=='pasuk'?S.pasukFrom:'title')};
-  showPasuk();
+  wireHebName();
+}
+/* шаг в мире «Зеркало»: после зеркала с камерой — твоё имя и твой стих */
+function gPasuk(){
+  stage.innerHTML=`<section class="scene pasuk">${head()}${sayHTML(M,tl('mirror.verse'),'warm')}
+    ${hebNameHTML()}
+    <p class="muted pasuk-src">${t('pasuk.cert')}</p>
+    <div class="actions"><button class="btn" id="nx">${t('btn.next')}</button></div></section>`;
+  let given=false;
+  $('#nx').onclick=()=>{sfx.tap();if(!given){given=true;addSparks(10,$('#pares'))}next()};
+  wireHebName();
+}
+/* личный стих для сертификата: первый стих пары первого имени; null, если имени нет или данные не загрузились */
+async function personalVerse(){
+  const n=hebFinals(S.hebName||'').trim().split(' ')[0]||'';
+  if(n.length<2)return null;
+  try{await loadPesukim([firstOf(n)])}catch(e){return null}
+  return pairVerses(n)[0]||null;
 }
 function showPasuk(){
   const box=$('#pares');if(!box)return;
