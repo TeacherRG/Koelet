@@ -432,6 +432,10 @@ p{margin:0}
 body{transition:background-color .6s ease}
 .scenery{position:fixed;inset:0;z-index:0;pointer-events:none}
 .scenery svg{display:block;width:100%;height:100%}
+/* фоны художника (art/<возраст>/bg/): заполняют экран, привязка к низу, как у нарисованных кодом */
+.scenery picture,.bn-art picture{display:block;width:100%;height:100%}
+.scenery img,.bn-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 100%}
+.bn-art picture.mid img{object-position:50% 50%}
 /* «вуаль» под сценой: иллюстрация видна по краям, текст остаётся читаемым */
 .scene{background:var(--bg);background:color-mix(in srgb,var(--bg) 90%,transparent);border-radius:26px;padding:16px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 .final-grid .final-grid,#tabp{background:none;padding:0;backdrop-filter:none}

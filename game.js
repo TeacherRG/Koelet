@@ -55,7 +55,20 @@ const byAge=a=>a.filter(s=>typeof s==='function'||!s.age||(s.age==='y'?young():s
 const PRO=()=>byAge(PROLOGUE);
 const myQualities=()=>[...(S.qualities||[]),...(S.own&&S.own.quality?[S.own.quality]:[])];
 
+/* роли героя: имя файла в art/<возраст>/avatar/ и значок, если у картинки нет своей роли */
+const ARCH_ART=['explorer','inventor','chronicler','traveler','artist','musician'];
+const ARCH_IC=['lens','bulb','scroll','compass','palette','note'];
+/* картинка художника: m3-artist → m3 → m (m/f — мальчик/девочка, цифра — внешность 1–6) */
+function avatarArt(p){
+  if(p.g!=='m'&&p.g!=='f')return '';
+  const g=p.g+((p.look||0)+1),r=ARCH_ART[p.arch];
+  const src=artSrc('avatar',r&&g+'-'+r,g,r&&p.g+'-'+r,p.g);if(!src)return '';
+  const own=r&&/-[a-z]+\.\w+/.test(src.split('/').pop().split('?')[0]);
+  const badge=r&&!own?`<g transform="translate(72 72)"><circle cx="12" cy="12" r="13" fill="#fff" stroke="${OUTFITS[p.outfit||0]}" stroke-width="2.5"/><g transform="translate(3 3) scale(.75)" fill="none" stroke="#3a3a3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[ARCH_IC[p.arch]]}</g></g>`:'';
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" fill="#f4efe6"/><rect width="100" height="100" fill="${OUTFITS[p.outfit||0]}" fill-opacity=".3"/><image href="${src}" width="100" height="100" preserveAspectRatio="xMidYMax slice"/>${badge}</svg>`;
+}
 function avatar(p){
+  const art=avatarArt(p);if(art)return art;
   const L=LOOKS[p.look||0], out=OUTFITS[p.outfit||0], a=p.arch;
   let back='',hair='',acc='';
   if(L.style===2) back=`<path d="M30 40 Q30 17 50 17 Q70 17 70 40 L73 68 Q60 63 50 63 Q40 63 27 68Z" fill="${L.hair}"/>`;
@@ -96,8 +109,8 @@ function themeKey(){
   return 'base';
 }
 function applyTheme(){
-  const k=themeKey(),b=document.body;if(b.dataset.theme===k)return;
-  const t=THEMES[k]||THEMES.base;b.dataset.theme=k;b.style.setProperty('--accent',t.accent);b.style.setProperty('--bg',t.bg);
+  const k=themeKey(),b=document.body;artPreload();if(b.dataset.theme===k&&b.dataset.art===artAge())return;
+  const t=THEMES[k]||THEMES.base;b.dataset.theme=k;b.dataset.art=artAge();b.style.setProperty('--accent',t.accent);b.style.setProperty('--bg',t.bg);
   const sc=$('#scenery');if(sc)sc.innerHTML=sceneSvg(k);
 }
 
@@ -484,7 +497,7 @@ function renderCreate(){
     ${req('f-age',1,t('create.age'),!h.age,t('create.needAge'),seg('age','y',t('create.ageY'),t('create.ageYs'),'book')+seg('age','t',t('create.ageT'),t('create.ageTs'),'compass')+seg('age','a',t('create.ageA'),t('create.ageAs'),'scroll'),'three')}
     ${h.age?`<p class="agenote">${t({y:'create.noteY',t:'create.noteT',a:'create.noteA'}[h.age])}</p>`:''}
     ${req('f-g',2,t('create.address'),!h.g,t('create.needG'),seg('g','m',t('create.m'),t('create.mSub'),'smile')+seg('g','f',t('create.f'),t('create.fSub'),'smile'))}
-    <div class="group"><h3>${t('create.role')}</h3><div class="archs">${ARCHS.map((a,i)=>`<button class="arch ${h.arch===i?'on':''}" data-arch="${i}">${avatar({look:h.look,outfit:h.outfit,arch:i})}<span>${esc(T(a.name))}</span></button>`).join('')}</div></div>
+    <div class="group"><h3>${t('create.role')}</h3><div class="archs">${ARCHS.map((a,i)=>`<button class="arch ${h.arch===i?'on':''}" data-arch="${i}">${avatar({look:h.look,outfit:h.outfit,arch:i,g:h.g})}<span>${esc(T(a.name))}</span></button>`).join('')}</div></div>
     <div class="group"><h3>${t('create.looks')}</h3><div class="swatches">${LOOKS.map((l,i)=>`<button class="sw ${h.look===i?'on':''}" data-look="${i}" aria-label="${t('create.lookN',{n:i+1})}"><span data-css="background:linear-gradient(135deg,${l.hair} 50%,${l.skin} 50%)"></span></button>`).join('')}</div></div>
     <div class="group"><h3>${t('create.outfit')}</h3><div class="swatches">${OUTFITS.map((o,i)=>`<button class="sw ${h.outfit===i?'on':''}" data-outfit="${i}" aria-label="${t('create.outfitN',{n:i+1})}"><span data-css="background:${o}"></span></button>`).join('')}</div></div>
     <div class="actions"><button class="btn ${ok?'':'wait'}" id="ready">${t('create.ready')}</button>${ok?'':`<span class="need ${createTried?'bad':''}">${icon('info')}${t(!h.age&&!h.g?'create.need':!h.age?'create.needAge':'create.needG')}</span>`}</div>
@@ -666,7 +679,7 @@ function rQuote(st){
 }
 function artHTML(a){
   if(a==='solomon')return `<div class="grid8">${tl('art.solomon').map(x=>[x]).map((r,i)=>`<div class="stat"><span>${r[0]}</span><div class="bar"><i data-css="animation-delay:${i*.15}s"></i></div></div>`).join('')}</div>`;
-  if(a==='brothers')return `<div class="art-bro"><div class="tc"><div class="av84">${avatar({look:0,outfit:0})}</div><small class="muted">${t('art.menashe')}</small></div><div class="tc"><div class="av70">${avatar({look:1,outfit:2})}</div><small class="muted">${t('art.efraim')}</small></div></div>`;
+  if(a==='brothers')return `<div class="art-bro"><div class="tc"><div class="av84">${avatar({look:0,outfit:0,g:'m'})}</div><small class="muted">${t('art.menashe')}</small></div><div class="tc"><div class="av70">${avatar({look:1,outfit:2,g:'m'})}</div><small class="muted">${t('art.efraim')}</small></div></div>`;
   if(a==='map')return `<div class="art-map"><div class="av72">${avatar(S.hero)}</div><div><span class="kicker">${esc(heroName())}</span><p class="muted fs-sm">${t('art.mapNote')}</p></div></div>`;
   return '';
 }
@@ -982,7 +995,7 @@ function gHands(){
       <g transform="translate(130,6) scale(1)"><svg width="100" height="100" x="0" y="0" viewBox="0 0 120 150">${mentorSvg('warm').replace(/^<svg[^>]*>|<\/svg>$/g,'')}</svg></g>
       <path class="arm straight" d="M160 100 Q120 140 85 175"/><path class="arm straight" d="M200 100 Q240 140 275 175"/>
       <path class="arm crossed" d="M160 100 Q210 130 275 175"/><path class="arm crossed" d="M200 100 Q150 130 85 175"/>
-      <svg x="40" y="160" width="90" height="90">${avatar({look:1,outfit:2})}</svg><svg x="230" y="160" width="90" height="90">${avatar({look:0,outfit:0})}</svg>
+      <svg x="40" y="160" width="90" height="90">${avatar({look:1,outfit:2,g:'m'})}</svg><svg x="230" y="160" width="90" height="90">${avatar({look:0,outfit:0,g:'m'})}</svg>
       <text x="85" y="248" text-anchor="middle" fill="#566d67" font-size="12" font-family="Onest,sans-serif">${esc(t('hands.efraim'))}</text><text x="275" y="248" text-anchor="middle" fill="#566d67" font-size="12" font-family="Onest,sans-serif">${esc(t('hands.menashe'))}</text>
     </svg>
     <p id="ht" class="muted">${t('hands.q')}</p></article>
@@ -1315,7 +1328,7 @@ function start(data){
 window.claude?.hot?.snapshot?.(()=>({state:S}));
 /* тексты могут прийти раньше, чем выполнены shabbat.js и pasuk.js — ждём и их */
 const DOM_READY=document.readyState==='loading'?new Promise(r=>document.addEventListener('DOMContentLoaded',r,{once:true})):Promise.resolve();
-Promise.all([window.GAME_DATA_READY,DOM_READY]).then(()=>{
+Promise.all([window.GAME_DATA_READY,DOM_READY,ART_READY]).then(()=>{
   window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 }).catch(()=>{
   const [h,p]=LOAD_ERROR[LANG]||LOAD_ERROR[DEFAULT_LANG];stage.innerHTML=`<section class="scene"><h1 class="h2">${h}</h1><p>${p}</p></section>`;

@@ -8,6 +8,7 @@
 //  - inline style="…" in texts (the CSP blocks it).
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
+import {imgSize, scanArt} from '../tools/art-files.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const REF = 'ru';
@@ -81,23 +82,7 @@ for (const lang of langs) {
   const own = await load('gallery/backgrounds.json');
   const FMT = {phone: [1170, 2532], screen: [3840, 2160], print: [2480, 3508]}, BUILTIN = ['deep', 'night', 'dawn'];
   const ids = new Set();
-  // width and height from the file header (PNG, JPEG, WebP)
-  const size = b => {
-    if (b.readUInt32BE(0) === 0x89504e47) return [b.readUInt32BE(16), b.readUInt32BE(20)];
-    if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') {
-      const k = b.toString('ascii', 12, 16);
-      if (k === 'VP8X') return [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)];
-      if (k === 'VP8 ') return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
-      if (k === 'VP8L') { const n = b.readUInt32LE(21); return [1 + (n & 0x3fff), 1 + ((n >> 14) & 0x3fff)]; }
-    }
-    if (b[0] === 0xff && b[1] === 0xd8) for (let i = 2; i < b.length - 9;) {
-      if (b[i] !== 0xff) { i++; continue; }
-      const m = b[i + 1], len = b.readUInt16BE(i + 2);
-      if (m >= 0xc0 && m <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(m)) return [b.readUInt16BE(i + 7), b.readUInt16BE(i + 5)];
-      i += 2 + len;
-    }
-    return null;
-  };
+  const size = imgSize;
   for (const [n, s] of ((own && own.scenes) || []).entries()) {
     const where = `gallery/backgrounds.json scene ${n + 1}${s && s.id ? ` «${s.id}»` : ''}`;
     if (!s || !/^[a-z0-9-]+$/.test(s.id || '')) { err(where, 'id must be latin letters, digits or -'); continue; }
@@ -118,6 +103,14 @@ for (const lang of langs) {
     for (const [f, band] of Object.entries(s.band || {})) if (!FMT[f] || !Array.isArray(band) || band.length !== 2 || !(band[0] >= 0 && band[0] < band[1] && band[1] <= 1)) err(where, `band.${f} must be [top, bottom] between 0 and 1`);
     if (s.shade != null && !(s.shade >= 0 && s.shade <= 1)) err(where, 'shade must be between 0 and 1');
   }
+}
+
+// the artist's pictures (art/<age>/{bg,keeper,avatar}/, see art/README.md): names, sizes, and art/manifest.json up to date
+{
+  const {manifest, problems} = await scanArt(ROOT);
+  for (const p of problems) err('art', p);
+  const have = await load('art/manifest.json');
+  if (have && JSON.stringify(have) !== JSON.stringify(manifest)) err('art/manifest.json', 'does not match the files in art/ — run npm run art');
 }
 
 // finished pictures for verses uploaded by the admin (gallery/verses.json: "book-chapter-verse" → files in gallery/)

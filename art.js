@@ -80,9 +80,33 @@ function icon(name,cls){
 /* «pic» на карточке: несколько имён иконок через пробел */
 const picHTML=s=>s?`<div class="pic" aria-hidden="true">${s.split(' ').map(n=>icon(n)).join('')}</div>`:'';
 
+/* ---------- Картинки художника: art/<возраст>/{bg,keeper,avatar}/ ----------
+   Свой стиль для каждой возрастной группы (y 8–11, t 12–15, a 16+). Какие файлы есть —
+   art/manifest.json (собирает npm run art). Чего нет — рисуется кодом, как раньше. См. art/README.md */
+let ARTSET={};
+const ART_READY=fetch('art/manifest.json').then(r=>r.ok?r.json():{}).then(m=>{ARTSET=m&&typeof m==='object'?m:{}}).catch(()=>{});
+const artAge=()=>(typeof S!=='undefined'&&S&&S.hero&&S.hero.age)||'t';
+/* первый найденный файл из names в наборе текущего возраста, иначе '' */
+function artSrc(kind,...names){
+  const a=artAge(),k=ARTSET[a]&&ARTSET[a][kind];if(!k)return '';
+  for(const n of names)if(n&&k[n])return `art/${a}/${kind}/${k[n]}`;
+  return '';
+}
+/* подгрузить всех Хранителей возраста заранее, чтобы смена настроения не мигала */
+let artWarm='';
+function artPreload(){
+  const a=artAge();if(artWarm===a)return;artWarm=a;
+  for(const m in MOODS){const src=artSrc('keeper',m);if(src)new Image().src=src}
+}
+
 /* ---------- Хранитель: 5 выражений лица × 5 жестов ---------- */
 const MOODS = {smile:['smile','book'],joy:['joy','open'],think:['think','chin'],wow:['wow','open'],warm:['warm','heart'],point:['smile','point']};
 function mentorSvg(mood){
+  const src=artSrc('keeper',MOODS[mood]?mood:'smile','smile');
+  if(src)return `<svg class="mentor" viewBox="0 0 120 150" role="img" aria-label="${typeof t==='function'?t('mentor.name'):''}"><image href="${src}" width="120" height="150" preserveAspectRatio="xMidYMax meet"/></svg>`;
+  return mentorVec(mood);
+}
+function mentorVec(mood){
   const [face,gest]=MOODS[mood]||MOODS.smile;
   const skin='#e7b894',robe='#5a4a78',ink='#2a2a2a';
   const arm=(d)=>`<path d="${d}" stroke="${robe}" stroke-width="12" stroke-linecap="round" fill="none"/>`;
@@ -215,6 +239,12 @@ const SCENES = {
   }
 };
 function sceneSvg(key,align){
+  const src=artSrc('bg',key);
+  if(src){
+    /* фон уходит под карточку: на телефоне (портрет) — свой вертикальный файл, если он есть */
+    const p=align?'':artSrc('bg',key+'-p');
+    return `<picture class="${align?'mid':'low'}">${p?`<source media="(orientation: portrait)" srcset="${p}">`:''}<img src="${src}" alt="" decoding="async"></picture>`;
+  }
   const f=SCENES[key];if(!f)return '';
   return `<svg viewBox="0 0 1200 800" preserveAspectRatio="${align||'xMidYMax'} slice" aria-hidden="true" focusable="false">${f()}</svg>`;
 }

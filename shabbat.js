@@ -80,7 +80,7 @@ function dieNet(){
   return `<svg class="die" viewBox="0 0 ${3*s+2*o} ${4*s+2*o}" aria-hidden="true">${g}</svg>`;
 }
 function tentToken(i){
-  const av=avatar({look:i%LOOKS.length,outfit:i%OUTFITS.length,arch:i%ARCHS.length});
+  const av=avatar({look:i%LOOKS.length,outfit:i%OUTFITS.length,arch:i%ARCHS.length,g:i%2?'f':'m'});
   return `<div class="tok"><div class="tok-h flip">${av}</div><div class="tok-h">${av}</div></div>`;
 }
 function pageRules(){
