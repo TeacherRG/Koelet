@@ -13,7 +13,8 @@
     "voice:dry": "node tools/tts.mjs --dry",
     "guide": "node tools/guide.mjs",
     "test:parsha": "node tests/parsha.mjs",
-    "parsha": "node tools/build-parsha.mjs"
+    "parsha": "node tools/build-parsha.mjs",
+    "art": "node tools/build-art.mjs"
   },
   "devDependencies": {
     "@hebcal/core": "^6.11.0",
